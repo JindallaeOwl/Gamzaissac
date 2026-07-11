@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+﻿import Phaser from 'phaser';
 import { Door } from '../entities/Door';
 import { ItemPickup } from '../entities/ItemPickup';
 import { createEnemy } from '../entities/enemies/EnemyFactory';
@@ -20,6 +20,7 @@ interface RoomControllerConfig {
   runState: RunState;
   onRoomCleared: (room: RoomNode) => void;
   onEnemyDefeated: (score: number) => void;
+  onBossPhaseTwo?: () => void;
 }
 
 export class RoomController {
@@ -34,6 +35,7 @@ export class RoomController {
   private readonly runState: RunState;
   private readonly onRoomCleared: (room: RoomNode) => void;
   private readonly onEnemyDefeated: (score: number) => void;
+  private readonly onBossPhaseTwo?: () => void;
   private readonly doorSprites = new Map<Direction, Door>();
   private readonly floorGraphics: Phaser.GameObjects.Graphics;
 
@@ -46,6 +48,7 @@ export class RoomController {
     this.runState = config.runState;
     this.onRoomCleared = config.onRoomCleared;
     this.onEnemyDefeated = config.onEnemyDefeated;
+    this.onBossPhaseTwo = config.onBossPhaseTwo;
 
     this.floorGraphics = this.scene.add.graphics();
     this.floorGraphics.setDepth(DEPTH.floor);
@@ -134,6 +137,10 @@ export class RoomController {
         this.runState.floor,
       );
       enemy.once('enemy-defeated', this.onEnemyDefeated);
+
+      if (enemy.isBoss && this.onBossPhaseTwo) {
+        enemy.once('boss-phase-two', this.onBossPhaseTwo);
+      }
     }
   }
 

@@ -1,4 +1,4 @@
-export const GAME_WIDTH = 960;
+﻿export const GAME_WIDTH = 960;
 export const GAME_HEIGHT = 640;
 
 export const ROOM_RECT = {
@@ -73,6 +73,7 @@ export const FEEDBACK_TUNING = {
     enemyDeath: { durationMs: 95, intensity: 0.0035 },
     playerHurt: { durationMs: 130, intensity: 0.006 },
     roomClear: { durationMs: 130, intensity: 0.0024 },
+    bossPhaseTwo: { durationMs: 230, intensity: 0.007 },
   },
   effects: {
     enemyHitFlashMs: 28,
@@ -99,12 +100,18 @@ export const BOSS_TUNING = {
   bulletDamage: 1,
   bulletSpeed: 245,
   fireCooldownMs: 1180,
-  enragedFireCooldownMs: 820,
   burstCount: 5,
   dashCooldownMs: 2400,
-  enragedDashCooldownMs: 1700,
   dashDurationMs: 340,
   dashSpeed: 330,
+  phaseTwoThreshold: 0.5,
+  phaseTwoTint: 0xff587d,
+  phaseTwoBurstCount: 7,
+  phaseTwoBulletSpeed: 310,
+  phaseTwoFireCooldownMs: 760,
+  phaseTwoDashCooldownMs: 1550,
+  phaseTwoTransitionLockMs: 500,
+  phaseTwoRadialCount: 8,
 };
 
 export const DEPTH = {

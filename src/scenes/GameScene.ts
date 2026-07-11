@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+﻿import Phaser from 'phaser';
 import { BeamAttack } from '../entities/BeamAttack';
 import { Bullet } from '../entities/Bullet';
 import { Door } from '../entities/Door';
@@ -8,6 +8,7 @@ import { RewardPickup } from '../entities/RewardPickup';
 import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import {
   BEAM_TUNING,
+  BOSS_TUNING,
   COMBAT_TUNING,
   FEEDBACK_TUNING,
   GAME_HEIGHT,
@@ -91,6 +92,7 @@ export class GameScene extends Phaser.Scene {
       runState: this.runState,
       onRoomCleared: (room) => this.handleRoomCleared(room),
       onEnemyDefeated: (score) => this.handleEnemyDefeated(score),
+      onBossPhaseTwo: () => this.handleBossPhaseTwo(),
     });
 
     this.hud = new Hud(this);
@@ -564,6 +566,17 @@ export class GameScene extends Phaser.Scene {
     this.runState.score += score;
   }
 
+  private handleBossPhaseTwo(): void {
+    if (this.gameOverStarted) {
+      return;
+    }
+
+    this.hud.showMessage(t('messages.bossPhaseTwo'), 1700);
+    this.effects.shake('bossPhaseTwo');
+    this.cameras.main.flash(160, 255, 88, 125, false);
+    this.audio.play('bossPhaseTwo');
+  }
+
   private dropRoomClearReward(room: RoomNode): void {
     const reward = this.rewardSystem.rollRoomClearReward(this.runState.stats);
 
@@ -699,7 +712,12 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    const phaseAwareBoss = boss as BaseEnemy & { isInPhaseTwo?: () => boolean };
+    const isPhaseTwo = phaseAwareBoss.isInPhaseTwo?.() ?? false;
+
     this.bossHealthFill.displayWidth = 316 * boss.getHealthRatio();
+    this.bossHealthFill.setFillStyle(isPhaseTwo ? BOSS_TUNING.phaseTwoTint : 0xd84f66, 1);
     this.bossHealthText.setText(boss.getDisplayName());
+    this.bossHealthText.setColor(isPhaseTwo ? '#ffb3c1' : '#ffe39b');
   }
 }

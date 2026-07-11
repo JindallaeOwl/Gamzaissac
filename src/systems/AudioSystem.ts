@@ -1,4 +1,4 @@
-import { FEEDBACK_TUNING } from '../config/gameConfig';
+﻿import { FEEDBACK_TUNING } from '../config/gameConfig';
 
 export type SoundCue =
   | 'shoot'
@@ -7,6 +7,7 @@ export type SoundCue =
   | 'playerHurt'
   | 'pickup'
   | 'roomClear'
+  | 'bossPhaseTwo'
   | 'beamCharge'
   | 'beamFire';
 
@@ -20,6 +21,7 @@ const CUE_SETTINGS: Record<
   playerHurt: { frequency: 76, durationMs: 180, type: 'sawtooth' },
   pickup: { frequency: 720, durationMs: 90, type: 'sine' },
   roomClear: { frequency: 440, durationMs: 180, type: 'triangle' },
+  bossPhaseTwo: { frequency: 64, durationMs: 260, type: 'sawtooth' },
   beamCharge: { frequency: 310, durationMs: 95, type: 'sine' },
   beamFire: { frequency: 120, durationMs: 220, type: 'sawtooth' },
 };

@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+﻿import Phaser from 'phaser';
 import { COMBAT_TUNING, DEPTH, FEEDBACK_TUNING, ROOM_RECT } from '../../config/gameConfig';
 import type { EnemyDefinition } from '../../data/enemies';
 import { Bullet } from '../Bullet';
@@ -15,6 +15,7 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   protected floorScale: number;
   private nextContactAt = 0;
   private defeated = false;
+  private persistentTint?: number;
 
   constructor(
     scene: Phaser.Scene,
@@ -93,6 +94,20 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
 
     this.nextContactAt = time + COMBAT_TUNING.enemyContactCooldownMs;
     return true;
+  }
+
+  protected setPersistentTint(tint: number): void {
+    this.persistentTint = tint;
+    this.setTint(tint);
+  }
+
+  private restorePersistentTint(): void {
+    if (this.persistentTint === undefined) {
+      this.clearTint();
+      return;
+    }
+
+    this.setTint(this.persistentTint);
   }
 
   protected moveToward(x: number, y: number, speed: number): void {

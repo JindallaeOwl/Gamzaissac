@@ -1,4 +1,4 @@
-import type { TranslationTree } from './types';
+﻿import type { TranslationTree } from './types';
 
 export const ko: TranslationTree = {
   title: {
@@ -18,7 +18,7 @@ export const ko: TranslationTree = {
     soundOff: '끄기',
   },
   gameOver: {
-    title: '탐사 종료',
+    title: '런 종료',
     summary: '방 {rooms}   아이템 {items}   점수 {score}',
   },
   hud: {
@@ -50,9 +50,10 @@ export const ko: TranslationTree = {
     floorCleared: '층 클리어',
     nextFloorOpening: '다음 층 개방',
     stageClear: '스테이지 클리어',
-    cacheFound: '보관소 발견',
+    cacheFound: '보급품 발견',
     treasureRoom: '보물방',
     bossRoom: '보스방',
+    bossPhaseTwo: 'Fault Warden: 2페이즈',
     treasureUnlocked: '보물방 개방',
     keyNeeded: '열쇠가 필요합니다',
     rewardGain: '+{amount} {resource}',
@@ -89,11 +90,11 @@ export const ko: TranslationTree = {
     },
     featherCoil: {
       name: '깃털 코일',
-      description: '몸놀림이 한결 가벼워집니다.',
+      description: '몸놀림이 조금 더 가벼워집니다.',
     },
     hotPebble: {
       name: '뜨거운 조약돌',
-      description: '탄환이 더 멀리, 더 세게 나아갑니다.',
+      description: '탄환이 더 멀리 나아갑니다.',
     },
     pocketBattery: {
       name: '주머니 전지',
@@ -101,7 +102,7 @@ export const ko: TranslationTree = {
     },
     steadyPin: {
       name: '고정 핀',
-      description: '압박을 유지하기 쉬워집니다.',
+      description: '정박한 의지가 전투를 안정시킵니다.',
     },
     moonDial: {
       name: '달 시계',
@@ -113,7 +114,7 @@ export const ko: TranslationTree = {
     },
     prismLance: {
       name: '프리즘 창',
-      description: '방향키를 모아 관통 빔을 충전합니다.',
+      description: '방향키를 길게 눌러 관통 빔을 충전합니다.',
     },
   },
 };

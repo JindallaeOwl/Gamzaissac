@@ -1,4 +1,4 @@
-import type { TranslationTree } from './types';
+﻿import type { TranslationTree } from './types';
 
 export const en: TranslationTree = {
   title: {
@@ -53,6 +53,7 @@ export const en: TranslationTree = {
     cacheFound: 'Cache found',
     treasureRoom: 'Treasure room',
     bossRoom: 'Boss room',
+    bossPhaseTwo: 'Fault Warden: Phase II',
     treasureUnlocked: 'Treasure room unlocked',
     keyNeeded: 'A key is needed',
     rewardGain: '+{amount} {resource}',
