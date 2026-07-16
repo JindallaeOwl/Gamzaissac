@@ -36,7 +36,6 @@ export class TitleScene extends Phaser.Scene {
   private soundEnabled = true;
   private menuItems: MenuItem[] = [];
   private menuTexts: Phaser.GameObjects.Text[] = [];
-  private titleText?: Phaser.GameObjects.Text;
   private subtitleText?: Phaser.GameObjects.Text;
   private hintText?: Phaser.GameObjects.Text;
   private menuContainer?: Phaser.GameObjects.Container;
@@ -113,25 +112,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private createTitle(): void {
-    this.titleText = this.add
-      .text(GAME_WIDTH / 2, 132, t('title.name'), {
-        fontFamily: koreanFontStack(),
-        fontSize: '60px',
-        fontStyle: 'bold',
-        color: '#f7f3e8',
-        stroke: '#0d1117',
-        strokeThickness: 12,
-        shadow: {
-          offsetX: 4,
-          offsetY: 5,
-          color: '#42202e',
-          blur: 0,
-          fill: true,
-        },
-        resolution: RENDER_SCALE,
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui);
+    createPixelTitleLogo(this, t('title.name'));
 
     this.subtitleText = this.add
       .text(GAME_WIDTH / 2, 188, '404% roguelike action', {
@@ -187,7 +168,6 @@ export class TitleScene extends Phaser.Scene {
     this.menuContainer.setDepth(DEPTH.ui);
     this.menuTexts = [];
     this.menuItems = this.buildMenuItems(mode);
-    this.titleText?.setText(t('title.name'));
     this.subtitleText?.setText(mode === 'settings' ? t('settings.title') : '404% roguelike action');
     this.hintText?.setText('');
 
@@ -357,4 +337,56 @@ export class TitleScene extends Phaser.Scene {
       this.audio?.play(cue);
     }
   }
+}
+
+const PIXEL_GLYPHS: Record<string, readonly string[]> = {
+  A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+  C: ['01111', '10000', '10000', '10000', '10000', '10000', '01111'],
+  G: ['01111', '10000', '10000', '10111', '10001', '10001', '01111'],
+  I: ['11111', '00100', '00100', '00100', '00100', '00100', '11111'],
+  M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
+  S: ['01111', '10000', '10000', '01110', '00001', '00001', '11110'],
+  Z: ['11111', '00001', '00010', '00100', '01000', '10000', '11111'],
+};
+
+function createPixelTitleLogo(scene: Phaser.Scene, title: string): Phaser.GameObjects.Container {
+  const blockSize = 7;
+  const glyphWidth = blockSize * 5;
+  const glyphGap = blockSize;
+  const normalizedTitle = title.toUpperCase();
+  const totalWidth =
+    normalizedTitle.length * glyphWidth + Math.max(0, normalizedTitle.length - 1) * glyphGap;
+  const container = scene.add.container((GAME_WIDTH - totalWidth) / 2, 106);
+  const shadow = scene.add.graphics();
+  const face = scene.add.graphics();
+
+  shadow.fillStyle(0x421f2e, 1);
+  face.fillStyle(0xf7f3e8, 1);
+
+  for (let glyphIndex = 0; glyphIndex < normalizedTitle.length; glyphIndex += 1) {
+    const glyph = PIXEL_GLYPHS[normalizedTitle[glyphIndex]];
+
+    if (!glyph) {
+      continue;
+    }
+
+    const offsetX = glyphIndex * (glyphWidth + glyphGap);
+
+    glyph.forEach((row, rowIndex) => {
+      for (let columnIndex = 0; columnIndex < row.length; columnIndex += 1) {
+        if (row[columnIndex] !== '1') {
+          continue;
+        }
+
+        const x = offsetX + columnIndex * blockSize;
+        const y = rowIndex * blockSize;
+        shadow.fillRect(x + 3, y + 4, blockSize, blockSize);
+        face.fillRect(x, y, blockSize - 1, blockSize - 1);
+      }
+    });
+  }
+
+  container.add([shadow, face]);
+  container.setDepth(DEPTH.ui);
+  return container;
 }

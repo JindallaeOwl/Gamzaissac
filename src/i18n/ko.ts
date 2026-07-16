@@ -2,7 +2,7 @@
 
 export const ko: TranslationTree = {
   title: {
-    name: 'Die-al and Error',
+    name: 'GAMZAISSAC',
   },
   menu: {
     start: '시작',

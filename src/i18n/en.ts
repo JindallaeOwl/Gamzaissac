@@ -2,7 +2,7 @@
 
 export const en: TranslationTree = {
   title: {
-    name: 'Die-al and Error',
+    name: 'GAMZAISSAC',
   },
   menu: {
     start: 'Start',

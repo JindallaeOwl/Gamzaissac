@@ -1,4 +1,4 @@
-﻿# Die-al and Error
+﻿# GAMZAISSAC
 
 Phaser 3, TypeScript, Vite 기반의 웹 브라우저용 2D 탑다운 로그라이크 액션 게임 프로토타입입니다. 빠른 방 단위 전투, 회피와 4방향 사격, 랜덤 보상, 패시브 아이템 성장을 중심으로 만들었고, 캐릭터/적/아이템/명칭/연출은 모두 오리지널 placeholder로 구성했습니다.
 
