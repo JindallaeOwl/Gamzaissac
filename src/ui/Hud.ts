@@ -5,12 +5,12 @@ import type { DungeonManager } from '../systems/DungeonManager';
 import type { RunState } from '../systems/RunState';
 import { getEffectiveDamage, getEffectiveFireRate } from '../systems/PlayerStatSystem';
 
-const HUD_EDGE_MARGIN = 6;
-const STATS_PANEL_WIDTH = 470;
-const STATS_PANEL_HEIGHT = 68;
-const MINIMAP_PANEL_WIDTH = 170;
-const MINIMAP_PANEL_HEIGHT = 68;
-const PANEL_TOP = 4;
+const HUD_EDGE_MARGIN = 0;
+const STATS_PANEL_WIDTH = 244;
+const STATS_PANEL_HEIGHT = 122;
+const MINIMAP_PANEL_WIDTH = 128;
+const MINIMAP_PANEL_HEIGHT = 94;
+const PANEL_TOP = 0;
 
 export class Hud {
   private readonly scene: Phaser.Scene;
@@ -45,10 +45,10 @@ export class Hud {
     this.messagePanel = this.createPanel(GAME_WIDTH / 2, 594, 680, 54).setVisible(false);
 
     const statsTextX = HUD_EDGE_MARGIN + 8;
-    this.healthText = this.createText(statsTextX, PANEL_TOP + 3, 16);
-    this.inventoryText = this.createText(statsTextX + 130, PANEL_TOP + 5, 13);
-    this.statsText = this.createText(statsTextX, PANEL_TOP + 27, 12);
-    this.roomText = this.createText(statsTextX, PANEL_TOP + 47, 12);
+    this.healthText = this.createText(statsTextX, PANEL_TOP + 4, 18);
+    this.inventoryText = this.createText(statsTextX, PANEL_TOP + 29, 13);
+    this.statsText = this.createText(statsTextX, PANEL_TOP + 49, 12);
+    this.roomText = this.createText(statsTextX, PANEL_TOP + 97, 12);
     this.messageText = this.createText(GAME_WIDTH / 2, 584, 16).setOrigin(0.5);
     this.itemHintText = this.createText(GAME_WIDTH / 2, 606, 13).setOrigin(0.5);
     this.debugText = this.createText(
@@ -145,14 +145,14 @@ export class Hud {
   private drawMinimap(dungeon: DungeonManager): void {
     const rooms = dungeon.getRooms();
     const current = dungeon.getCurrentRoom();
-    const size = 10;
-    const gap = 2;
+    const size = 12;
+    const gap = 3;
     const minX = Math.min(...rooms.map((room) => room.coord.x));
     const maxX = Math.max(...rooms.map((room) => room.coord.x));
     const minY = Math.min(...rooms.map((room) => room.coord.y));
     const mapWidth = (maxX - minX) * (size + gap) + size;
-    const originX = GAME_WIDTH - HUD_EDGE_MARGIN - 10 - mapWidth;
-    const originY = PANEL_TOP + 9;
+    const originX = GAME_WIDTH - HUD_EDGE_MARGIN - 12 - mapWidth;
+    const originY = PANEL_TOP + 12;
 
     this.minimap.clear();
 
