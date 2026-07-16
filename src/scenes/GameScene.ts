@@ -3,6 +3,7 @@ import { BeamAttack } from '../entities/BeamAttack';
 import { Bomb } from '../entities/Bomb';
 import { Bullet } from '../entities/Bullet';
 import { Door } from '../entities/Door';
+import { FloorExit } from '../entities/FloorExit';
 import { ItemPickup } from '../entities/ItemPickup';
 import type { Obstacle } from '../entities/Obstacle';
 import { Player, type PlayerControls } from '../entities/Player';
@@ -51,7 +52,7 @@ export class GameScene extends Phaser.Scene {
   private nextDoorAt = 0;
   private nextBombAt = 0;
   private gameOverStarted = false;
-  private floorAdvanceQueued = false;
+  private floorTransitionStarted = false;
   private playerDamageFeedbackQueued = false;
   private removeRuntimeErrorListener?: () => void;
   private bossHealthBack?: Phaser.GameObjects.Rectangle;
@@ -65,6 +66,7 @@ export class GameScene extends Phaser.Scene {
   private items!: Phaser.Physics.Arcade.Group;
   private rewards!: Phaser.Physics.Arcade.Group;
   private plantedBombs!: Phaser.GameObjects.Group;
+  private floorExits!: Phaser.Physics.Arcade.Group;
   private hud!: Hud;
 
   constructor() {
@@ -79,7 +81,7 @@ export class GameScene extends Phaser.Scene {
     this.nextDoorAt = 0;
     this.nextBombAt = 0;
     this.gameOverStarted = false;
-    this.floorAdvanceQueued = false;
+    this.floorTransitionStarted = false;
     this.playerDamageFeedbackQueued = false;
 
     this.cameras.main.setBackgroundColor('#0d1117');
@@ -101,6 +103,7 @@ export class GameScene extends Phaser.Scene {
     this.items = this.physics.add.group();
     this.rewards = this.physics.add.group();
     this.plantedBombs = this.add.group();
+    this.floorExits = this.physics.add.group({ allowGravity: false, immovable: true });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.clearPlantedBombs());
 
     this.player = new Player(this, 480, 320, this.runState.stats, this.runState.attackProfile);
@@ -385,6 +388,9 @@ export class GameScene extends Phaser.Scene {
         this.handleDoorOverlap(doorObject as Door);
       },
     );
+    this.physics.add.overlap(this.player, this.floorExits, (_playerObject, exitObject) => {
+      this.handleFloorExitOverlap(exitObject as FloorExit);
+    });
   }
 
   private setupPlayerEvents(): void {
@@ -394,10 +400,24 @@ export class GameScene extends Phaser.Scene {
       }
 
       this.gameOverStarted = true;
-      this.scene.start('GameOverScene', {
+      const gameOverData = {
         clearedRooms: this.runState.clearedRooms,
         itemCount: this.runState.collectedItemIds.length,
         score: this.runState.score,
+      };
+      this.player.setActive(false);
+      this.player.setCombatVisible(false);
+      const body = this.player.body as Phaser.Physics.Arcade.Body | undefined;
+
+      if (body) {
+        body.enable = false;
+        body.stop();
+      }
+
+      // Scene changes during an Arcade Physics callback can interrupt the
+      // current world step. Defer it to the safe end of this Scene frame.
+      this.events.once(Phaser.Scenes.Events.POST_UPDATE, () => {
+        this.scene.start('GameOverScene', gameOverData);
       });
     });
 
@@ -529,6 +549,7 @@ export class GameScene extends Phaser.Scene {
     this.enemyBullets.clear(true, true);
     this.beams.clear(true, true);
     this.rewards.clear(true, true);
+    this.floorExits.clear(true, true);
     this.clearPlantedBombs();
 
     const spawnPosition = this.roomController.getSpawnPositionForEntry(door.direction);
@@ -537,6 +558,7 @@ export class GameScene extends Phaser.Scene {
 
     this.roomController.enterCurrentRoom();
     this.restorePendingRoomReward(moved);
+    this.restoreFloorExit(moved);
     this.cameras.main.fadeIn(moved.type === 'boss' ? 320 : 150, 6, 9, 14);
 
     const roomEnteredMessage =
@@ -627,7 +649,6 @@ export class GameScene extends Phaser.Scene {
     this.effects.pickup(pickup.x, pickup.y);
     this.audio.play('pickup');
     pickup.destroy();
-    this.queueNextFloorIfReady();
   }
 
   private collectReward(pickup: RewardPickup): void {
@@ -696,7 +717,11 @@ export class GameScene extends Phaser.Scene {
     this.effects.roomClear();
     this.effects.shake('roomClear');
     this.audio.play('roomClear');
-    this.queueNextFloorIfReady();
+
+    if (room.type === 'boss') {
+      this.spawnFloorExit();
+      this.hud.showMessage(t('messages.nextFloorOpening'), 2200);
+    }
   }
 
   private handleEnemyDefeated(score: number): void {
@@ -852,22 +877,29 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private queueNextFloorIfReady(): void {
-    if (this.floorAdvanceQueued || !this.dungeon.isFloorObjectiveCleared()) {
+  private spawnFloorExit(): void {
+    if (this.floorExits.countActive(true) > 0) {
       return;
     }
 
-    const hasUnclaimedReward = this.dungeon
-      .getRooms()
-      .some((room) => room.type === 'reward' && !room.rewardClaimed);
+    this.floorExits.add(new FloorExit(this, 480, 320));
+  }
 
-    if (hasUnclaimedReward) {
+  private restoreFloorExit(room: RoomNode): void {
+    if (room.type === 'boss' && room.cleared) {
+      this.spawnFloorExit();
+    }
+  }
+
+  private handleFloorExitOverlap(exit: FloorExit): void {
+    if (this.gameOverStarted || this.floorTransitionStarted || !exit.canEnter(this.time.now)) {
       return;
     }
 
-    this.floorAdvanceQueued = true;
-    this.hud.showMessage(t('messages.nextFloorOpening'), 1800);
-    this.time.delayedCall(1800, () => this.advanceFloor());
+    this.floorTransitionStarted = true;
+    exit.disableBody(true, false);
+    this.cameras.main.fadeOut(180, 5, 9, 14);
+    this.time.delayedCall(180, () => this.advanceFloor());
   }
 
   private advanceFloor(): void {
@@ -875,7 +907,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    this.floorAdvanceQueued = false;
+    this.floorTransitionStarted = false;
     this.runState.floor += 1;
     this.runState.stats.health = Math.min(
       this.runState.stats.maxHealth,
@@ -891,6 +923,7 @@ export class GameScene extends Phaser.Scene {
     this.items.clear(true, true);
     this.rewards.clear(true, true);
     this.beams.clear(true, true);
+    this.floorExits.clear(true, true);
     this.clearPlantedBombs();
 
     this.dungeon.generateFloor(this.runState.floor);

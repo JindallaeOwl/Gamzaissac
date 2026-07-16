@@ -22,6 +22,7 @@ export const TextureKeys = {
   bombPlaced: 'bomb-placed',
   coinPickup: 'coin-pickup',
   chestPickup: 'chest-pickup',
+  floorExit: 'floor-exit',
   floorTile: 'floor-tile',
   wall: 'wall',
   obstacleCrate: 'obstacle-crate',

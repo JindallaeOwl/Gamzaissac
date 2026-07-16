@@ -66,10 +66,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.setMaxVelocity(420, 420);
 
     this.extraEyes = scene.add
-      .image(x, y - 10, TextureKeys.playerExtraEyes)
+      .image(x, y - 11, TextureKeys.playerExtraEyes)
       .setDepth(DEPTH.actor + 1);
     this.toothpick = scene.add
-      .image(x + 8, y - 22, TextureKeys.playerToothpick)
+      .image(x + 8, y - 25, TextureKeys.playerToothpick)
       .setDepth(DEPTH.actor + 1);
     this.syncCosmetics();
   }
@@ -292,12 +292,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private syncCosmetics(): void {
     const visible = this.visible && this.active;
     this.extraEyes
-      .setPosition(this.x, this.y - 10)
+      .setPosition(this.x, this.y - 11)
       .setFlipX(this.flipX)
       .setAlpha(this.alpha)
       .setVisible(visible && this.attackProfile.extraForeheadEyeCount > 0);
     this.toothpick
-      .setPosition(this.x + (this.flipX ? -8 : 8), this.y - 22)
+      .setPosition(this.x + (this.flipX ? -8 : 8), this.y - 25)
       .setFlipX(this.flipX)
       .setAlpha(this.alpha)
       .setVisible(visible && this.attackProfile.hasToothpickCosmetic);

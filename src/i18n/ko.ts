@@ -68,7 +68,7 @@ export const ko: TranslationTree = {
     floor: '{floor}층',
     roomClear: '방 클리어',
     floorCleared: '층 클리어',
-    nextFloorOpening: '다음 층 개방',
+    nextFloorOpening: '다음 층 구멍이 열렸습니다',
     stageClear: '스테이지 클리어',
     cacheFound: '보급품 발견',
     treasureRoom: '보물방',

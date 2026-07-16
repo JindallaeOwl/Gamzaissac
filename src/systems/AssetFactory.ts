@@ -6,9 +6,9 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createPlayerFrameTexture(scene, TextureKeys.player, 0, 0, 0, false);
   createPlayerFrameTexture(scene, TextureKeys.playerHit, 0, 0, 0, true);
   createPlayerFrameTexture(scene, TextureKeys.playerIdle, 0, 0, 0, false);
-  createPlayerFrameTexture(scene, TextureKeys.playerWalkA, 3, -2, -1, false);
+  createPlayerFrameTexture(scene, TextureKeys.playerWalkA, -4, 4, -1, false);
   createPlayerFrameTexture(scene, TextureKeys.playerWalkMid, 0, 0, 0, false);
-  createPlayerFrameTexture(scene, TextureKeys.playerWalkB, -2, 3, -1, false);
+  createPlayerFrameTexture(scene, TextureKeys.playerWalkB, 4, -4, -1, false);
   createPlayerCosmeticTextures(scene);
   createSeedTexture(scene);
   createBulletTexture(scene, TextureKeys.playerBullet, 14, 0xe8ffff, 0x58e8ed, 0x104954);
@@ -26,6 +26,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createPlacedBombTexture(scene);
   createCoinTexture(scene);
   createChestTexture(scene);
+  createFloorExitTexture(scene);
   createFloorTile(scene);
   createWallTexture(scene);
   createObstacleTexture(scene);
@@ -33,10 +34,10 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
 
 function createPlayerCosmeticTextures(scene: Phaser.Scene): void {
   const eyes = scene.add.graphics();
-  eyes.fillStyle(0xeaffff, 1);
+  eyes.fillStyle(0xf7dca5, 1);
   eyes.fillCircle(5, 5, 4);
   eyes.fillCircle(15, 5, 4);
-  eyes.fillStyle(0x08222a, 1);
+  eyes.fillStyle(0x4b2919, 1);
   eyes.fillCircle(5, 6, 2);
   eyes.fillCircle(15, 6, 2);
   eyes.generateTexture(TextureKeys.playerExtraEyes, 20, 10);
@@ -92,35 +93,61 @@ function createPlayerFrameTexture(
   hit: boolean,
 ): void {
   const graphics = scene.add.graphics();
-  const bodyY = 20 + bodyBob;
+  const bodyY = 25 + bodyBob;
+  const leftFootX = 17 + leftFootOffset;
+  const rightFootX = 31 + rightFootOffset;
 
-  graphics.fillStyle(0x05090e, 0.42);
-  graphics.fillEllipse(22, 40, 30, 8);
+  graphics.fillStyle(0x05090e, 0.38);
+  graphics.fillEllipse(24, 52, 36, 7);
 
-  graphics.fillStyle(0x164956, 1);
-  graphics.lineStyle(2, 0x07171d, 1);
-  graphics.fillEllipse(15, 34 + leftFootOffset, 11, 9);
-  graphics.strokeEllipse(15, 34 + leftFootOffset, 11, 9);
-  graphics.fillEllipse(29, 34 + rightFootOffset, 11, 9);
-  graphics.strokeEllipse(29, 34 + rightFootOffset, 11, 9);
+  // Two separate legs and feet move in opposite directions on walk frames.
+  graphics.lineStyle(3, 0x5f341d, 1);
+  graphics.lineBetween(18, bodyY + 18, leftFootX, 49);
+  graphics.lineBetween(30, bodyY + 18, rightFootX, 49);
+  graphics.fillStyle(0x754324, 1);
+  graphics.fillEllipse(leftFootX, 50, 9, 5);
+  graphics.fillEllipse(rightFootX, 50, 9, 5);
 
-  graphics.fillStyle(hit ? 0xffa3a8 : 0x62e8ef, 1);
-  graphics.lineStyle(3, hit ? 0xff5964 : 0x0b3540, 1);
-  graphics.fillCircle(22, bodyY, 17);
-  graphics.strokeCircle(22, bodyY, 16);
+  // Small arms keep the silhouette readable without copying the reference art.
+  graphics.lineStyle(3, 0x6b3a20, 1);
+  graphics.lineBetween(8, bodyY + 2, 3, bodyY + 10);
+  graphics.lineBetween(40, bodyY + 2, 45, bodyY + 9);
+  graphics.fillCircle(3, bodyY + 11, 2);
+  graphics.fillCircle(45, bodyY + 10, 2);
 
-  graphics.fillStyle(hit ? 0xffffff : 0xc9ffff, 0.72);
-  graphics.fillEllipse(17, bodyY - 6, 12, 7);
-  graphics.fillStyle(0x08222a, 1);
-  graphics.fillCircle(17, bodyY + 2, 3);
-  graphics.fillCircle(28, bodyY + 2, 3);
-  graphics.fillStyle(0xeaffff, 1);
-  graphics.fillCircle(18, bodyY + 1, 1);
-  graphics.fillCircle(29, bodyY + 1, 1);
-  graphics.lineStyle(2, 0x164956, 0.9);
-  graphics.lineBetween(19, bodyY + 9, 25, bodyY + 9);
+  const skin = hit ? 0xd98a73 : 0xc98a4d;
+  const outline = hit ? 0x7a3028 : 0x6b3a20;
+  graphics.fillStyle(skin, 1);
+  graphics.lineStyle(3, outline, 1);
+  graphics.fillEllipse(24, bodyY, 35, 43);
+  graphics.strokeEllipse(24, bodyY, 35, 43);
 
-  graphics.generateTexture(key, 44, 46);
+  // Warm highlights and irregular peel marks make it read as a potato.
+  graphics.fillStyle(hit ? 0xf0b49e : 0xe1ad6c, 0.9);
+  graphics.fillEllipse(17, bodyY - 10, 11, 8);
+  graphics.fillEllipse(30, bodyY + 10, 12, 7);
+  graphics.fillStyle(0x9a5c31, 0.85);
+  graphics.fillCircle(33, bodyY - 12, 2);
+  graphics.fillCircle(13, bodyY + 9, 2);
+  graphics.fillCircle(35, bodyY + 5, 1.5);
+  graphics.fillCircle(20, bodyY + 15, 1.5);
+
+  graphics.fillStyle(0x4b2919, 1);
+  graphics.fillCircle(17, bodyY - 1, 3);
+  graphics.fillCircle(31, bodyY - 1, 3);
+  graphics.fillStyle(0xffe6ba, 1);
+  graphics.fillCircle(18, bodyY - 2, 1);
+  graphics.fillCircle(32, bodyY - 2, 1);
+
+  graphics.fillStyle(hit ? 0xff7f87 : 0xe97f86, 0.75);
+  graphics.fillEllipse(11, bodyY + 5, 7, 4);
+  graphics.fillEllipse(37, bodyY + 5, 7, 4);
+  graphics.lineStyle(2, 0x4b2919, 1);
+  graphics.lineBetween(21, bodyY + 5, 23, bodyY + 7);
+  graphics.lineBetween(23, bodyY + 7, 26, bodyY + 7);
+  graphics.lineBetween(26, bodyY + 7, 28, bodyY + 5);
+
+  graphics.generateTexture(key, 48, 56);
   graphics.destroy();
 }
 
@@ -588,6 +615,22 @@ function createChestTexture(scene: Phaser.Scene): void {
   graphics.lineStyle(2, 0xffd166, 0.75);
   graphics.lineBetween(7, 13, 33, 13);
   graphics.generateTexture(TextureKeys.chestPickup, 40, 40);
+  graphics.destroy();
+}
+
+function createFloorExitTexture(scene: Phaser.Scene): void {
+  const graphics = scene.add.graphics();
+  graphics.fillStyle(0x020407, 0.55);
+  graphics.fillEllipse(32, 24, 62, 30);
+  graphics.fillStyle(0x05080d, 1);
+  graphics.fillEllipse(32, 20, 54, 25);
+  graphics.lineStyle(4, 0x65727d, 1);
+  graphics.strokeEllipse(32, 20, 56, 27);
+  graphics.lineStyle(2, 0xa7c4ca, 0.55);
+  graphics.strokeEllipse(32, 18, 43, 16);
+  graphics.fillStyle(0x17242b, 0.8);
+  graphics.fillEllipse(32, 18, 31, 10);
+  graphics.generateTexture(TextureKeys.floorExit, 64, 40);
   graphics.destroy();
 }
 

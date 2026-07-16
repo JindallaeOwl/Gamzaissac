@@ -68,7 +68,7 @@ export const en: TranslationTree = {
     floor: 'Floor {floor}',
     roomClear: 'Room clear',
     floorCleared: 'Floor cleared',
-    nextFloorOpening: 'Next floor opening',
+    nextFloorOpening: 'The passage to the next floor is open',
     stageClear: 'Stage clear',
     cacheFound: 'Cache found',
     treasureRoom: 'Treasure room',
