@@ -9,9 +9,14 @@ import {
   buildSettingsMenuItems,
   type SettingsMenuAction,
 } from '../ui/SettingsMenu';
+import {
+  getTitleEscapeTarget,
+  getTitleSubtitle,
+  isEscapeCode,
+  type TitleMenuMode,
+} from '../ui/TitleMenuRules';
 import { applyRenderScale } from '../utils/render';
 
-type MenuMode = 'main' | 'settings';
 type MenuAction = 'start' | 'settings' | 'quit' | SettingsMenuAction;
 
 interface MenuItem {
@@ -20,7 +25,7 @@ interface MenuItem {
 }
 
 export class TitleScene extends Phaser.Scene {
-  private mode: MenuMode = 'main';
+  private mode: TitleMenuMode = 'main';
   private selectedIndex = 0;
   private soundEnabled = true;
   private menuItems: MenuItem[] = [];
@@ -29,16 +34,46 @@ export class TitleScene extends Phaser.Scene {
   private hintText?: Phaser.GameObjects.Text;
   private menuContainer?: Phaser.GameObjects.Container;
   private audio?: AudioSystem;
+  private suppressNextFullscreenLeaveNavigation = false;
 
   private upKeys: Phaser.Input.Keyboard.Key[] = [];
   private downKeys: Phaser.Input.Keyboard.Key[] = [];
   private confirmKeys: Phaser.Input.Keyboard.Key[] = [];
+  private readonly handleEscapeKeyDown = (event: KeyboardEvent): void => {
+    if (!isEscapeCode(event.code)) {
+      return;
+    }
+
+    const targetMode = getTitleEscapeTarget(this.mode);
+
+    if (!targetMode) {
+      return;
+    }
+
+    event.preventDefault();
+    this.playCue('pickup');
+    this.renderMenu(targetMode);
+  };
+  private readonly handleLeaveFullscreen = (): void => {
+    if (this.suppressNextFullscreenLeaveNavigation) {
+      this.suppressNextFullscreenLeaveNavigation = false;
+      return;
+    }
+
+    const targetMode = getTitleEscapeTarget(this.mode);
+
+    if (targetMode) {
+      this.playCue('pickup');
+      this.renderMenu(targetMode);
+    }
+  };
 
   constructor() {
     super('TitleScene');
   }
 
   create(): void {
+    this.suppressNextFullscreenLeaveNavigation = false;
     applyRenderScale(this);
     this.audio = new AudioSystem();
     this.soundEnabled = getGameSettings().soundEnabled;
@@ -59,6 +94,12 @@ export class TitleScene extends Phaser.Scene {
     this.createOrbitDecoration();
     this.createTitle();
     this.createControls();
+    document.addEventListener('keydown', this.handleEscapeKeyDown, true);
+    this.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, this.handleLeaveFullscreen);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      document.removeEventListener('keydown', this.handleEscapeKeyDown, true);
+      this.scale.off(Phaser.Scale.Events.LEAVE_FULLSCREEN, this.handleLeaveFullscreen);
+    });
     this.renderMenu('main');
   }
 
@@ -104,7 +145,7 @@ export class TitleScene extends Phaser.Scene {
     this.add
       .text(GAME_WIDTH / 2, 39, t('title.name'), {
         fontFamily: gameFontStack(),
-        fontSize: '36px',
+        fontSize: '50px',
         color: '#f7f3e8',
         stroke: '#421f2e',
         strokeThickness: 4,
@@ -114,7 +155,7 @@ export class TitleScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
 
     this.subtitleText = this.add
-      .text(GAME_WIDTH / 2, 72, '404% roguelike action', {
+      .text(GAME_WIDTH / 2, 78, '404% roguelike action', {
         fontFamily: gameFontStack(),
         fontSize: '8px',
         color: '#ffcf75',
@@ -159,7 +200,7 @@ export class TitleScene extends Phaser.Scene {
     ];
   }
 
-  private renderMenu(mode: MenuMode): void {
+  private renderMenu(mode: TitleMenuMode): void {
     this.mode = mode;
     this.selectedIndex = 0;
     this.menuContainer?.destroy(true);
@@ -167,7 +208,7 @@ export class TitleScene extends Phaser.Scene {
     this.menuContainer.setDepth(DEPTH.ui);
     this.menuTexts = [];
     this.menuItems = this.buildMenuItems(mode);
-    this.subtitleText?.setText(mode === 'settings' ? t('settings.title') : '404% roguelike action');
+    this.subtitleText?.setText(getTitleSubtitle(mode));
     this.hintText?.setText('');
 
     this.menuItems.forEach((item, index) => {
@@ -194,7 +235,7 @@ export class TitleScene extends Phaser.Scene {
     this.refreshMenuText();
   }
 
-  private buildMenuItems(mode: MenuMode): MenuItem[] {
+  private buildMenuItems(mode: TitleMenuMode): MenuItem[] {
     if (mode === 'main') {
       return [
         { label: t('menu.start'), action: 'start' },
@@ -248,6 +289,7 @@ export class TitleScene extends Phaser.Scene {
 
     if (result.command === 'fullscreen') {
       if (this.scale.isFullscreen) {
+        this.suppressNextFullscreenLeaveNavigation = true;
         this.scale.stopFullscreen();
       } else {
         void this.scale.startFullscreen();
