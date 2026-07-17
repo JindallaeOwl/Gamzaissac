@@ -15,7 +15,7 @@ const STATS_PANEL_WIDTH = 122;
 const STATS_PANEL_HEIGHT = 66;
 const MINIMAP_PANEL_WIDTH = 64;
 const MINIMAP_PANEL_HEIGHT = 48;
-const PANEL_TOP = 20;
+const PANEL_TOP = HUD_EDGE_MARGIN;
 
 interface HealthHeartImages {
   empty: Phaser.GameObjects.Image;
