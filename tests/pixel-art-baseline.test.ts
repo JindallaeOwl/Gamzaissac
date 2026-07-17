@@ -12,7 +12,7 @@ import {
   PIXEL_ART_SIZES,
   PIXEL_GRID_SIZE,
 } from '../src/config/gameConfig';
-import { calculateCoverViewport } from '../src/utils/render';
+import { calculateFitViewport } from '../src/utils/render';
 import { BOLD_PIXELS_FONT_FAMILY, gameFontStack } from '../src/i18n';
 import { resolvePlayerFacing } from '../src/utils/playerFacing';
 
@@ -74,13 +74,13 @@ describe('pixel art baseline', () => {
     expect(gameFontStack()).toContain('Malgun Gothic');
   });
 
-  it('fills a 1920x1080 display at 4x with four pixels cropped at each vertical edge', () => {
-    expect(calculateCoverViewport(1920, 1080)).toEqual({
-      scale: 4,
-      renderedWidth: 1920,
-      renderedHeight: 1088,
-      cropX: 0,
-      cropY: 4,
+  it('fits the whole game inside a tall window without cropping', () => {
+    expect(calculateFitViewport(960, 800)).toEqual({
+      scale: 2,
+      renderedWidth: 960,
+      renderedHeight: 544,
+      letterboxX: 0,
+      letterboxY: 128,
     });
   });
 });

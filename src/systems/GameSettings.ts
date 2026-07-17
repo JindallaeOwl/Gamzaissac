@@ -11,7 +11,7 @@ const STORAGE_KEY = 'die-al-and-error-settings-v1';
 const DEFAULT_SETTINGS: GameSettings = {
   soundEnabled: true,
   effectsVolume: 0.75,
-  screenShake: 1,
+  screenShake: 0.5,
   renderQuality: 'high',
 };
 

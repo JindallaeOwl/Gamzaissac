@@ -29,7 +29,9 @@ const config: Phaser.Types.Core.GameConfig = {
     smoothStep: true,
   },
   scale: {
-    mode: Phaser.Scale.ENVELOP,
+    // Keep the whole 480x272 play area visible at every window aspect ratio.
+    // FIT may add letterboxing, but never crops the HUD or room edges.
+    mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   physics: {

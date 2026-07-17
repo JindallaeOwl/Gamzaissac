@@ -8,8 +8,8 @@ import { getEffectiveDamage, getEffectiveFireRate } from '../systems/PlayerStatS
 import { getHeartFillUnits } from '../utils/healthHearts';
 import type { UiObjectRegistrar } from './UiCameraSystem';
 
-// ENVELOP fills wide browser windows by cropping a little from the top and
-// bottom. Keep the corner HUD inside a safe area so it remains fully visible.
+// Keep a small inset around the corner HUD so it remains easy to read at
+// different window sizes and aspect ratios.
 const HUD_EDGE_MARGIN = 4;
 const STATS_PANEL_WIDTH = 122;
 const STATS_PANEL_HEIGHT = 66;

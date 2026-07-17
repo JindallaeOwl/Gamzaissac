@@ -8,16 +8,16 @@ export function applyRenderScale(scene: Phaser.Scene): void {
   scene.cameras.main.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 }
 
-export interface CoverViewport {
+export interface FitViewport {
   scale: number;
   renderedWidth: number;
   renderedHeight: number;
-  cropX: number;
-  cropY: number;
+  letterboxX: number;
+  letterboxY: number;
 }
 
-export function calculateCoverViewport(displayWidth: number, displayHeight: number): CoverViewport {
-  const scale = Math.max(displayWidth / GAME_WIDTH, displayHeight / GAME_HEIGHT);
+export function calculateFitViewport(displayWidth: number, displayHeight: number): FitViewport {
+  const scale = Math.min(displayWidth / GAME_WIDTH, displayHeight / GAME_HEIGHT);
   const renderedWidth = GAME_WIDTH * scale;
   const renderedHeight = GAME_HEIGHT * scale;
 
@@ -25,7 +25,7 @@ export function calculateCoverViewport(displayWidth: number, displayHeight: numb
     scale,
     renderedWidth,
     renderedHeight,
-    cropX: Math.max(0, (renderedWidth - displayWidth) / 2),
-    cropY: Math.max(0, (renderedHeight - displayHeight) / 2),
+    letterboxX: Math.max(0, (displayWidth - renderedWidth) / 2),
+    letterboxY: Math.max(0, (displayHeight - renderedHeight) / 2),
   };
 }

@@ -12,6 +12,7 @@ const settings: GameSettings = {
 describe('SettingsMenu rules', () => {
   it('starts new players at high render quality', () => {
     expect(getGameSettings().renderQuality).toBe('high');
+    expect(getGameSettings().screenShake).toBe(0.5);
     expect(getRenderScale()).toBe(4);
   });
 
