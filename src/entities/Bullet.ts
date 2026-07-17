@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
-import { ROOM_RECT } from '../config/gameConfig';
+import { DEPTH, ROOM_RECT } from '../config/gameConfig';
 
 export type BulletOwner = 'player' | 'enemy';
 
@@ -26,6 +26,7 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
   private lifeMs = 1000;
   private consumed = false;
   private destroyQueued = false;
+  private tintColor?: number;
   private hitTargets = new Set<object>();
 
   constructor(scene: Phaser.Scene) {
@@ -55,6 +56,7 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     this.destroyQueued = false;
     this.hitTargets.clear();
     this.clearTint();
+    this.tintColor = config.tint;
     this.setScale(config.scale ?? 1);
     this.setTexture(config.owner === 'player' ? TextureKeys.playerSeed : TextureKeys.enemyBullet);
     if (config.tint !== undefined) {
@@ -133,6 +135,7 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (time - this.bornAt > this.lifeMs) {
+      this.spawnSeedDropEffect();
       this.consume();
       this.queueDestroy();
       return;
@@ -149,5 +152,66 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
       this.consume();
       this.queueDestroy();
     }
+  }
+
+  private spawnSeedDropEffect(): void {
+    if (this.owner !== 'player') {
+      return;
+    }
+
+    const body = this.body as Phaser.Physics.Arcade.Body | undefined;
+    const scene = this.scene;
+    const direction = body?.velocity.clone().normalize() ?? new Phaser.Math.Vector2();
+    const landingX = this.x + direction.x * 3;
+    const landingY = this.y + direction.y * 3 + 4;
+    const seedScaleX = this.scaleX;
+    const seedScaleY = this.scaleY;
+    const shadow = scene.add
+      .ellipse(landingX, landingY + 2, 7 * seedScaleX, 3 * seedScaleY, 0x07110a, 0.08)
+      .setScale(0.35)
+      .setDepth(DEPTH.bullet - 1);
+    const fallenSeed = scene.add
+      .image(this.x, this.y, TextureKeys.playerSeed)
+      .setScale(seedScaleX, seedScaleY)
+      .setRotation(this.rotation)
+      .setDepth(DEPTH.bullet);
+
+    if (this.tintColor !== undefined) {
+      fallenSeed.setTint(this.tintColor);
+    }
+
+    scene.tweens.add({
+      targets: shadow,
+      scaleX: 1,
+      scaleY: 1,
+      alpha: 0.28,
+      duration: 130,
+      ease: 'Quad.easeIn',
+    });
+    scene.tweens.add({
+      targets: fallenSeed,
+      x: landingX,
+      y: landingY,
+      rotation: this.rotation + Math.PI * 0.65,
+      scaleX: seedScaleX * 1.05,
+      scaleY: seedScaleY * 0.65,
+      duration: 130,
+      ease: 'Quad.easeIn',
+      onComplete: () => {
+        scene.tweens.add({
+          targets: [fallenSeed, shadow],
+          alpha: 0,
+          scaleX: '*=0.75',
+          scaleY: '*=0.75',
+          delay: 140,
+          duration: 180,
+          ease: 'Quad.easeOut',
+          onComplete: () => {
+            fallenSeed.destroy();
+            shadow.destroy();
+          },
+        });
+      },
+    });
   }
 }
