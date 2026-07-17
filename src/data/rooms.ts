@@ -47,13 +47,13 @@ export const BOSS_ROOM_TEMPLATES: RoomTemplate[] = [
     id: 'error-sanctum',
     roomType: 'boss',
     accentColor: 0xd84f66,
-    spawnSets: [[{ enemyId: 'faultWarden', x: 480, y: 260 }]],
+    spawnSets: [[{ enemyId: 'faultWarden', x: 240, y: 110 }]],
   },
   {
     id: 'root-cellar',
     roomType: 'boss',
     accentColor: 0x4f9f71,
-    spawnSets: [[{ enemyId: 'rootKernel', x: 480, y: 260 }]],
+    spawnSets: [[{ enemyId: 'rootKernel', x: 240, y: 110 }]],
   },
 ];
 
@@ -64,19 +64,19 @@ export const COMBAT_ROOM_TEMPLATES: RoomTemplate[] = [
     accentColor: 0x783f5f,
     spawnSets: [
       [
-        { enemyId: 'chaser', x: 250, y: 230 },
-        { enemyId: 'chaser', x: 710, y: 410 },
-        { enemyId: 'shooter', x: 680, y: 230 },
+        { enemyId: 'chaser', x: 120, y: 96 },
+        { enemyId: 'chaser', x: 360, y: 176 },
+        { enemyId: 'shooter', x: 344, y: 96 },
       ],
       [
-        { enemyId: 'dasher', x: 250, y: 410 },
-        { enemyId: 'chaser', x: 480, y: 210 },
-        { enemyId: 'shooter', x: 710, y: 400 },
+        { enemyId: 'dasher', x: 120, y: 176 },
+        { enemyId: 'chaser', x: 240, y: 88 },
+        { enemyId: 'shooter', x: 360, y: 172 },
       ],
     ],
     obstacles: [
-      { x: 400, y: 260 },
-      { x: 560, y: 380 },
+      { x: 200, y: 112 },
+      { x: 280, y: 160 },
     ],
   },
   {
@@ -85,20 +85,20 @@ export const COMBAT_ROOM_TEMPLATES: RoomTemplate[] = [
     accentColor: 0x825c34,
     spawnSets: [
       [
-        { enemyId: 'chaser', x: 480, y: 190 },
-        { enemyId: 'chaser', x: 480, y: 450 },
-        { enemyId: 'dasher', x: 275, y: 320 },
-        { enemyId: 'dasher', x: 685, y: 320 },
+        { enemyId: 'chaser', x: 240, y: 80 },
+        { enemyId: 'chaser', x: 240, y: 192 },
+        { enemyId: 'dasher', x: 136, y: 136 },
+        { enemyId: 'dasher', x: 344, y: 136 },
       ],
       [
-        { enemyId: 'shooter', x: 250, y: 225 },
-        { enemyId: 'shooter', x: 710, y: 415 },
-        { enemyId: 'chaser', x: 480, y: 320 },
+        { enemyId: 'shooter', x: 120, y: 96 },
+        { enemyId: 'shooter', x: 360, y: 176 },
+        { enemyId: 'chaser', x: 240, y: 136 },
       ],
     ],
     obstacles: [
-      { x: 350, y: 320 },
-      { x: 610, y: 320 },
+      { x: 176, y: 136 },
+      { x: 304, y: 136 },
     ],
   },
   {
@@ -107,20 +107,20 @@ export const COMBAT_ROOM_TEMPLATES: RoomTemplate[] = [
     accentColor: 0x395f7f,
     spawnSets: [
       [
-        { enemyId: 'shooter', x: 300, y: 215 },
-        { enemyId: 'shooter', x: 660, y: 215 },
-        { enemyId: 'chaser', x: 310, y: 440 },
-        { enemyId: 'dasher', x: 640, y: 420 },
+        { enemyId: 'shooter', x: 144, y: 88 },
+        { enemyId: 'shooter', x: 336, y: 88 },
+        { enemyId: 'chaser', x: 152, y: 184 },
+        { enemyId: 'dasher', x: 328, y: 176 },
       ],
       [
-        { enemyId: 'dasher', x: 240, y: 235 },
-        { enemyId: 'dasher', x: 720, y: 405 },
-        { enemyId: 'chaser', x: 480, y: 320 },
+        { enemyId: 'dasher', x: 112, y: 96 },
+        { enemyId: 'dasher', x: 368, y: 176 },
+        { enemyId: 'chaser', x: 240, y: 136 },
       ],
     ],
     obstacles: [
-      { x: 480, y: 260 },
-      { x: 480, y: 380 },
+      { x: 240, y: 104 },
+      { x: 240, y: 168 },
     ],
   },
   {
@@ -129,17 +129,17 @@ export const COMBAT_ROOM_TEMPLATES: RoomTemplate[] = [
     accentColor: 0x4c6c43,
     spawnSets: [
       [
-        { enemyId: 'chaser', x: 245, y: 230 },
-        { enemyId: 'chaser', x: 715, y: 230 },
-        { enemyId: 'chaser', x: 245, y: 410 },
-        { enemyId: 'chaser', x: 715, y: 410 },
-        { enemyId: 'shooter', x: 480, y: 320 },
+        { enemyId: 'chaser', x: 120, y: 96 },
+        { enemyId: 'chaser', x: 360, y: 96 },
+        { enemyId: 'chaser', x: 120, y: 176 },
+        { enemyId: 'chaser', x: 360, y: 176 },
+        { enemyId: 'shooter', x: 240, y: 136 },
       ],
       [
-        { enemyId: 'dasher', x: 480, y: 205 },
-        { enemyId: 'dasher', x: 480, y: 435 },
-        { enemyId: 'shooter', x: 270, y: 320 },
-        { enemyId: 'shooter', x: 690, y: 320 },
+        { enemyId: 'dasher', x: 240, y: 88 },
+        { enemyId: 'dasher', x: 240, y: 184 },
+        { enemyId: 'shooter', x: 128, y: 136 },
+        { enemyId: 'shooter', x: 352, y: 136 },
       ],
     ],
   },

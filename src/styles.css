@@ -1,7 +1,17 @@
+@font-face {
+  font-family: 'BoldPixels';
+  src: url('/assets/fonts/boldpixels/boldpixels.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+0020-007E;
+}
+
 :root {
   color: #f7f3e8;
   background: #0d1117;
   font-family:
+    'BoldPixels',
     Galmuri11,
     DungGeunMo,
     'NeoDunggeunmo Pro',
@@ -40,5 +50,6 @@ body {
 
 canvas {
   display: block;
-  image-rendering: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }

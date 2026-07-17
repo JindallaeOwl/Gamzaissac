@@ -23,7 +23,7 @@ export class DasherEnemy extends BaseEnemy {
       this.windupEndsAt = 0;
       this.telegraph?.destroy();
       this.telegraph = undefined;
-      const dashSpeed = this.definition.dashSpeed ?? 320;
+      const dashSpeed = this.definition.dashSpeed ?? 160;
       body.setVelocity(
         this.pendingDashDirection.x * dashSpeed,
         this.pendingDashDirection.y * dashSpeed,
@@ -61,19 +61,19 @@ export class DasherEnemy extends BaseEnemy {
   private showDashTelegraph(): void {
     this.telegraph?.destroy();
     this.telegraph = this.scene.add.graphics().setDepth(this.depth - 1);
-    this.telegraph.lineStyle(5, 0xb58cff, 0.72);
+    this.telegraph.lineStyle(3, 0xb58cff, 0.72);
     this.telegraph.lineBetween(
       this.x,
       this.y,
-      this.x + this.pendingDashDirection.x * 180,
-      this.y + this.pendingDashDirection.y * 180,
+      this.x + this.pendingDashDirection.x * 90,
+      this.y + this.pendingDashDirection.y * 90,
     );
-    this.telegraph.lineStyle(10, 0xb58cff, 0.12);
+    this.telegraph.lineStyle(5, 0xb58cff, 0.12);
     this.telegraph.lineBetween(
       this.x,
       this.y,
-      this.x + this.pendingDashDirection.x * 180,
-      this.y + this.pendingDashDirection.y * 180,
+      this.x + this.pendingDashDirection.x * 90,
+      this.y + this.pendingDashDirection.y * 90,
     );
   }
 }

@@ -4,7 +4,15 @@ import { ItemPickup } from '../entities/ItemPickup';
 import { Obstacle } from '../entities/Obstacle';
 import { createEnemy } from '../entities/enemies/EnemyFactory';
 import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
-import { DEPTH, OBSTACLE_TUNING, ROOM_RECT, WALL_THICKNESS } from '../config/gameConfig';
+import {
+  DEPTH,
+  GAME_CENTER_X,
+  GAME_CENTER_Y,
+  OBSTACLE_TUNING,
+  PIXEL_GRID_SIZE,
+  ROOM_RECT,
+  WALL_THICKNESS,
+} from '../config/gameConfig';
 import { PASSIVE_ITEMS } from '../data/items';
 import { getRoomTemplate } from '../data/rooms';
 import type { ItemSystem } from './ItemSystem';
@@ -106,22 +114,22 @@ export class RoomController {
 
   getSpawnPositionForEntry(direction: Direction | null): { x: number; y: number } {
     if (!direction) {
-      return { x: 480, y: 320 };
+      return { x: GAME_CENTER_X, y: GAME_CENTER_Y };
     }
 
     if (direction === 'north') {
-      return { x: 480, y: ROOM_RECT.bottom - 58 };
+      return { x: GAME_CENTER_X, y: ROOM_RECT.bottom - 28 };
     }
 
     if (direction === 'south') {
-      return { x: 480, y: ROOM_RECT.top + 58 };
+      return { x: GAME_CENTER_X, y: ROOM_RECT.top + 28 };
     }
 
     if (direction === 'east') {
-      return { x: ROOM_RECT.left + 58, y: 320 };
+      return { x: ROOM_RECT.left + 28, y: GAME_CENTER_Y };
     }
 
-    return { x: ROOM_RECT.right - 58, y: 320 };
+    return { x: ROOM_RECT.right - 28, y: GAME_CENTER_Y };
   }
 
   private spawnCombatRoom(room: RoomNode): void {
@@ -133,8 +141,8 @@ export class RoomController {
     for (let i = 0; i < extraEnemies; i += 1) {
       spawnSet.push({
         enemyId: randomOf(['chaser', 'shooter', 'dasher'] as const, this.random),
-        x: randomInt(190, 770, this.random),
-        y: randomInt(160, 480, this.random),
+        x: randomInt(96, 384, this.random),
+        y: randomInt(64, 208, this.random),
       });
     }
 
@@ -189,7 +197,7 @@ export class RoomController {
       return;
     }
 
-    const pickup = new ItemPickup(this.scene, 480, 320, item);
+    const pickup = new ItemPickup(this.scene, GAME_CENTER_X, GAME_CENTER_Y, item);
     this.items.add(pickup);
   }
 
@@ -205,7 +213,7 @@ export class RoomController {
     const item = PASSIVE_ITEMS.find((candidate) => candidate.id === room.rewardItemId);
 
     if (item) {
-      this.items.add(new ItemPickup(this.scene, 480, 320, item));
+      this.items.add(new ItemPickup(this.scene, GAME_CENTER_X, GAME_CENTER_Y, item));
     }
   }
 
@@ -222,23 +230,23 @@ export class RoomController {
     this.floorGraphics.fillRect(ROOM_RECT.left, ROOM_RECT.top, ROOM_RECT.width, ROOM_RECT.height);
     this.floorGraphics.lineStyle(1, 0x293640, 0.42);
 
-    for (let x = ROOM_RECT.left + 40; x < ROOM_RECT.right; x += 40) {
+    for (let x = ROOM_RECT.left + PIXEL_GRID_SIZE; x < ROOM_RECT.right; x += PIXEL_GRID_SIZE) {
       this.floorGraphics.lineBetween(x, ROOM_RECT.top, x, ROOM_RECT.bottom);
     }
 
-    for (let y = ROOM_RECT.top + 40; y < ROOM_RECT.bottom; y += 40) {
+    for (let y = ROOM_RECT.top + PIXEL_GRID_SIZE; y < ROOM_RECT.bottom; y += PIXEL_GRID_SIZE) {
       this.floorGraphics.lineBetween(ROOM_RECT.left, y, ROOM_RECT.right, y);
     }
 
-    for (let x = ROOM_RECT.left + 20; x < ROOM_RECT.right; x += 160) {
-      for (let y = ROOM_RECT.top + 20; y < ROOM_RECT.bottom; y += 160) {
+    for (let x = ROOM_RECT.left + 8; x < ROOM_RECT.right; x += 64) {
+      for (let y = ROOM_RECT.top + 8; y < ROOM_RECT.bottom; y += 64) {
         this.floorGraphics.fillStyle(0x60717e, 0.28);
         this.floorGraphics.fillCircle(x, y, 2);
-        this.floorGraphics.fillCircle(x + 120, y + 120, 2);
+        this.floorGraphics.fillCircle(x + 48, y + 48, 2);
       }
     }
 
-    this.floorGraphics.lineStyle(4, accentColor, 0.9);
+    this.floorGraphics.lineStyle(2, accentColor, 0.9);
     this.floorGraphics.strokeRect(
       ROOM_RECT.left + 2,
       ROOM_RECT.top + 2,
@@ -246,8 +254,8 @@ export class RoomController {
       ROOM_RECT.height - 4,
     );
 
-    const corner = 34;
-    this.floorGraphics.lineStyle(6, accentColor, 1);
+    const corner = 18;
+    this.floorGraphics.lineStyle(3, accentColor, 1);
     this.floorGraphics.lineBetween(
       ROOM_RECT.left + 8,
       ROOM_RECT.top + 8,
@@ -299,10 +307,30 @@ export class RoomController {
   }
 
   private createWalls(): void {
-    this.addWall(480, ROOM_RECT.top - WALL_THICKNESS / 2, ROOM_RECT.width, WALL_THICKNESS);
-    this.addWall(480, ROOM_RECT.bottom + WALL_THICKNESS / 2, ROOM_RECT.width, WALL_THICKNESS);
-    this.addWall(ROOM_RECT.left - WALL_THICKNESS / 2, 320, WALL_THICKNESS, ROOM_RECT.height);
-    this.addWall(ROOM_RECT.right + WALL_THICKNESS / 2, 320, WALL_THICKNESS, ROOM_RECT.height);
+    this.addWall(
+      GAME_CENTER_X,
+      ROOM_RECT.top - WALL_THICKNESS / 2,
+      ROOM_RECT.width,
+      WALL_THICKNESS,
+    );
+    this.addWall(
+      GAME_CENTER_X,
+      ROOM_RECT.bottom + WALL_THICKNESS / 2,
+      ROOM_RECT.width,
+      WALL_THICKNESS,
+    );
+    this.addWall(
+      ROOM_RECT.left - WALL_THICKNESS / 2,
+      GAME_CENTER_Y,
+      WALL_THICKNESS,
+      ROOM_RECT.height,
+    );
+    this.addWall(
+      ROOM_RECT.right + WALL_THICKNESS / 2,
+      GAME_CENTER_Y,
+      WALL_THICKNESS,
+      ROOM_RECT.height,
+    );
   }
 
   private addWall(x: number, y: number, width: number, height: number): void {
@@ -315,10 +343,10 @@ export class RoomController {
 
   private createDoors(): void {
     const positions: Record<Direction, { x: number; y: number }> = {
-      north: { x: 480, y: ROOM_RECT.top + 15 },
-      south: { x: 480, y: ROOM_RECT.bottom - 15 },
-      east: { x: ROOM_RECT.right - 15, y: 320 },
-      west: { x: ROOM_RECT.left + 15, y: 320 },
+      north: { x: GAME_CENTER_X, y: ROOM_RECT.top + 8 },
+      south: { x: GAME_CENTER_X, y: ROOM_RECT.bottom - 8 },
+      east: { x: ROOM_RECT.right - 8, y: GAME_CENTER_Y },
+      west: { x: ROOM_RECT.left + 8, y: GAME_CENTER_Y },
     };
 
     for (const direction of DIRECTIONS) {

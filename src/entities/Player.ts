@@ -57,19 +57,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.attackProfile = { ...attackProfile };
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.setDepth(DEPTH.actor);
+    this.setDepth(DEPTH.actor).setScale(0.6);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
-    body.setCircle(15);
+    body.setCircle(10);
     body.setCollideWorldBounds(false);
-    body.setMaxVelocity(420, 420);
+    body.setMaxVelocity(220, 220);
 
     this.extraEyes = scene.add
-      .image(x, y - 11, TextureKeys.playerExtraEyes)
+      .image(x, y - 7, TextureKeys.playerExtraEyes)
+      .setScale(0.6)
       .setDepth(DEPTH.actor + 1);
     this.toothpick = scene.add
-      .image(x + 8, y - 25, TextureKeys.playerToothpick)
+      .image(x + 5, y - 15, TextureKeys.playerToothpick)
+      .setScale(0.6)
       .setDepth(DEPTH.actor + 1);
     this.syncCosmetics();
   }
@@ -197,9 +199,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       );
       const angle = Math.atan2(direction.y, direction.x) + angleOffset;
       const seedDirection = { x: Math.cos(angle), y: Math.sin(angle) };
-      const lateralOffset = (index - centerIndex) * 4;
-      const seedX = this.x + seedDirection.x * 22 - direction.y * lateralOffset;
-      const seedY = this.y + seedDirection.y * 22 + direction.x * lateralOffset;
+      const lateralOffset = (index - centerIndex) * 2;
+      const seedX = this.x + seedDirection.x * 12 - direction.y * lateralOffset;
+      const seedY = this.y + seedDirection.y * 12 + direction.x * lateralOffset;
 
       Bullet.spawn(this.scene, bulletGroup, {
         x: seedX,
@@ -215,8 +217,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       });
     }
 
-    const muzzleX = this.x + direction.x * 22;
-    const muzzleY = this.y + direction.y * 22;
+    const muzzleX = this.x + direction.x * 12;
+    const muzzleY = this.y + direction.y * 12;
     this.emit('player-shot', { x: muzzleX, y: muzzleY, direction });
   }
 
@@ -285,19 +287,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private constrainToRoom(): void {
-    this.x = clamp(this.x, ROOM_RECT.left + 18, ROOM_RECT.right - 18);
-    this.y = clamp(this.y, ROOM_RECT.top + 18, ROOM_RECT.bottom - 18);
+    this.x = clamp(this.x, ROOM_RECT.left + 12, ROOM_RECT.right - 12);
+    this.y = clamp(this.y, ROOM_RECT.top + 12, ROOM_RECT.bottom - 12);
   }
 
   private syncCosmetics(): void {
     const visible = this.visible && this.active;
     this.extraEyes
-      .setPosition(this.x, this.y - 11)
+      .setPosition(this.x, this.y - 7)
       .setFlipX(this.flipX)
       .setAlpha(this.alpha)
       .setVisible(visible && this.attackProfile.extraForeheadEyeCount > 0);
     this.toothpick
-      .setPosition(this.x + (this.flipX ? -8 : 8), this.y - 25)
+      .setPosition(this.x + (this.flipX ? -5 : 5), this.y - 15)
       .setFlipX(this.flipX)
       .setAlpha(this.alpha)
       .setVisible(visible && this.attackProfile.hasToothpickCosmetic);

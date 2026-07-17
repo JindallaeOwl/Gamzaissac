@@ -14,10 +14,10 @@ const config: Phaser.Types.Core.GameConfig = {
   height: GAME_HEIGHT * RENDER_SCALE,
   backgroundColor: '#0d1117',
   render: {
-    antialias: true,
-    antialiasGL: true,
-    pixelArt: false,
-    roundPixels: false,
+    antialias: false,
+    antialiasGL: false,
+    pixelArt: true,
+    roundPixels: true,
     desynchronized: true,
     powerPreference: 'high-performance',
   },
@@ -29,7 +29,7 @@ const config: Phaser.Types.Core.GameConfig = {
     smoothStep: true,
   },
   scale: {
-    mode: Phaser.Scale.FIT,
+    mode: Phaser.Scale.ENVELOP,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   physics: {

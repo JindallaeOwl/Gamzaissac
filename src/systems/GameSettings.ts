@@ -12,13 +12,13 @@ const DEFAULT_SETTINGS: GameSettings = {
   soundEnabled: true,
   effectsVolume: 0.75,
   screenShake: 1,
-  renderQuality: 'balanced',
+  renderQuality: 'high',
 };
 
 const RENDER_SCALES: Record<RenderQuality, number> = {
-  low: 1.5,
+  low: 1,
   balanced: 2,
-  high: 2.5,
+  high: 4,
 };
 
 let settings = loadSettings();

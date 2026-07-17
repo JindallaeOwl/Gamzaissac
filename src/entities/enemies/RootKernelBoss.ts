@@ -1,5 +1,11 @@
 import Phaser from 'phaser';
-import { DEPTH, ROOT_KERNEL_TUNING, ROOM_RECT } from '../../config/gameConfig';
+import {
+  DEPTH,
+  GAME_CENTER_X,
+  GAME_CENTER_Y,
+  ROOT_KERNEL_TUNING,
+  ROOM_RECT,
+} from '../../config/gameConfig';
 import type { Player } from '../Player';
 import { normalizeVector } from '../../utils/math';
 import { BaseEnemy } from './BaseEnemy';
@@ -120,7 +126,7 @@ export class RootKernelBoss extends BaseEnemy {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const toPlayer = normalizeVector(player.x - this.x, player.y - this.y);
     const distance = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
-    const toCenter = normalizeVector(480 - this.x, 320 - this.y);
+    const toCenter = normalizeVector(GAME_CENTER_X - this.x, GAME_CENTER_Y - this.y);
     let velocityX: number;
     let velocityY: number;
 
@@ -174,19 +180,19 @@ export class RootKernelBoss extends BaseEnemy {
 
   private drawCrossWarning(graphics: Phaser.GameObjects.Graphics, diagonal: boolean): void {
     const angles = diagonal ? [Math.PI / 4, (Math.PI * 3) / 4] : [0, Math.PI / 2];
-    graphics.lineStyle(12, 0x8cff9b, 0.14);
+    graphics.lineStyle(6, 0x8cff9b, 0.14);
 
     for (const angle of angles) {
-      const dx = Math.cos(angle) * 600;
-      const dy = Math.sin(angle) * 600;
+      const dx = Math.cos(angle) * 300;
+      const dy = Math.sin(angle) * 300;
       graphics.lineBetween(this.x - dx, this.y - dy, this.x + dx, this.y + dy);
     }
 
     graphics.lineStyle(3, 0xbaffc3, 0.84);
 
     for (const angle of angles) {
-      const dx = Math.cos(angle) * 600;
-      const dy = Math.sin(angle) * 600;
+      const dx = Math.cos(angle) * 300;
+      const dy = Math.sin(angle) * 300;
       graphics.lineBetween(this.x - dx, this.y - dy, this.x + dx, this.y + dy);
     }
   }
@@ -202,8 +208,8 @@ export class RootKernelBoss extends BaseEnemy {
       for (let lane = -1; lane <= 1; lane += 1) {
         const laneOffset = lane * ROOT_KERNEL_TUNING.crossLaneSpacing;
         this.fireBullet(
-          this.x + direction.x * 42 + perpendicular.x * laneOffset,
-          this.y + direction.y * 42 + perpendicular.y * laneOffset,
+          this.x + direction.x * 30 + perpendicular.x * laneOffset,
+          this.y + direction.y * 30 + perpendicular.y * laneOffset,
           direction,
           enemyBullets,
           ROOT_KERNEL_TUNING.crossBulletSpeed,
@@ -262,8 +268,8 @@ export class RootKernelBoss extends BaseEnemy {
   private buildCurtainSpawns(direction: CurtainDirection): CurtainSpawn[] {
     const spawns: CurtainSpawn[] = [];
     const horizontal = direction === 'north' || direction === 'south';
-    const start = horizontal ? ROOM_RECT.left + 95 : ROOM_RECT.top + 75;
-    const end = horizontal ? ROOM_RECT.right - 95 : ROOM_RECT.bottom - 75;
+    const start = horizontal ? ROOM_RECT.left + 48 : ROOM_RECT.top + 36;
+    const end = horizontal ? ROOM_RECT.right - 48 : ROOM_RECT.bottom - 36;
 
     for (let index = 0; index < ROOT_KERNEL_TUNING.curtainLaneCount; index += 1) {
       const position = Phaser.Math.Linear(
@@ -273,13 +279,13 @@ export class RootKernelBoss extends BaseEnemy {
       );
 
       if (direction === 'north') {
-        spawns.push({ x: position, y: ROOM_RECT.top + 18, direction: { x: 0, y: 1 } });
+        spawns.push({ x: position, y: ROOM_RECT.top + 12, direction: { x: 0, y: 1 } });
       } else if (direction === 'south') {
-        spawns.push({ x: position, y: ROOM_RECT.bottom - 18, direction: { x: 0, y: -1 } });
+        spawns.push({ x: position, y: ROOM_RECT.bottom - 12, direction: { x: 0, y: -1 } });
       } else if (direction === 'west') {
-        spawns.push({ x: ROOM_RECT.left + 18, y: position, direction: { x: 1, y: 0 } });
+        spawns.push({ x: ROOM_RECT.left + 12, y: position, direction: { x: 1, y: 0 } });
       } else {
-        spawns.push({ x: ROOM_RECT.right - 18, y: position, direction: { x: -1, y: 0 } });
+        spawns.push({ x: ROOM_RECT.right - 12, y: position, direction: { x: -1, y: 0 } });
       }
     }
 
@@ -290,9 +296,9 @@ export class RootKernelBoss extends BaseEnemy {
     this.curtainSpawns.forEach((spawn, index) => {
       const safe = index === this.curtainSafeIndex;
       graphics.fillStyle(safe ? 0x6fffa0 : 0xffb347, safe ? 0.3 : 0.76);
-      graphics.fillRect(spawn.x - 7, spawn.y - 7, 14, 14);
-      graphics.lineStyle(2, safe ? 0xbaffc3 : 0xffe09c, 0.9);
-      graphics.strokeRect(spawn.x - 9, spawn.y - 9, 18, 18);
+      graphics.fillRect(spawn.x - 4, spawn.y - 4, 8, 8);
+      graphics.lineStyle(1, safe ? 0xbaffc3 : 0xffe09c, 0.9);
+      graphics.strokeRect(spawn.x - 5, spawn.y - 5, 10, 10);
     });
   }
 
@@ -339,18 +345,18 @@ export class RootKernelBoss extends BaseEnemy {
   }
 
   private drawRingWarning(graphics: Phaser.GameObjects.Graphics): void {
-    graphics.lineStyle(5, 0xff866f, 0.62);
-    graphics.strokeCircle(this.x, this.y, 62);
+    graphics.lineStyle(3, 0xff866f, 0.62);
+    graphics.strokeCircle(this.x, this.y, 36);
 
     for (let offset = 0; offset < 2; offset += 1) {
       const index = (this.ringSafeStartIndex + offset) % ROOT_KERNEL_TUNING.ringBulletCount;
       const angle = (Math.PI * 2 * index) / ROOT_KERNEL_TUNING.ringBulletCount;
-      graphics.lineStyle(8, 0x78ffa1, 0.84);
+      graphics.lineStyle(4, 0x78ffa1, 0.84);
       graphics.lineBetween(
-        this.x + Math.cos(angle) * 48,
-        this.y + Math.sin(angle) * 48,
-        this.x + Math.cos(angle) * 150,
-        this.y + Math.sin(angle) * 150,
+        this.x + Math.cos(angle) * 30,
+        this.y + Math.sin(angle) * 30,
+        this.x + Math.cos(angle) * 75,
+        this.y + Math.sin(angle) * 75,
       );
     }
   }
@@ -368,8 +374,8 @@ export class RootKernelBoss extends BaseEnemy {
       const angle = (Math.PI * 2 * index) / ROOT_KERNEL_TUNING.ringBulletCount;
       const direction = { x: Math.cos(angle), y: Math.sin(angle) };
       this.fireBullet(
-        this.x + direction.x * 42,
-        this.y + direction.y * 42,
+        this.x + direction.x * 30,
+        this.y + direction.y * 30,
         direction,
         enemyBullets,
         ROOT_KERNEL_TUNING.ringBulletSpeed,

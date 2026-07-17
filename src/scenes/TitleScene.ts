@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE } from '../config/gameConfig';
-import { koreanFontStack, t } from '../i18n';
+import { gameFontStack, t } from '../i18n';
 import { AudioSystem } from '../systems/AudioSystem';
 import { getGameSettings } from '../systems/GameSettings';
 import {
@@ -53,8 +53,8 @@ export class TitleScene extends Phaser.Scene {
       TextureKeys.floorTile,
     );
     this.add
-      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH - 80, GAME_HEIGHT - 64, 0x060a10, 0.28)
-      .setStrokeStyle(3, 0x33434f, 0.75)
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH - 32, GAME_HEIGHT - 24, 0x060a10, 0.28)
+      .setStrokeStyle(2, 0x33434f, 0.75)
       .setDepth(DEPTH.floor + 1);
     this.createOrbitDecoration();
     this.createTitle();
@@ -77,14 +77,14 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private createOrbitDecoration(): void {
-    const orbit = this.add.container(GAME_WIDTH / 2, 300);
+    const orbit = this.add.container(GAME_WIDTH / 2, 105);
     orbit.setDepth(DEPTH.actor);
 
     for (let i = 0; i < 11; i += 1) {
       const angle = (Math.PI * 2 * i) / 11;
       const mote = this.add.image(
-        Math.cos(angle) * 165,
-        Math.sin(angle) * 66,
+        Math.cos(angle) * 82,
+        Math.sin(angle) * 28,
         i % 2 === 0 ? TextureKeys.enemyBullet : TextureKeys.playerSeed,
       );
       mote.setAlpha(0.36);
@@ -101,27 +101,37 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private createTitle(): void {
-    createPixelTitleLogo(this, t('title.name'));
+    this.add
+      .text(GAME_WIDTH / 2, 39, t('title.name'), {
+        fontFamily: gameFontStack(),
+        fontSize: '36px',
+        color: '#f7f3e8',
+        stroke: '#421f2e',
+        strokeThickness: 4,
+        resolution: RENDER_SCALE,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui);
 
     this.subtitleText = this.add
-      .text(GAME_WIDTH / 2, 188, '404% roguelike action', {
-        fontFamily: koreanFontStack(),
-        fontSize: '15px',
+      .text(GAME_WIDTH / 2, 72, '404% roguelike action', {
+        fontFamily: gameFontStack(),
+        fontSize: '8px',
         color: '#ffcf75',
         stroke: '#0d1117',
-        strokeThickness: 5,
+        strokeThickness: 2,
         resolution: RENDER_SCALE,
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
 
     this.hintText = this.add
-      .text(GAME_WIDTH / 2, 566, '', {
-        fontFamily: koreanFontStack(),
-        fontSize: '15px',
+      .text(GAME_WIDTH / 2, 258, '', {
+        fontFamily: gameFontStack(),
+        fontSize: '7px',
         color: '#ffe39b',
         stroke: '#0d1117',
-        strokeThickness: 5,
+        strokeThickness: 2,
         resolution: RENDER_SCALE,
       })
       .setOrigin(0.5)
@@ -153,7 +163,7 @@ export class TitleScene extends Phaser.Scene {
     this.mode = mode;
     this.selectedIndex = 0;
     this.menuContainer?.destroy(true);
-    this.menuContainer = this.add.container(GAME_WIDTH / 2, mode === 'main' ? 350 : 270);
+    this.menuContainer = this.add.container(GAME_WIDTH / 2, mode === 'main' ? 150 : 80);
     this.menuContainer.setDepth(DEPTH.ui);
     this.menuTexts = [];
     this.menuItems = this.buildMenuItems(mode);
@@ -162,17 +172,17 @@ export class TitleScene extends Phaser.Scene {
 
     this.menuItems.forEach((item, index) => {
       const text = this.add
-        .text(0, index * (mode === 'main' ? 54 : 42), item.label, {
-          fontFamily: koreanFontStack(),
-          fontSize: mode === 'main' ? '30px' : '20px',
+        .text(0, index * (mode === 'main' ? 30 : 24), item.label, {
+          fontFamily: gameFontStack(),
+          fontSize: mode === 'main' ? '15px' : '10px',
           fontStyle: 'bold',
           color: '#f7f3e8',
           stroke: '#0d1117',
-          strokeThickness: 7,
+          strokeThickness: 3,
           resolution: RENDER_SCALE,
         })
         .setOrigin(0.5)
-        .setPadding(24, 9, 24, 9)
+        .setPadding(12, 4, 12, 4)
         .setInteractive({ useHandCursor: true });
 
       text.on('pointerover', () => this.selectIndex(index));
@@ -278,56 +288,4 @@ export class TitleScene extends Phaser.Scene {
       this.audio?.play(cue);
     }
   }
-}
-
-const PIXEL_GLYPHS: Record<string, readonly string[]> = {
-  A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
-  C: ['01111', '10000', '10000', '10000', '10000', '10000', '01111'],
-  G: ['01111', '10000', '10000', '10111', '10001', '10001', '01111'],
-  I: ['11111', '00100', '00100', '00100', '00100', '00100', '11111'],
-  M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
-  S: ['01111', '10000', '10000', '01110', '00001', '00001', '11110'],
-  Z: ['11111', '00001', '00010', '00100', '01000', '10000', '11111'],
-};
-
-function createPixelTitleLogo(scene: Phaser.Scene, title: string): Phaser.GameObjects.Container {
-  const blockSize = 7;
-  const glyphWidth = blockSize * 5;
-  const glyphGap = blockSize;
-  const normalizedTitle = title.toUpperCase();
-  const totalWidth =
-    normalizedTitle.length * glyphWidth + Math.max(0, normalizedTitle.length - 1) * glyphGap;
-  const container = scene.add.container((GAME_WIDTH - totalWidth) / 2, 106);
-  const shadow = scene.add.graphics();
-  const face = scene.add.graphics();
-
-  shadow.fillStyle(0x421f2e, 1);
-  face.fillStyle(0xf7f3e8, 1);
-
-  for (let glyphIndex = 0; glyphIndex < normalizedTitle.length; glyphIndex += 1) {
-    const glyph = PIXEL_GLYPHS[normalizedTitle[glyphIndex]];
-
-    if (!glyph) {
-      continue;
-    }
-
-    const offsetX = glyphIndex * (glyphWidth + glyphGap);
-
-    glyph.forEach((row, rowIndex) => {
-      for (let columnIndex = 0; columnIndex < row.length; columnIndex += 1) {
-        if (row[columnIndex] !== '1') {
-          continue;
-        }
-
-        const x = offsetX + columnIndex * blockSize;
-        const y = rowIndex * blockSize;
-        shadow.fillRect(x + 3, y + 4, blockSize, blockSize);
-        face.fillRect(x, y, blockSize - 1, blockSize - 1);
-      }
-    });
-  }
-
-  container.add([shadow, face]);
-  container.setDepth(DEPTH.ui);
-  return container;
 }

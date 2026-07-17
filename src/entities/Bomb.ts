@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
 import { BOMB_TUNING, DEPTH, RENDER_SCALE } from '../config/gameConfig';
-import { koreanFontStack } from '../i18n';
+import { gameFontStack } from '../i18n';
 
 type DetonateCallback = (x: number, y: number) => void;
 
@@ -33,13 +33,13 @@ export class Bomb extends Phaser.GameObjects.Sprite {
       .setStrokeStyle(2, 0xff9a66, 0.38)
       .setDepth(DEPTH.item - 1);
     this.countdownText = scene.add
-      .text(x, y - 32, '3', {
-        fontFamily: koreanFontStack(),
-        fontSize: '15px',
+      .text(x, y - 20, '3', {
+        fontFamily: gameFontStack(),
+        fontSize: '8px',
         fontStyle: 'bold',
         color: '#fff2c7',
         stroke: '#35130e',
-        strokeThickness: 4,
+        strokeThickness: 2,
         resolution: RENDER_SCALE,
       })
       .setOrigin(0.5)
@@ -67,7 +67,7 @@ export class Bomb extends Phaser.GameObjects.Sprite {
     const progress = Phaser.Math.Clamp((time - this.plantedAt) / BOMB_TUNING.fuseMs, 0, 1);
     const pulseSpeed = Phaser.Math.Linear(0.008, 0.028, progress);
     const pulse = (Math.sin(time * pulseSpeed) + 1) / 2;
-    this.setScale(1 + pulse * Phaser.Math.Linear(0.04, 0.13, progress));
+    this.setScale(0.8 + pulse * Phaser.Math.Linear(0.03, 0.1, progress));
 
     const flashIntervalMs = Phaser.Math.Linear(420, 90, progress);
     const flashing = Math.floor(remainingMs / flashIntervalMs) % 2 === 0;

@@ -29,7 +29,7 @@ export class ItemPickup extends Phaser.Physics.Arcade.Sprite {
 
     scene.tweens.add({
       targets: this,
-      y: y - 8,
+      y: y - 4,
       duration: 720,
       yoyo: true,
       repeat: -1,

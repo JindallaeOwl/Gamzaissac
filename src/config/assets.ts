@@ -17,6 +17,9 @@ export const TextureKeys = {
   enemyRootKernel: 'enemy-root-kernel',
   doorHorizontal: 'door-horizontal',
   doorVertical: 'door-vertical',
+  hudKey: 'hud-key',
+  hudBomb: 'hud-bomb',
+  hudCoin: 'hud-coin',
   keyPickup: 'key-pickup',
   bombPickup: 'bomb-pickup',
   bombPlaced: 'bomb-placed',
@@ -27,6 +30,12 @@ export const TextureKeys = {
   wall: 'wall',
   obstacleCrate: 'obstacle-crate',
 } as const;
+
+export const HUD_ICON_ASSETS = [
+  { key: TextureKeys.hudKey, path: 'assets/icons/nikoichu/hud-key.png' },
+  { key: TextureKeys.hudBomb, path: 'assets/icons/nikoichu/hud-bomb.png' },
+  { key: TextureKeys.hudCoin, path: 'assets/icons/nikoichu/hud-coin.png' },
+] as const;
 
 export const AnimationKeys = {
   playerWalk: 'player-walk',

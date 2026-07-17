@@ -67,8 +67,8 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
-    const playerRadius = Math.round(5 * (config.scale ?? 1));
-    body.setCircle(config.owner === 'player' ? playerRadius : 6);
+    const playerRadius = Math.round(3 * (config.scale ?? 1));
+    body.setCircle(config.owner === 'player' ? playerRadius : 4);
     body.enable = true;
     body.checkCollision.none = false;
     body.setVelocity(config.direction.x * config.speed, config.direction.y * config.speed);
@@ -89,8 +89,8 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
 
     if (body) {
       const direction = body.velocity.clone().normalize();
-      this.x += direction.x * 8;
-      this.y += direction.y * 8;
+      this.x += direction.x * 4;
+      this.y += direction.y * 4;
     }
   }
 
@@ -138,7 +138,7 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    const margin = 28;
+    const margin = 14;
 
     if (
       this.x < ROOM_RECT.left - margin ||

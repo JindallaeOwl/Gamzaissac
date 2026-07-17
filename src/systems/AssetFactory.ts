@@ -11,15 +11,15 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createPlayerFrameTexture(scene, TextureKeys.playerWalkB, 4, -4, -1, false);
   createPlayerCosmeticTextures(scene);
   createSeedTexture(scene);
-  createBulletTexture(scene, TextureKeys.playerBullet, 14, 0xe8ffff, 0x58e8ed, 0x104954);
-  createBulletTexture(scene, TextureKeys.enemyBullet, 16, 0xfff0b8, 0xff8b3d, 0x681f1c);
+  createBulletTexture(scene, TextureKeys.playerBullet, 8, 0xe8ffff, 0x58e8ed, 0x104954);
+  createBulletTexture(scene, TextureKeys.enemyBullet, 8, 0xfff0b8, 0xff8b3d, 0x681f1c);
   createChaserTexture(scene);
   createShooterTexture(scene);
   createDasherTexture(scene);
   createBossTexture(scene);
   createRootKernelTexture(scene);
-  createDoorTexture(scene, TextureKeys.doorHorizontal, 86, 24);
-  createDoorTexture(scene, TextureKeys.doorVertical, 24, 86);
+  createDoorTexture(scene, TextureKeys.doorHorizontal, 48, 16);
+  createDoorTexture(scene, TextureKeys.doorVertical, 16, 48);
   createPassiveItemIcons(scene);
   createKeyTexture(scene);
   createBombTexture(scene);
@@ -55,14 +55,14 @@ function createPlayerCosmeticTextures(scene: Phaser.Scene): void {
 function createSeedTexture(scene: Phaser.Scene): void {
   const graphics = scene.add.graphics();
   graphics.fillStyle(0x07110a, 0.35);
-  graphics.fillEllipse(9, 10, 15, 9);
+  graphics.fillEllipse(4, 5, 8, 5);
   graphics.fillStyle(0x79cf52, 1);
-  graphics.lineStyle(2, 0x214f28, 1);
-  graphics.fillEllipse(8, 8, 13, 8);
-  graphics.strokeEllipse(8, 8, 13, 8);
+  graphics.lineStyle(1, 0x214f28, 1);
+  graphics.fillEllipse(4, 4, 7, 5);
+  graphics.strokeEllipse(4, 4, 7, 5);
   graphics.fillStyle(0xc7f28c, 1);
-  graphics.fillEllipse(6, 6, 4, 2);
-  graphics.generateTexture(TextureKeys.playerSeed, 18, 16);
+  graphics.fillRect(2, 2, 2, 1);
+  graphics.generateTexture(TextureKeys.playerSeed, 8, 8);
   graphics.destroy();
 }
 
@@ -577,40 +577,35 @@ function createFloorExitTexture(scene: Phaser.Scene): void {
 function createFloorTile(scene: Phaser.Scene): void {
   const graphics = scene.add.graphics();
   graphics.fillStyle(0x111820, 1);
-  graphics.fillRect(0, 0, 48, 48);
+  graphics.fillRect(0, 0, 16, 16);
   graphics.fillStyle(0x17212b, 1);
-  graphics.fillRect(3, 3, 42, 42);
+  graphics.fillRect(1, 1, 14, 14);
   graphics.lineStyle(1, 0x2d3a47, 0.8);
-  graphics.strokeRect(3, 3, 42, 42);
+  graphics.strokeRect(1, 1, 14, 14);
   graphics.lineStyle(1, 0x080d12, 0.75);
-  graphics.lineBetween(4, 45, 45, 45);
-  graphics.lineBetween(45, 4, 45, 45);
+  graphics.lineBetween(1, 15, 15, 15);
+  graphics.lineBetween(15, 1, 15, 15);
   graphics.fillStyle(0x4d5f6d, 0.65);
-  graphics.fillCircle(7, 7, 1.5);
-  graphics.fillCircle(41, 7, 1.5);
-  graphics.fillCircle(7, 41, 1.5);
-  graphics.fillCircle(41, 41, 1.5);
-  graphics.lineStyle(1, 0x263440, 0.7);
-  graphics.lineBetween(17, 15, 29, 14);
-  graphics.lineBetween(28, 34, 37, 30);
-  graphics.generateTexture(TextureKeys.floorTile, 48, 48);
+  graphics.fillRect(3, 3, 1, 1);
+  graphics.fillRect(12, 11, 1, 1);
+  graphics.generateTexture(TextureKeys.floorTile, 16, 16);
   graphics.destroy();
 }
 
 function createWallTexture(scene: Phaser.Scene): void {
   const graphics = scene.add.graphics();
   graphics.fillStyle(0x25313b, 1);
-  graphics.fillRect(0, 0, 48, 48);
+  graphics.fillRect(0, 0, 16, 16);
   graphics.fillStyle(0x3e4d59, 1);
-  graphics.fillRect(2, 2, 44, 9);
+  graphics.fillRect(1, 1, 14, 3);
   graphics.fillStyle(0x131b22, 1);
-  graphics.fillRect(2, 38, 44, 8);
-  graphics.lineStyle(2, 0x0d141a, 1);
-  graphics.strokeRect(1, 1, 46, 46);
+  graphics.fillRect(1, 13, 14, 2);
+  graphics.lineStyle(1, 0x0d141a, 1);
+  graphics.strokeRect(0, 0, 15, 15);
   graphics.lineStyle(1, 0x60717e, 0.65);
-  graphics.lineBetween(8, 16, 40, 16);
-  graphics.lineBetween(8, 29, 40, 29);
-  graphics.generateTexture(TextureKeys.wall, 48, 48);
+  graphics.lineBetween(3, 6, 13, 6);
+  graphics.lineBetween(3, 10, 13, 10);
+  graphics.generateTexture(TextureKeys.wall, 16, 16);
   graphics.destroy();
 }
 

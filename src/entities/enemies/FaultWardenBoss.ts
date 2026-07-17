@@ -80,8 +80,8 @@ export class FaultWardenBoss extends BaseEnemy {
       this.nextShotAt = time + this.getFireCooldownMs();
       this.volleyAt = time + 180;
       this.volleyTelegraph = this.scene.add
-        .circle(this.x, this.y, 40, 0xff7aee, 0.12)
-        .setStrokeStyle(4, 0xffb6f4, 0.9)
+        .circle(this.x, this.y, 24, 0xff7aee, 0.12)
+        .setStrokeStyle(2, 0xffb6f4, 0.9)
         .setDepth(this.depth - 1);
     }
 
@@ -91,12 +91,12 @@ export class FaultWardenBoss extends BaseEnemy {
       this.dashWindupUntil = time + 320;
       this.dashTelegraph?.destroy();
       this.dashTelegraph = this.scene.add.graphics().setDepth(this.depth - 1);
-      this.dashTelegraph.lineStyle(8, 0xca72ff, 0.28);
+      this.dashTelegraph.lineStyle(4, 0xca72ff, 0.28);
       this.dashTelegraph.lineBetween(
         this.x,
         this.y,
-        this.x + this.dashDirection.x * 220,
-        this.y + this.dashDirection.y * 220,
+        this.x + this.dashDirection.x * 110,
+        this.y + this.dashDirection.y * 110,
       );
     }
 
@@ -185,14 +185,14 @@ export class FaultWardenBoss extends BaseEnemy {
     direction: { x: number; y: number },
   ): void {
     const x = Phaser.Math.Clamp(
-      this.x + direction.x * 36,
-      ROOM_RECT.left + 30,
-      ROOM_RECT.right - 30,
+      this.x + direction.x * 30,
+      ROOM_RECT.left + 26,
+      ROOM_RECT.right - 26,
     );
     const y = Phaser.Math.Clamp(
-      this.y + direction.y * 36,
-      ROOM_RECT.top + 30,
-      ROOM_RECT.bottom - 30,
+      this.y + direction.y * 30,
+      ROOM_RECT.top + 26,
+      ROOM_RECT.bottom - 26,
     );
 
     this.fireBullet(

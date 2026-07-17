@@ -8,21 +8,21 @@ export class ShooterEnemy extends BaseEnemy {
 
   updateAI(time: number, player: Player, enemyBullets: Phaser.Physics.Arcade.Group): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
-    const keepAwayDistance = this.definition.keepAwayDistance ?? 250;
+    const keepAwayDistance = this.definition.keepAwayDistance ?? 125;
     const distance = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
 
-    if (distance < keepAwayDistance - 45) {
+    if (distance < keepAwayDistance - 24) {
       const angle = Phaser.Math.Angle.Between(player.x, player.y, this.x, this.y);
       body.setVelocity(
         Math.cos(angle) * this.definition.speed,
         Math.sin(angle) * this.definition.speed,
       );
-    } else if (distance > keepAwayDistance + 60) {
+    } else if (distance > keepAwayDistance + 30) {
       this.moveToward(player.x, player.y, this.definition.speed);
     } else {
       const strafeAngle =
         Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y) + Math.PI / 2;
-      body.setVelocity(Math.cos(strafeAngle) * 42, Math.sin(strafeAngle) * 42);
+      body.setVelocity(Math.cos(strafeAngle) * 22, Math.sin(strafeAngle) * 22);
     }
 
     this.constrainToRoom();
@@ -30,11 +30,11 @@ export class ShooterEnemy extends BaseEnemy {
     if (this.fireAt > 0 && time >= this.fireAt) {
       this.fireAt = 0;
       this.clearTint();
-      this.setScale(1);
+      this.setScale(0.8);
       this.fireAtPlayer(
         player,
         enemyBullets,
-        (this.definition.bulletSpeed ?? 220) * (1 + (this.floorScale - 1) * 0.35),
+        (this.definition.bulletSpeed ?? 112) * (1 + (this.floorScale - 1) * 0.35),
         this.definition.bulletDamage ?? 1,
       );
       return;
@@ -44,7 +44,7 @@ export class ShooterEnemy extends BaseEnemy {
       this.nextShotAt = time + (this.definition.fireCooldownMs ?? 1400);
       this.fireAt = time + 240;
       this.setTint(0xfff0ad);
-      this.setScale(1.12);
+      this.setScale(0.9);
     }
   }
 }

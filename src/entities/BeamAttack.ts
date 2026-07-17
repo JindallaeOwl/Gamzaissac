@@ -20,8 +20,8 @@ export class BeamAttack extends Phaser.GameObjects.Rectangle {
     const horizontal = direction.x !== 0;
     const width = horizontal ? range : BEAM_TUNING.width;
     const height = horizontal ? BEAM_TUNING.width : range;
-    const centerX = x + direction.x * (range / 2 + 22);
-    const centerY = y + direction.y * (range / 2 + 22);
+    const centerX = x + direction.x * (range / 2 + 12);
+    const centerY = y + direction.y * (range / 2 + 12);
 
     super(scene, centerX, centerY, width, height, 0xff7af2, 0.42);
     this.damage = damage;
@@ -30,10 +30,10 @@ export class BeamAttack extends Phaser.GameObjects.Rectangle {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(DEPTH.effect);
-    this.setStrokeStyle(4, 0xf7f3e8, 0.72);
+    this.setStrokeStyle(2, 0xf7f3e8, 0.72);
 
     this.core = scene.add
-      .rectangle(centerX, centerY, horizontal ? range : 8, horizontal ? 8 : range, 0xfff4ff, 0.68)
+      .rectangle(centerX, centerY, horizontal ? range : 4, horizontal ? 4 : range, 0xfff4ff, 0.68)
       .setDepth(DEPTH.effect + 1);
 
     const body = this.body as Phaser.Physics.Arcade.Body;

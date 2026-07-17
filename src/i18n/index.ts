@@ -6,6 +6,10 @@ const STORAGE_KEY = 'die-al-and-error-locale';
 const DEFAULT_LOCALE: Locale = 'ko';
 const FALLBACK_LOCALE: Locale = 'en';
 const dictionaries: Record<Locale, TranslationTree> = { en, ko };
+const KOREAN_FONT_FALLBACK =
+  'Galmuri11, DungGeunMo, "NeoDunggeunmo Pro", DOSGothic, DNFBitBitv2, Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", Inter, "Segoe UI", Arial, sans-serif';
+
+export const BOLD_PIXELS_FONT_FAMILY = 'BoldPixels';
 
 let currentLocale: Locale = loadStoredLocale();
 
@@ -32,8 +36,8 @@ export function t(key: string, params: TranslationParams = {}): string {
   return interpolate(value, params);
 }
 
-export function koreanFontStack(): string {
-  return 'Galmuri11, DungGeunMo, "NeoDunggeunmo Pro", DOSGothic, DNFBitBitv2, Pretendard, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", Inter, "Segoe UI", Arial, sans-serif';
+export function gameFontStack(): string {
+  return `"${BOLD_PIXELS_FONT_FAMILY}", ${KOREAN_FONT_FALLBACK}`;
 }
 
 function lookup(tree: TranslationTree, key: string): TranslationValue | undefined {

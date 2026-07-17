@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE } from '../config/gameConfig';
-import { koreanFontStack, t } from '../i18n';
+import { gameFontStack, t } from '../i18n';
 import {
   activateSettingsMenuAction,
   buildSettingsMenuItems,
@@ -38,29 +38,29 @@ export class PauseScene extends Phaser.Scene {
       .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x04070b, 0.82)
       .setDepth(DEPTH.ui + 20);
     this.add
-      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 570, 470, 0x0a1119, 0.96)
-      .setStrokeStyle(3, 0x56dce5, 0.75)
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 456, 250, 0x0a1119, 0.96)
+      .setStrokeStyle(2, 0x56dce5, 0.75)
       .setDepth(DEPTH.ui + 21);
     this.add
-      .text(GAME_WIDTH / 2, 126, t('pause.title'), {
-        fontFamily: koreanFontStack(),
-        fontSize: '46px',
+      .text(GAME_WIDTH / 2, 44, t('pause.title'), {
+        fontFamily: gameFontStack(),
+        fontSize: '23px',
         fontStyle: 'bold',
         color: '#dfffff',
         stroke: '#071116',
-        strokeThickness: 8,
+        strokeThickness: 4,
         resolution: RENDER_SCALE,
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 22);
 
     this.hintText = this.add
-      .text(GAME_WIDTH / 2, 530, '', {
-        fontFamily: koreanFontStack(),
-        fontSize: '14px',
+      .text(GAME_WIDTH / 2, 252, '', {
+        fontFamily: gameFontStack(),
+        fontSize: '7px',
         color: '#ffd783',
         stroke: '#071116',
-        strokeThickness: 4,
+        strokeThickness: 2,
         resolution: RENDER_SCALE,
       })
       .setOrigin(0.5)
@@ -121,7 +121,7 @@ export class PauseScene extends Phaser.Scene {
     this.mode = mode;
     this.selectedIndex = 0;
     this.menuContainer?.destroy(true);
-    this.menuContainer = this.add.container(GAME_WIDTH / 2, mode === 'main' ? 238 : 194);
+    this.menuContainer = this.add.container(GAME_WIDTH / 2, mode === 'main' ? 92 : 70);
     this.menuContainer.setDepth(DEPTH.ui + 22);
     this.items = this.buildItems(mode);
     this.itemTexts = [];
@@ -129,17 +129,17 @@ export class PauseScene extends Phaser.Scene {
 
     this.items.forEach((item, index) => {
       const text = this.add
-        .text(0, index * 48, item.label, {
-          fontFamily: koreanFontStack(),
-          fontSize: mode === 'main' ? '25px' : '20px',
+        .text(0, index * (mode === 'main' ? 32 : 27), item.label, {
+          fontFamily: gameFontStack(),
+          fontSize: mode === 'main' ? '13px' : '10px',
           fontStyle: 'bold',
           color: '#f5fbff',
           stroke: '#071116',
-          strokeThickness: 6,
+          strokeThickness: 3,
           resolution: RENDER_SCALE,
         })
         .setOrigin(0.5)
-        .setPadding(22, 7, 22, 7)
+        .setPadding(11, 4, 11, 4)
         .setInteractive({ useHandCursor: true });
 
       text.on('pointerover', () => {

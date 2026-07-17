@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
 import { GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE } from '../config/gameConfig';
-import { koreanFontStack, t } from '../i18n';
+import { gameFontStack, t } from '../i18n';
 import { applyRenderScale } from '../utils/render';
 
 interface GameOverData {
@@ -28,8 +28,8 @@ export class GameOverScene extends Phaser.Scene {
     );
     this.cameras.main.setBackgroundColor('#11151d');
     this.add
-      .rectangle(GAME_WIDTH / 2, 310, 600, 300, 0x070a10, 0.84)
-      .setStrokeStyle(3, 0x7a3342, 0.9)
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 300, 150, 0x070a10, 0.84)
+      .setStrokeStyle(2, 0x7a3342, 0.9)
       .setDepth(1);
 
     this.add
@@ -37,12 +37,12 @@ export class GameOverScene extends Phaser.Scene {
       .setDepth(0);
 
     this.add
-      .text(GAME_WIDTH / 2, 210, t('gameOver.title'), {
-        fontFamily: koreanFontStack(),
-        fontSize: '50px',
+      .text(GAME_WIDTH / 2, 90, t('gameOver.title'), {
+        fontFamily: gameFontStack(),
+        fontSize: '25px',
         color: '#ff8b8b',
         stroke: '#0d1117',
-        strokeThickness: 8,
+        strokeThickness: 4,
         resolution: RENDER_SCALE,
       })
       .setOrigin(0.5)
@@ -51,18 +51,18 @@ export class GameOverScene extends Phaser.Scene {
     this.add
       .text(
         GAME_WIDTH / 2,
-        310,
+        140,
         t('gameOver.summary', {
           rooms: data.clearedRooms,
           items: data.itemCount,
           score: data.score,
         }),
         {
-          fontFamily: koreanFontStack(),
-          fontSize: '20px',
+          fontFamily: gameFontStack(),
+          fontSize: '10px',
           color: '#f7f3e8',
           stroke: '#0d1117',
-          strokeThickness: 5,
+          strokeThickness: 2,
           resolution: RENDER_SCALE,
         },
       )
@@ -70,12 +70,12 @@ export class GameOverScene extends Phaser.Scene {
       .setDepth(2);
 
     this.add
-      .text(GAME_WIDTH / 2, 390, t('title.pressEnter'), {
-        fontFamily: koreanFontStack(),
-        fontSize: '18px',
+      .text(GAME_WIDTH / 2, 184, t('title.pressEnter'), {
+        fontFamily: gameFontStack(),
+        fontSize: '9px',
         color: '#ffe39b',
         stroke: '#0d1117',
-        strokeThickness: 5,
+        strokeThickness: 2,
         resolution: RENDER_SCALE,
       })
       .setOrigin(0.5)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GameSettings } from '../src/systems/GameSettings';
+import { getGameSettings, getRenderScale, type GameSettings } from '../src/systems/GameSettings';
 import { getSettingsPatch } from '../src/ui/SettingsMenu';
 
 const settings: GameSettings = {
@@ -10,6 +10,11 @@ const settings: GameSettings = {
 };
 
 describe('SettingsMenu rules', () => {
+  it('starts new players at high render quality', () => {
+    expect(getGameSettings().renderQuality).toBe('high');
+    expect(getRenderScale()).toBe(4);
+  });
+
   it('toggles sound without changing unrelated settings', () => {
     expect(getSettingsPatch('sound', settings)).toEqual({ soundEnabled: false });
   });

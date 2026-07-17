@@ -13,6 +13,7 @@ export class FloorExit extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(DEPTH.item);
+    this.setScale(0.5);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
@@ -28,7 +29,7 @@ export class FloorExit extends Phaser.Physics.Arcade.Sprite {
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
     const pulse = (Math.sin(time * 0.006) + 1) / 2;
-    this.setScale(1 + pulse * 0.045);
+    this.setScale(0.5 + pulse * 0.025);
     this.setAlpha(time < this.usableAt ? 0.55 : 0.82 + pulse * 0.18);
   }
 }

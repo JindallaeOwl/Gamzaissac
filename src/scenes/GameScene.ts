@@ -10,6 +10,8 @@ import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import {
   BEAM_TUNING,
   COMBAT_TUNING,
+  GAME_CENTER_X,
+  GAME_CENTER_Y,
   GAME_HEIGHT,
   GAME_WIDTH,
   ITEM_PREVIEW_RADIUS,
@@ -109,7 +111,13 @@ export class GameScene extends Phaser.Scene {
     this.rewards = this.physics.add.group();
     this.floorExits = this.physics.add.group({ allowGravity: false, immovable: true });
 
-    this.player = new Player(this, 480, 320, this.runState.stats, this.runState.attackProfile);
+    this.player = new Player(
+      this,
+      GAME_CENTER_X,
+      GAME_CENTER_Y,
+      this.runState.stats,
+      this.runState.attackProfile,
+    );
     this.controls = this.createControls();
 
     this.roomController = new RoomController({
@@ -288,9 +296,9 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const offsetX = this.player.x > GAME_WIDTH / 2 ? -72 : 72;
-    const x = clamp(this.player.x + offsetX, ROOM_RECT.left + 48, ROOM_RECT.right - 48);
-    const y = clamp(this.player.y, ROOM_RECT.top + 48, ROOM_RECT.bottom - 48);
+    const offsetX = this.player.x > GAME_CENTER_X ? -36 : 36;
+    const x = clamp(this.player.x + offsetX, ROOM_RECT.left + 24, ROOM_RECT.right - 24);
+    const y = clamp(this.player.y, ROOM_RECT.top + 24, ROOM_RECT.bottom - 24);
     const pickup = new ItemPickup(this, x, y, item, 'secret');
     this.items.add(pickup);
     this.effects.pickup(x, y);
@@ -583,8 +591,8 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const x = 480 + Phaser.Math.Between(-60, 60);
-    const y = 320 + Phaser.Math.Between(-40, 40);
+    const x = GAME_CENTER_X + Phaser.Math.Between(-30, 30);
+    const y = GAME_CENTER_Y + Phaser.Math.Between(-20, 20);
     room.pendingReward = { reward, x, y };
     this.roomTransitions.spawnPendingReward(room);
   }

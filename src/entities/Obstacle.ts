@@ -19,7 +19,7 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
     this.onHealthChanged = onHealthChanged;
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
-    this.setDepth(DEPTH.item);
+    this.setDepth(DEPTH.item).setScale(0.8);
   }
 
   takeDamage(amount: number): boolean {

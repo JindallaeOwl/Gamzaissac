@@ -1,10 +1,20 @@
-﻿export const GAME_WIDTH = 960;
-export const GAME_HEIGHT = 640;
+﻿export const GAME_WIDTH = 480;
+export const GAME_HEIGHT = 272;
+export const GAME_CENTER_X = GAME_WIDTH / 2;
+export const GAME_CENTER_Y = GAME_HEIGHT / 2;
+export const PIXEL_GRID_SIZE = 16;
+export const PIXEL_ART_SIZES = {
+  tile: 16,
+  hudIcon: 16,
+  collectible: 32,
+  player: 32,
+  normalEnemy: 32,
+  largeEnemy: [48, 64],
+  boss: [64, 96],
+} as const;
 
-// The Phaser canvas is rendered at GAME_WIDTH/HEIGHT * RENDER_SCALE physical
-// pixels while every gameplay coordinate (ROOM_RECT, spawns, HUD layout)
-// stays authored in GAME_WIDTH/HEIGHT space; each scene camera zooms by this
-// factor so the extra buffer resolution shows up as sharpness, not more world.
+// Gameplay is authored on a 480x272 pixel-art canvas. The render scale only
+// changes how many physical pixels draw each gameplay pixel.
 export const RENDER_SCALE = readStoredRenderScale();
 
 function readStoredRenderScale(): number {
@@ -13,29 +23,29 @@ function readStoredRenderScale(): number {
     const parsed = raw ? (JSON.parse(raw) as { renderQuality?: string }) : null;
 
     if (parsed?.renderQuality === 'low') {
-      return 1.5;
+      return 1;
     }
 
     if (parsed?.renderQuality === 'high') {
-      return 2.5;
+      return 4;
     }
   } catch {
-    // Use the balanced fallback when storage is unavailable or malformed.
+    // Use the high-quality fallback when storage is unavailable or malformed.
   }
 
-  return 2;
+  return 4;
 }
 
 export const ROOM_RECT = {
-  left: 80,
-  right: 880,
-  top: 80,
-  bottom: 560,
-  width: 800,
-  height: 480,
+  left: 32,
+  right: 448,
+  top: 32,
+  bottom: 240,
+  width: 416,
+  height: 208,
 };
 
-export const WALL_THICKNESS = 36;
+export const WALL_THICKNESS = 16;
 
 export interface PlayerStats {
   health: number;
@@ -64,12 +74,12 @@ export interface PlayerAttackProfile {
 export const PLAYER_BASE_STATS: PlayerStats = {
   health: 6,
   maxHealth: 6,
-  moveSpeed: 250,
+  moveSpeed: 130,
   damage: 1,
-  range: 430,
+  range: 220,
   fireRate: 2.8,
   luck: 0,
-  projectileSpeed: 500,
+  projectileSpeed: 260,
   damageMultiplier: 1,
   fireRateMultiplier: 1,
   projectileSpeedMultiplier: 1,
@@ -87,15 +97,15 @@ export const PLAYER_BASE_ATTACK_PROFILE: PlayerAttackProfile = {
 
 export const COMBAT_TUNING = {
   playerIFrameMs: 850,
-  playerKnockback: 220,
-  enemyKnockback: 130,
+  playerKnockback: 110,
+  enemyKnockback: 65,
   enemyBulletLifeMs: 1700,
-  enemyBulletHitRadius: 22,
+  enemyBulletHitRadius: 11,
   doorCooldownMs: 280,
   enemyContactCooldownMs: 650,
 };
 
-export const ITEM_PREVIEW_RADIUS = 90;
+export const ITEM_PREVIEW_RADIUS = 48;
 
 export const INVENTORY_TUNING = {
   maxConsumable: 99,
@@ -107,8 +117,8 @@ export const BEAM_TUNING = {
   durationMs: 260,
   cooldownMs: 850,
   damage: 2.6,
-  range: 560,
-  width: 42,
+  range: 280,
+  width: 20,
   tickMs: 95,
 };
 
@@ -147,21 +157,21 @@ export const FEEDBACK_TUNING = {
 
 export const BOSS_TUNING = {
   maxHealth: 26,
-  speed: 78,
+  speed: 42,
   contactDamage: 1,
-  bodyRadius: 34,
+  bodyRadius: 28,
   score: 180,
   bulletDamage: 1,
-  bulletSpeed: 245,
+  bulletSpeed: 125,
   fireCooldownMs: 1180,
   burstCount: 5,
   dashCooldownMs: 2400,
   dashDurationMs: 340,
-  dashSpeed: 330,
+  dashSpeed: 170,
   phaseTwoThreshold: 0.5,
   phaseTwoTint: 0xff587d,
   phaseTwoBurstCount: 7,
-  phaseTwoBulletSpeed: 310,
+  phaseTwoBulletSpeed: 160,
   phaseTwoFireCooldownMs: 760,
   phaseTwoDashCooldownMs: 1550,
   phaseTwoTransitionLockMs: 500,
@@ -170,23 +180,23 @@ export const BOSS_TUNING = {
 
 export const ROOT_KERNEL_TUNING = {
   maxHealth: 30,
-  speed: 58,
+  speed: 32,
   contactDamage: 1,
-  bodyRadius: 32,
+  bodyRadius: 28,
   score: 220,
   bulletDamage: 1,
-  crossBulletSpeed: 235,
-  curtainBulletSpeed: 285,
-  ringBulletSpeed: 220,
+  crossBulletSpeed: 120,
+  curtainBulletSpeed: 145,
+  ringBulletSpeed: 112,
   crossCooldownMs: 1900,
   curtainCooldownMs: 3200,
   crossTelegraphMs: 650,
   curtainTelegraphMs: 800,
   ringTelegraphMs: 750,
   attackRecoveryMs: 300,
-  preferredMinDistance: 210,
-  preferredMaxDistance: 260,
-  crossLaneSpacing: 18,
+  preferredMinDistance: 105,
+  preferredMaxDistance: 132,
+  crossLaneSpacing: 10,
   curtainLaneCount: 7,
   phaseTwoThreshold: 0.5,
   phaseTwoTransitionLockMs: 700,
@@ -200,10 +210,10 @@ export const ROOT_KERNEL_TUNING = {
 
 export const BOMB_TUNING = {
   damage: 5,
-  radius: 230,
+  radius: 115,
   cooldownMs: 900,
   fuseMs: 3000,
-  knockback: 260,
+  knockback: 130,
 };
 
 export const OBSTACLE_TUNING = {

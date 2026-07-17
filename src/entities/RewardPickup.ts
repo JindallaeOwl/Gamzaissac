@@ -13,14 +13,16 @@ export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.setTint(reward.tint);
     this.setDepth(DEPTH.item);
+    const baseScale = reward.kind === 'chest' ? 0.8 : 0.5;
+    this.setScale(baseScale);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
-    body.setCircle(reward.kind === 'chest' ? 17 : 12);
+    body.setCircle(reward.kind === 'chest' ? 15 : 10);
 
     scene.tweens.add({
       targets: this,
-      scale: 1.08,
+      scale: baseScale * 1.08,
       duration: 520,
       yoyo: true,
       repeat: -1,

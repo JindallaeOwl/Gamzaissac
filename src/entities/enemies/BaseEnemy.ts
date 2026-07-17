@@ -37,6 +37,10 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.setDepth(DEPTH.actor);
 
+    if (!this.isBoss) {
+      this.setScale(0.8);
+    }
+
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
     body.setCircle(definition.bodyRadius);
@@ -155,8 +159,8 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     const direction = normalizeVector(player.x - this.x, player.y - this.y);
 
     this.fireBullet(
-      this.x + direction.x * 20,
-      this.y + direction.y * 20,
+      this.x + direction.x * (this.definition.bodyRadius + 4),
+      this.y + direction.y * (this.definition.bodyRadius + 4),
       direction,
       enemyBullets,
       speed,
@@ -184,7 +188,8 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   protected constrainToRoom(): void {
-    this.x = Phaser.Math.Clamp(this.x, ROOM_RECT.left + 18, ROOM_RECT.right - 18);
-    this.y = Phaser.Math.Clamp(this.y, ROOM_RECT.top + 18, ROOM_RECT.bottom - 18);
+    const margin = this.definition.bodyRadius + 2;
+    this.x = Phaser.Math.Clamp(this.x, ROOM_RECT.left + margin, ROOM_RECT.right - margin);
+    this.y = Phaser.Math.Clamp(this.y, ROOM_RECT.top + margin, ROOM_RECT.bottom - margin);
   }
 }

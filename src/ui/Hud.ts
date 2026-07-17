@@ -1,21 +1,24 @@
 import Phaser from 'phaser';
+import { TextureKeys } from '../config/assets';
 import { DEPTH, GAME_WIDTH, RENDER_SCALE } from '../config/gameConfig';
-import { koreanFontStack, t } from '../i18n';
+import { gameFontStack, t } from '../i18n';
 import type { DungeonManager } from '../systems/DungeonManager';
 import type { RunState } from '../systems/RunState';
 import { getEffectiveDamage, getEffectiveFireRate } from '../systems/PlayerStatSystem';
 
 const HUD_EDGE_MARGIN = 0;
-const STATS_PANEL_WIDTH = 244;
-const STATS_PANEL_HEIGHT = 122;
-const MINIMAP_PANEL_WIDTH = 128;
-const MINIMAP_PANEL_HEIGHT = 94;
+const STATS_PANEL_WIDTH = 122;
+const STATS_PANEL_HEIGHT = 62;
+const MINIMAP_PANEL_WIDTH = 64;
+const MINIMAP_PANEL_HEIGHT = 48;
 const PANEL_TOP = 0;
 
 export class Hud {
   private readonly scene: Phaser.Scene;
   private readonly healthText: Phaser.GameObjects.Text;
-  private readonly inventoryText: Phaser.GameObjects.Text;
+  private readonly keyCountText: Phaser.GameObjects.Text;
+  private readonly bombCountText: Phaser.GameObjects.Text;
+  private readonly coinCountText: Phaser.GameObjects.Text;
   private readonly statsText: Phaser.GameObjects.Text;
   private readonly roomText: Phaser.GameObjects.Text;
   private readonly messageText: Phaser.GameObjects.Text;
@@ -42,20 +45,41 @@ export class Hud {
       MINIMAP_PANEL_WIDTH,
       MINIMAP_PANEL_HEIGHT,
     );
-    this.messagePanel = this.createPanel(GAME_WIDTH / 2, 594, 680, 54).setVisible(false);
+    this.messagePanel = this.createPanel(GAME_WIDTH / 2, 255, 340, 26).setVisible(false);
 
-    const statsTextX = HUD_EDGE_MARGIN + 8;
-    this.healthText = this.createText(statsTextX, PANEL_TOP + 4, 18);
-    this.inventoryText = this.createText(statsTextX, PANEL_TOP + 29, 13);
-    this.statsText = this.createText(statsTextX, PANEL_TOP + 49, 12);
-    this.roomText = this.createText(statsTextX, PANEL_TOP + 97, 12);
-    this.messageText = this.createText(GAME_WIDTH / 2, 584, 16).setOrigin(0.5);
-    this.itemHintText = this.createText(GAME_WIDTH / 2, 606, 13).setOrigin(0.5);
-    this.debugText = this.createText(
+    const statsTextX = HUD_EDGE_MARGIN + 4;
+    this.healthText = this.createText(statsTextX, PANEL_TOP + 2, 9);
+    this.createInventoryIcon(
       statsTextX,
-      PANEL_TOP + STATS_PANEL_HEIGHT + 12,
-      13,
-    ).setVisible(false);
+      PANEL_TOP + 15,
+      TextureKeys.hudKey,
+      TextureKeys.keyPickup,
+      0x8bd3ff,
+    );
+    this.createInventoryIcon(
+      statsTextX + 39,
+      PANEL_TOP + 15,
+      TextureKeys.hudBomb,
+      TextureKeys.bombPickup,
+      0xff8f70,
+    );
+    this.createInventoryIcon(
+      statsTextX + 78,
+      PANEL_TOP + 15,
+      TextureKeys.hudCoin,
+      TextureKeys.coinPickup,
+      0xffd166,
+    );
+    this.keyCountText = this.createText(statsTextX + 19, PANEL_TOP + 19, 7);
+    this.bombCountText = this.createText(statsTextX + 58, PANEL_TOP + 19, 7);
+    this.coinCountText = this.createText(statsTextX + 97, PANEL_TOP + 19, 7);
+    this.statsText = this.createText(statsTextX, PANEL_TOP + 34, 6);
+    this.roomText = this.createText(statsTextX, PANEL_TOP + 51, 6);
+    this.messageText = this.createText(GAME_WIDTH / 2, 250, 8).setOrigin(0.5);
+    this.itemHintText = this.createText(GAME_WIDTH / 2, 261, 6).setOrigin(0.5);
+    this.debugText = this.createText(statsTextX, PANEL_TOP + STATS_PANEL_HEIGHT + 6, 6).setVisible(
+      false,
+    );
     this.minimap = scene.add.graphics();
     this.minimap.setDepth(DEPTH.ui);
   }
@@ -95,11 +119,9 @@ export class Hud {
     this.healthText.setText(
       `${t('hud.hp')} ${formatStat(stats.health)} / ${formatStat(stats.maxHealth)}`,
     );
-    this.inventoryText.setText(
-      `${t('hud.key')} ${runState.inventory.keys}  ${t('hud.bomb')} ${runState.inventory.bombs}  ${t(
-        'hud.coin',
-      )} ${runState.inventory.coins}`,
-    );
+    this.keyCountText.setText(`${runState.inventory.keys}`);
+    this.bombCountText.setText(`${runState.inventory.bombs}`);
+    this.coinCountText.setText(`${runState.inventory.coins}`);
     this.statsText.setText(
       [
         `${t('hud.damage')} ${effectiveDamage.toFixed(1)}  ${t('hud.range')} ${Math.round(
@@ -145,14 +167,14 @@ export class Hud {
   private drawMinimap(dungeon: DungeonManager): void {
     const rooms = dungeon.getRooms();
     const current = dungeon.getCurrentRoom();
-    const size = 12;
-    const gap = 3;
+    const size = 6;
+    const gap = 2;
     const minX = Math.min(...rooms.map((room) => room.coord.x));
     const maxX = Math.max(...rooms.map((room) => room.coord.x));
     const minY = Math.min(...rooms.map((room) => room.coord.y));
     const mapWidth = (maxX - minX) * (size + gap) + size;
-    const originX = GAME_WIDTH - HUD_EDGE_MARGIN - 12 - mapWidth;
-    const originY = PANEL_TOP + 12;
+    const originX = GAME_WIDTH - HUD_EDGE_MARGIN - 6 - mapWidth;
+    const originY = PANEL_TOP + 6;
 
     this.minimap.clear();
 
@@ -175,8 +197,8 @@ export class Hud {
       this.minimap.fillRect(x, y, size, size);
 
       if (room.id === current.id) {
-        this.minimap.lineStyle(2, 0xffffff, 1);
-        this.minimap.strokeRect(x - 2, y - 2, size + 4, size + 4);
+        this.minimap.lineStyle(1, 0xffffff, 1);
+        this.minimap.strokeRect(x - 1, y - 1, size + 2, size + 2);
       }
     }
   }
@@ -184,13 +206,32 @@ export class Hud {
   private createText(x: number, y: number, size: number): Phaser.GameObjects.Text {
     return this.scene.add
       .text(x, y, '', {
-        fontFamily: koreanFontStack(),
+        fontFamily: gameFontStack(),
         fontSize: `${size}px`,
         color: '#f7f3e8',
         stroke: '#090b10',
-        strokeThickness: 4,
+        strokeThickness: 2,
         resolution: RENDER_SCALE,
       })
+      .setDepth(DEPTH.ui);
+  }
+
+  private createInventoryIcon(
+    x: number,
+    y: number,
+    preferredTexture: string,
+    fallbackTexture: string,
+    tint: number,
+  ): Phaser.GameObjects.Image {
+    const texture = this.scene.textures.exists(preferredTexture)
+      ? preferredTexture
+      : fallbackTexture;
+
+    return this.scene.add
+      .image(x, y, texture)
+      .setOrigin(0)
+      .setDisplaySize(16, 16)
+      .setTint(tint)
       .setDepth(DEPTH.ui);
   }
 
@@ -203,7 +244,7 @@ export class Hud {
   ): Phaser.GameObjects.Rectangle {
     return this.scene.add
       .rectangle(x, y, width, height, 0x070c12, alpha)
-      .setStrokeStyle(2, 0x40525f, 0.82)
+      .setStrokeStyle(1, 0x40525f, 0.82)
       .setDepth(DEPTH.ui - 1);
   }
 }

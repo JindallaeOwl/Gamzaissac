@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, RENDER_SCALE } from '../config/gameConfig';
 import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
-import { koreanFontStack } from '../i18n';
+import { gameFontStack } from '../i18n';
 
-const BAR_WIDTH = 316;
+const BAR_WIDTH = 158;
 
 export class BossHud {
   private readonly enemies: Phaser.Physics.Arcade.Group;
@@ -14,22 +14,22 @@ export class BossHud {
   constructor(scene: Phaser.Scene, enemies: Phaser.Physics.Arcade.Group) {
     this.enemies = enemies;
     this.healthBack = scene.add
-      .rectangle(GAME_WIDTH / 2, 28, 320, 12, 0x10151c, 0.86)
+      .rectangle(GAME_WIDTH / 2, 10, 162, 8, 0x10151c, 0.86)
       .setOrigin(0.5)
       .setDepth(101)
       .setVisible(false);
     this.healthFill = scene.add
-      .rectangle(GAME_WIDTH / 2 - BAR_WIDTH / 2, 28, BAR_WIDTH, 8, 0xd84f66, 1)
+      .rectangle(GAME_WIDTH / 2 - BAR_WIDTH / 2, 10, BAR_WIDTH, 4, 0xd84f66, 1)
       .setOrigin(0, 0.5)
       .setDepth(102)
       .setVisible(false);
     this.healthText = scene.add
-      .text(GAME_WIDTH / 2, 48, '', {
-        fontFamily: koreanFontStack(),
-        fontSize: '13px',
+      .text(GAME_WIDTH / 2, 20, '', {
+        fontFamily: gameFontStack(),
+        fontSize: '7px',
         color: '#ffe39b',
         stroke: '#090b10',
-        strokeThickness: 4,
+        strokeThickness: 2,
         resolution: RENDER_SCALE,
       })
       .setOrigin(0.5)
