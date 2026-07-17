@@ -37,7 +37,7 @@ export const ko: TranslationTree = {
     rootKernel: '루트 커널',
   },
   gameOver: {
-    title: '런 종료',
+    title: 'GAME OVER',
     summary: '방 {rooms}   아이템 {items}   점수 {score}',
     restart: '다시 시작 (Enter / Space)',
   },

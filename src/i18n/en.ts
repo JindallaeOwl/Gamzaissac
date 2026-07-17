@@ -37,7 +37,7 @@ export const en: TranslationTree = {
     rootKernel: 'ROOT KERNEL',
   },
   gameOver: {
-    title: 'RUN ENDED',
+    title: 'GAME OVER',
     summary: 'Rooms {rooms}   Items {items}   Score {score}',
     restart: 'Restart (Enter / Space)',
   },
