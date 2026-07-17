@@ -35,7 +35,6 @@ export class Hud {
   private readonly itemHintText: Phaser.GameObjects.Text;
   private readonly debugText: Phaser.GameObjects.Text;
   private readonly minimap: Phaser.GameObjects.Graphics;
-  private readonly messagePanel: Phaser.GameObjects.Rectangle;
   private messageUntil = 0;
   private debugVisible = false;
 
@@ -56,8 +55,6 @@ export class Hud {
       MINIMAP_PANEL_WIDTH,
       MINIMAP_PANEL_HEIGHT,
     );
-    this.messagePanel = this.createPanel(GAME_WIDTH / 2, 255, 340, 26).setVisible(false);
-
     const statsTextX = HUD_EDGE_MARGIN + 4;
     this.createInventoryIcon(
       statsTextX,
@@ -85,8 +82,12 @@ export class Hud {
     this.coinCountText = this.createText(statsTextX + 97, PANEL_TOP + 22, 7);
     this.statsText = this.createText(statsTextX, PANEL_TOP + 37, 6);
     this.roomText = this.createText(statsTextX, PANEL_TOP + 54, 6);
-    this.messageText = this.createText(GAME_WIDTH / 2, 250, 8).setOrigin(0.5);
-    this.itemHintText = this.createText(GAME_WIDTH / 2, 261, 6).setOrigin(0.5);
+    this.messageText = this.createText(GAME_WIDTH / 2, 250, 8)
+      .setOrigin(0.5)
+      .setFontStyle('bold');
+    this.itemHintText = this.createText(GAME_WIDTH / 2, 261, 6)
+      .setOrigin(0.5)
+      .setFontStyle('bold');
     this.debugText = this.createText(statsTextX, PANEL_TOP + STATS_PANEL_HEIGHT + 6, 6).setVisible(
       false,
     );
@@ -102,17 +103,14 @@ export class Hud {
   showMessage(message: string, durationMs = 2200): void {
     this.messageText.setText(message);
     this.messageUntil = this.scene.time.now + durationMs;
-    this.messagePanel.setVisible(true);
   }
 
   showItemHint(text: string): void {
     this.itemHintText.setText(text);
-    this.messagePanel.setVisible(true);
   }
 
   clearItemHint(): void {
     this.itemHintText.setText('');
-    this.messagePanel.setVisible(this.scene.time.now <= this.messageUntil);
   }
 
   update(
@@ -148,7 +146,6 @@ export class Hud {
 
     if (this.scene.time.now > this.messageUntil) {
       this.messageText.setText('');
-      this.messagePanel.setVisible(this.itemHintText.text.length > 0);
     }
 
     this.drawMinimap(dungeon);
