@@ -2,6 +2,11 @@ import { PASSIVE_ITEMS, type PassiveItemDefinition } from '../data/items';
 import type { PlayerAttackProfile, PlayerStats } from '../config/gameConfig';
 import { clamp } from '../utils/math';
 import { randomOf, type RandomSource } from '../utils/random';
+import type { RunState } from './RunState';
+
+export interface ItemAcquisitionResult {
+  newlyUnlockedAbilityId?: NonNullable<PassiveItemDefinition['abilityId']>;
+}
 
 export class ItemSystem {
   constructor(private readonly random: RandomSource = Math.random) {}
@@ -12,6 +17,19 @@ export class ItemSystem {
 
   pickTreasureItem(collectedItemIds: readonly string[]): PassiveItemDefinition {
     return this.pickItem(collectedItemIds, { includeTreasureOnly: true });
+  }
+
+  acquireItem(runState: RunState, item: PassiveItemDefinition): ItemAcquisitionResult {
+    runState.stats = this.applyItem(runState.stats, item);
+    runState.attackProfile = this.applyAttackProfile(runState.attackProfile, item);
+    runState.collectedItemIds.push(item.id);
+
+    if (item.abilityId && !runState.unlockedAbilityIds.includes(item.abilityId)) {
+      runState.unlockedAbilityIds.push(item.abilityId);
+      return { newlyUnlockedAbilityId: item.abilityId };
+    }
+
+    return {};
   }
 
   applyItem(stats: PlayerStats, item: PassiveItemDefinition): PlayerStats {

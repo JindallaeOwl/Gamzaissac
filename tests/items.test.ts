@@ -33,4 +33,30 @@ describe('ItemSystem', () => {
     expect(system.pickRewardItem([]).id).not.toBe('prism-lance');
     expect(system.pickTreasureItem([]).id).toBe('prism-lance');
   });
+
+  it('updates the run state when an item is acquired', () => {
+    const state = createInitialRunState();
+    const item = PASSIVE_ITEMS.find((candidate) => candidate.id === 'quad-shot');
+    const system = new ItemSystem(() => 0);
+
+    expect(item).toBeDefined();
+    expect(system.acquireItem(state, item!)).toEqual({});
+    expect(state.collectedItemIds).toEqual(['quad-shot']);
+    expect(state.attackProfile.seedCount).toBe(4);
+    expect(state.stats.fireRateMultiplier).toBeCloseTo(0.42);
+  });
+
+  it('unlocks an item ability only once', () => {
+    const state = createInitialRunState();
+    const prismLance = PASSIVE_ITEMS.find((candidate) => candidate.id === 'prism-lance');
+    const system = new ItemSystem(() => 0);
+
+    expect(prismLance).toBeDefined();
+    expect(system.acquireItem(state, prismLance!)).toEqual({
+      newlyUnlockedAbilityId: 'charge-beam',
+    });
+    expect(system.acquireItem(state, prismLance!)).toEqual({});
+    expect(state.unlockedAbilityIds).toEqual(['charge-beam']);
+    expect(state.collectedItemIds).toEqual(['prism-lance', 'prism-lance']);
+  });
 });

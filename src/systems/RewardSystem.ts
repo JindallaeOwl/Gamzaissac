@@ -6,8 +6,10 @@ import {
   type RewardDefinition,
   type RewardKind,
 } from '../data/rewards';
-import type { InventoryState } from './RunState';
+import { clamp } from '../utils/math';
 import { randomInt, type RandomSource } from '../utils/random';
+import { addConsumable } from './InventorySystem';
+import type { InventoryState, RunState } from './RunState';
 
 export interface RewardDrop {
   kind: RewardKind;
@@ -19,6 +21,11 @@ export interface RewardDrop {
 export type ChestResult =
   | { type: 'heal'; amount: number }
   | { type: 'consumable'; consumable: ConsumableType; amount: number };
+
+export type RewardPickupResult =
+  | { collected: false; type: 'resource-full'; labelKey: string }
+  | { collected: true; type: 'chest'; chestResult: ChestResult }
+  | { collected: true; type: 'consumable'; amount: number; labelKey: string };
 
 export class RewardSystem {
   constructor(private readonly random: RandomSource = Math.random) {}
@@ -62,6 +69,42 @@ export class RewardSystem {
       type: 'consumable',
       consumable,
       amount: consumable === 'coins' ? randomInt(4, 10, this.random) : randomInt(1, 2, this.random),
+    };
+  }
+
+  applyPickup(runState: RunState, reward: RewardDrop): RewardPickupResult {
+    if (reward.kind === 'chest') {
+      const chestResult = this.rollChestResult(runState.stats);
+
+      if (chestResult.type === 'heal') {
+        runState.stats.health = clamp(
+          runState.stats.health + chestResult.amount,
+          0,
+          runState.stats.maxHealth,
+        );
+      } else {
+        runState.inventory = addConsumable(
+          runState.inventory,
+          chestResult.consumable,
+          chestResult.amount,
+        );
+      }
+
+      return { collected: true, type: 'chest', chestResult };
+    }
+
+    const consumable = reward.kind;
+
+    if (!this.canTakeConsumable(runState.inventory, consumable)) {
+      return { collected: false, type: 'resource-full', labelKey: reward.labelKey };
+    }
+
+    runState.inventory = addConsumable(runState.inventory, consumable, reward.amount);
+    return {
+      collected: true,
+      type: 'consumable',
+      amount: reward.amount,
+      labelKey: reward.labelKey,
     };
   }
 

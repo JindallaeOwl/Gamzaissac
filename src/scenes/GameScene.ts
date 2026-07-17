@@ -16,7 +16,6 @@ import {
   FEEDBACK_TUNING,
   GAME_HEIGHT,
   GAME_WIDTH,
-  INVENTORY_TUNING,
   ITEM_PREVIEW_RADIUS,
   RENDER_SCALE,
   ROOM_RECT,
@@ -24,12 +23,15 @@ import {
 import { PASSIVE_ITEMS, PRISM_LANCE_ITEM_ID } from '../data/items';
 import { koreanFontStack, t, toggleLocale } from '../i18n';
 import { AudioSystem } from '../systems/AudioSystem';
+import { CombatCollisionSystem } from '../systems/CombatCollisionSystem';
 import { DungeonManager, type RoomNode } from '../systems/DungeonManager';
 import { EffectsSystem } from '../systems/EffectsSystem';
-import { addConsumable, spendConsumable } from '../systems/InventorySystem';
+import { spendConsumable } from '../systems/InventorySystem';
 import { ItemSystem } from '../systems/ItemSystem';
 import { RewardSystem } from '../systems/RewardSystem';
 import { RoomController } from '../systems/RoomController';
+import { RoomNavigationSystem } from '../systems/RoomNavigationSystem';
+import { advanceRunToNextFloor } from '../systems/RunProgressionSystem';
 import { KONAMI_CODE, SecretCodeTracker } from '../systems/SecretCodeSystem';
 import { createInitialRunState, type RunState } from '../systems/RunState';
 import { getEffectiveDamage } from '../systems/PlayerStatSystem';
@@ -42,8 +44,10 @@ export class GameScene extends Phaser.Scene {
   private dungeon!: DungeonManager;
   private itemSystem!: ItemSystem;
   private rewardSystem!: RewardSystem;
+  private roomNavigation!: RoomNavigationSystem;
   private effects!: EffectsSystem;
   private audio!: AudioSystem;
+  private combatCollisions!: CombatCollisionSystem;
   private roomController!: RoomController;
   private player!: Player;
   private controls!: PlayerControls;
@@ -97,6 +101,7 @@ export class GameScene extends Phaser.Scene {
     this.dungeon = new DungeonManager();
     this.itemSystem = new ItemSystem();
     this.rewardSystem = new RewardSystem();
+    this.roomNavigation = new RoomNavigationSystem(this.dungeon);
     this.effects = new EffectsSystem(this);
     this.audio = new AudioSystem();
     this.dungeon.generateFloor(this.runState.floor);
@@ -127,6 +132,20 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.hud = new Hud(this);
+    this.combatCollisions = new CombatCollisionSystem({
+      scene: this,
+      player: this.player,
+      enemies: this.enemies,
+      playerBullets: this.playerBullets,
+      enemyBullets: this.enemyBullets,
+      beams: this.beams,
+      walls: this.roomController.walls,
+      obstacles: this.roomController.obstacles,
+      effects: this.effects,
+      audio: this.audio,
+      isGameOver: () => this.gameOverStarted,
+      onPlayerDamaged: () => this.queuePlayerDamagedFeedback(),
+    });
     this.setupRuntimeErrorReporting();
     this.createBossHud();
     this.setupAudioUnlock();
@@ -185,7 +204,7 @@ export class GameScene extends Phaser.Scene {
       bullet.update(time);
     }
 
-    this.resolveEnemyBulletHits();
+    this.combatCollisions.update();
 
     for (const beam of this.beams.getChildren() as BeamAttack[]) {
       beam.update(time);
@@ -263,128 +282,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private setupPhysics(): void {
-    this.physics.add.collider(this.player, this.roomController.walls);
-    this.physics.add.collider(this.enemies, this.roomController.walls);
-    this.physics.add.collider(this.player, this.roomController.obstacles);
-    this.physics.add.collider(this.enemies, this.roomController.obstacles);
-    this.physics.add.collider(this.playerBullets, this.roomController.walls, (bulletObject) => {
-      const bullet = bulletObject as Bullet;
-      const x = bullet.x;
-      const y = bullet.y;
-
-      if (!bullet.consume()) {
-        return;
-      }
-
-      this.effects.impact(x, y, 0xc7fff4);
-      bullet.queueDestroy();
-    });
-    this.physics.add.collider(this.enemyBullets, this.roomController.walls, (bulletObject) => {
-      const bullet = bulletObject as Bullet;
-      const x = bullet.x;
-      const y = bullet.y;
-
-      if (!bullet.consume()) {
-        return;
-      }
-
-      this.effects.impact(x, y, 0xffb347);
-      bullet.queueDestroy();
-    });
-    this.physics.add.collider(
-      this.playerBullets,
-      this.roomController.obstacles,
-      (bulletObject, obstacleObject) => {
-        const bullet = bulletObject as Bullet;
-        const obstacle = obstacleObject as Obstacle;
-        const x = bullet.x;
-        const y = bullet.y;
-
-        if (!bullet.consume()) {
-          return;
-        }
-
-        const destroyed = obstacle.takeDamage(bullet.damage);
-        this.effects.impact(x, y, 0xc7fff4);
-
-        if (destroyed) {
-          this.effects.obstacleBreak(obstacle.x, obstacle.y);
-          this.audio.play('hit');
-        }
-
-        bullet.queueDestroy();
-      },
-    );
-    this.physics.add.collider(this.enemyBullets, this.roomController.obstacles, (bulletObject) => {
-      const bullet = bulletObject as Bullet;
-      const x = bullet.x;
-      const y = bullet.y;
-
-      if (!bullet.consume()) {
-        return;
-      }
-
-      this.effects.impact(x, y, 0xffb347);
-      bullet.queueDestroy();
-    });
-
-    this.physics.add.overlap(this.playerBullets, this.enemies, (bulletObject, enemyObject) => {
-      const bullet = bulletObject as Bullet;
-      const enemy = enemyObject as BaseEnemy;
-
-      if (
-        !bullet.active ||
-        !enemy.active ||
-        !bullet.body ||
-        !enemy.body ||
-        bullet.hasHitTarget(enemy)
-      ) {
-        return;
-      }
-
-      const bulletX = bullet.x;
-      const bulletY = bullet.y;
-      const enemyX = enemy.x;
-      const enemyY = enemy.y;
-
-      bullet.markTargetHit(enemy);
-      const { defeated, overflowDamage } = enemy.takeProjectileDamage(
-        bullet.damage,
-        bulletX,
-        bulletY,
-      );
-      const continues = bullet.overflowPenetration && defeated && overflowDamage > 0;
-      this.effects.impact(bulletX, bulletY, defeated ? 0xffd166 : 0xf7f3e8);
-
-      if (continues) {
-        bullet.retainOverflowDamage(overflowDamage);
-      } else if (bullet.consume()) {
-        bullet.queueDestroy();
-      }
-
-      if (defeated) {
-        this.effects.hitStop(FEEDBACK_TUNING.hitStop.enemyDeathMs);
-        this.effects.shake('enemyDeath');
-        this.effects.enemyDeath(enemyX, enemyY, enemy.scoreValue);
-        this.audio.play('enemyDeath');
-      } else {
-        this.effects.hitStop(FEEDBACK_TUNING.hitStop.bulletHitMs);
-        this.effects.shake('bulletHit');
-        this.audio.play('hit');
-      }
-    });
-
-    this.physics.add.overlap(this.player, this.enemies, (_playerObject, enemyObject) => {
-      const enemy = enemyObject as BaseEnemy;
-
-      if (enemy.active && enemy.body && enemy.canDealContactDamage(this.time.now)) {
-        const damaged = this.player.damage(enemy.contactDamage, enemy.x, enemy.y);
-
-        if (damaged) {
-          this.queuePlayerDamagedFeedback();
-        }
-      }
-    });
+    this.combatCollisions.register();
 
     this.physics.add.overlap(this.player, this.items, (_playerObject, itemObject) => {
       this.collectItem(itemObject as ItemPickup);
@@ -392,29 +290,6 @@ export class GameScene extends Phaser.Scene {
 
     this.physics.add.overlap(this.player, this.rewards, (_playerObject, rewardObject) => {
       this.collectReward(rewardObject as RewardPickup);
-    });
-
-    this.physics.add.overlap(this.beams, this.enemies, (beamObject, enemyObject) => {
-      const beam = beamObject as BeamAttack;
-      const enemy = enemyObject as BaseEnemy;
-
-      if (beam.active && enemy.active && enemy.body && beam.canDamage(enemy, this.time.now)) {
-        const enemyX = enemy.x;
-        const enemyY = enemy.y;
-        const defeated = enemy.takeDamage(beam.damage, this.player.x, this.player.y);
-        this.effects.beamImpact(enemyX, enemyY);
-
-        if (defeated) {
-          this.effects.hitStop(FEEDBACK_TUNING.hitStop.enemyDeathMs);
-          this.effects.shake('enemyDeath');
-          this.effects.enemyDeath(enemyX, enemyY, enemy.scoreValue);
-          this.audio.play('enemyDeath');
-        } else {
-          this.effects.hitStop(FEEDBACK_TUNING.hitStop.beamHitMs);
-          this.effects.shake('beamHit');
-          this.audio.play('hit');
-        }
-      }
     });
 
     this.physics.add.overlap(
@@ -510,75 +385,28 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private resolveEnemyBulletHits(): void {
-    if (!this.player.active || !this.player.body || this.gameOverStarted) {
-      return;
-    }
-
-    const hitRadiusSq = COMBAT_TUNING.enemyBulletHitRadius * COMBAT_TUNING.enemyBulletHitRadius;
-
-    for (const bullet of this.enemyBullets.getChildren() as Bullet[]) {
-      if (!bullet.active || !bullet.body) {
-        continue;
-      }
-
-      const dx = bullet.x - this.player.x;
-      const dy = bullet.y - this.player.y;
-
-      if (dx * dx + dy * dy > hitRadiusSq) {
-        continue;
-      }
-
-      const bulletX = bullet.x;
-      const bulletY = bullet.y;
-
-      if (!bullet.consume()) {
-        continue;
-      }
-
-      const damaged = this.player.damage(bullet.damage, bulletX, bulletY);
-      bullet.queueDestroy();
-
-      if (damaged) {
-        this.queuePlayerDamagedFeedback();
-      }
-    }
-  }
-
   private handleDoorOverlap(door: Door): void {
     if (!door.isOpen || this.time.now < this.nextDoorAt) {
       return;
     }
 
-    const targetRoom = this.dungeon.peek(door.direction);
+    const navigation = this.roomNavigation.tryMove(this.runState, door.direction);
 
-    if (!targetRoom) {
+    if (navigation.status === 'no-target') {
       return;
     }
 
-    if (targetRoom.type === 'treasure' && !targetRoom.treasureUnlocked) {
-      const updatedInventory = spendConsumable(
-        this.runState.inventory,
-        'keys',
-        INVENTORY_TUNING.treasureRoomKeyCost,
-      );
+    if (navigation.status === 'key-needed') {
+      this.nextDoorAt = this.time.now + COMBAT_TUNING.doorCooldownMs;
+      this.hud.showMessage(t('messages.keyNeeded'), 1200);
+      return;
+    }
 
-      if (!updatedInventory) {
-        this.nextDoorAt = this.time.now + COMBAT_TUNING.doorCooldownMs;
-        this.hud.showMessage(t('messages.keyNeeded'), 1200);
-        return;
-      }
-
-      this.runState.inventory = updatedInventory;
-      this.dungeon.unlockRoom(targetRoom.id);
+    if (navigation.treasureUnlocked) {
       this.hud.showMessage(t('messages.treasureUnlocked'), 1200);
     }
 
-    const moved = this.dungeon.move(door.direction);
-
-    if (!moved) {
-      return;
-    }
+    const moved = navigation.room;
 
     this.nextDoorAt = this.time.now + COMBAT_TUNING.doorCooldownMs;
     this.playerBullets.clear(true, true);
@@ -648,18 +476,9 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    this.runState.stats = this.itemSystem.applyItem(this.runState.stats, pickup.item);
-    this.runState.attackProfile = this.itemSystem.applyAttackProfile(
-      this.runState.attackProfile,
-      pickup.item,
-    );
-    this.runState.collectedItemIds.push(pickup.item.id);
+    const acquisition = this.itemSystem.acquireItem(this.runState, pickup.item);
 
-    if (
-      pickup.item.abilityId &&
-      !this.runState.unlockedAbilityIds.includes(pickup.item.abilityId)
-    ) {
-      this.runState.unlockedAbilityIds.push(pickup.item.abilityId);
+    if (acquisition.newlyUnlockedAbilityId === 'charge-beam') {
       this.player.hasChargeBeam = true;
     }
 
@@ -690,47 +509,29 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const reward = pickup.reward;
+    const result = this.rewardSystem.applyPickup(this.runState, pickup.reward);
 
-    if (reward.kind === 'chest') {
-      const result = this.rewardSystem.rollChestResult(this.runState.stats);
+    if (!result.collected) {
+      this.hud.showMessage(t('messages.resourceFull', { resource: t(result.labelKey) }), 1100);
+      return;
+    }
 
-      if (result.type === 'heal') {
-        this.runState.stats.health = clamp(
-          this.runState.stats.health + result.amount,
-          0,
-          this.runState.stats.maxHealth,
-        );
+    if (result.type === 'chest') {
+      if (result.chestResult.type === 'heal') {
         this.player.setStats(this.runState.stats);
-      } else {
-        this.runState.inventory = addConsumable(
-          this.runState.inventory,
-          result.consumable,
-          result.amount,
-        );
       }
 
-      this.hud.showMessage(this.formatChestResult(result), 1600);
-      this.effects.pickup(pickup.x, pickup.y);
-      this.audio.play('pickup');
-      this.clearPendingRewardForPickup(pickup);
-      pickup.destroy();
-      return;
+      this.hud.showMessage(this.formatChestResult(result.chestResult), 1600);
+    } else {
+      this.hud.showMessage(
+        t('messages.rewardGain', {
+          amount: result.amount,
+          resource: t(result.labelKey),
+        }),
+        1200,
+      );
     }
 
-    if (!this.rewardSystem.canTakeConsumable(this.runState.inventory, reward.kind)) {
-      this.hud.showMessage(t('messages.resourceFull', { resource: t(reward.labelKey) }), 1100);
-      return;
-    }
-
-    this.runState.inventory = addConsumable(this.runState.inventory, reward.kind, reward.amount);
-    this.hud.showMessage(
-      t('messages.rewardGain', {
-        amount: reward.amount,
-        resource: t(reward.labelKey),
-      }),
-      1200,
-    );
     this.effects.pickup(pickup.x, pickup.y);
     this.audio.play('pickup');
     this.clearPendingRewardForPickup(pickup);
@@ -942,11 +743,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.floorTransitionStarted = false;
-    this.runState.floor += 1;
-    this.runState.stats.health = Math.min(
-      this.runState.stats.maxHealth,
-      this.runState.stats.health + 1,
-    );
+    advanceRunToNextFloor(this.runState);
     this.player.setStats(this.runState.stats);
     this.player.setPosition(480, 320);
     (this.player.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
