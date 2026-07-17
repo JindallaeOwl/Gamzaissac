@@ -10,6 +10,7 @@ import {
   GAME_CENTER_Y,
   OBSTACLE_TUNING,
   PIXEL_GRID_SIZE,
+  ROOM_CLEAR_DOOR_DELAY_MS,
   ROOM_RECT,
   WALL_THICKNESS,
 } from '../config/gameConfig';
@@ -110,8 +111,22 @@ export class RoomController {
     }
 
     if (this.enemies.countActive(true) === 0 && this.dungeon.markCurrentCleared()) {
-      this.updateDoors(room);
+      this.updateDoors(room, true);
       this.onRoomCleared(room);
+      const clearedRoomId = room.id;
+      this.scene.time.delayedCall(ROOM_CLEAR_DOOR_DELAY_MS, () => {
+        if (this.dungeon.getCurrentRoom().id === clearedRoomId) {
+          this.updateDoors(room, false, true);
+        }
+      });
+    }
+  }
+
+  updateDoorEntryGates(playerBody: Phaser.Physics.Arcade.Body): void {
+    for (const door of this.doorSprites.values()) {
+      if (door.active && door.isOpen) {
+        door.updateEntryGate(playerBody);
+      }
     }
   }
 
@@ -367,7 +382,7 @@ export class RoomController {
     }
   }
 
-  private updateDoors(room: RoomNode): void {
+  private updateDoors(room: RoomNode, forceClosed = false, requireFreshEntry = false): void {
     for (const direction of DIRECTIONS) {
       const door = this.doorSprites.get(direction);
 
@@ -380,7 +395,7 @@ export class RoomController {
       const isLockedTreasure = targetRoom?.type === 'treasure' && !targetRoom.treasureUnlocked;
       door.setVisible(hasExit);
       door.setActive(hasExit);
-      door.setOpen(room.cleared);
+      door.setOpen(room.cleared && !forceClosed, requireFreshEntry);
 
       if (hasExit && isLockedTreasure && room.cleared) {
         door.setTint(0x7f6bd9);

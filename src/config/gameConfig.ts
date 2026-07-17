@@ -105,6 +105,8 @@ export const COMBAT_TUNING = {
   enemyContactCooldownMs: 650,
 };
 
+export const ROOM_CLEAR_DOOR_DELAY_MS = 500;
+
 export const ITEM_PREVIEW_RADIUS = 48;
 
 export const INVENTORY_TUNING = {

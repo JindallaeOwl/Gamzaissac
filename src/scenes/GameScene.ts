@@ -260,6 +260,7 @@ export class GameScene extends Phaser.Scene {
       beam.update(time);
     }
 
+    this.roomController.updateDoorEntryGates(this.player.body as Phaser.Physics.Arcade.Body);
     this.roomController.update();
     this.bossHud.update();
     this.updateItemHint();
@@ -494,7 +495,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleDoorOverlap(door: Door): void {
-    if (!door.isOpen || this.time.now < this.nextDoorAt) {
+    if (!door.canEnter() || this.time.now < this.nextDoorAt) {
       return;
     }
 
