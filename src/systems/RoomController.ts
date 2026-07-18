@@ -21,6 +21,7 @@ import type { DungeonManager, RoomNode } from './DungeonManager';
 import type { RunState } from './RunState';
 import { DIRECTIONS, type Direction } from '../utils/directions';
 import { randomInt, randomOf, type RandomSource } from '../utils/random';
+import { resolveEnemySpawnAwayFromEntry, type RoomPoint } from './RoomEntrySafety';
 
 interface RoomControllerConfig {
   scene: Phaser.Scene;
@@ -78,7 +79,7 @@ export class RoomController {
     this.createDoors();
   }
 
-  enterCurrentRoom(): void {
+  enterCurrentRoom(entryPosition?: RoomPoint): void {
     this.enemies.clear(true, true);
     this.items.clear(true, true);
     this.obstacles.clear(true, true);
@@ -89,7 +90,7 @@ export class RoomController {
     this.updateDoors(room);
 
     if ((room.type === 'combat' || room.type === 'boss') && !room.cleared) {
-      this.spawnCombatRoom(room);
+      this.spawnCombatRoom(room, entryPosition);
     }
 
     if (room.type === 'reward' && !room.rewardClaimed) {
@@ -150,7 +151,7 @@ export class RoomController {
     return { x: ROOM_RECT.right - 28, y: GAME_CENTER_Y };
   }
 
-  private spawnCombatRoom(room: RoomNode): void {
+  private spawnCombatRoom(room: RoomNode, entryPosition?: RoomPoint): void {
     const template = getRoomTemplate(room.templateId);
     const spawnSet = [...randomOf(template.spawnSets, this.random)];
     const extraEnemies =
@@ -164,15 +165,25 @@ export class RoomController {
       });
     }
 
+    const occupiedPositions: RoomPoint[] = [];
+    const obstaclePositions = template.obstacles ?? [];
+
     for (const spawn of spawnSet) {
+      const safePosition = resolveEnemySpawnAwayFromEntry(
+        spawn,
+        entryPosition,
+        occupiedPositions,
+        obstaclePositions,
+      );
       const enemy = createEnemy(
         this.scene,
         this.enemies,
         spawn.enemyId,
-        spawn.x,
-        spawn.y,
+        safePosition.x,
+        safePosition.y,
         this.runState.floor,
       );
+      occupiedPositions.push(safePosition);
       enemy.once('enemy-defeated', this.onEnemyDefeated);
 
       if (enemy.isBoss && this.onBossPhaseTwo) {

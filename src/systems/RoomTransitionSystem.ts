@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { FloorExit } from '../entities/FloorExit';
 import type { Player } from '../entities/Player';
 import { RewardPickup } from '../entities/RewardPickup';
-import { GAME_CENTER_X, GAME_CENTER_Y } from '../config/gameConfig';
+import { GAME_CENTER_X, GAME_CENTER_Y, ROOM_ENTRY_PROTECTION_MS } from '../config/gameConfig';
 import type { Direction } from '../utils/directions';
 import type { BombSystem } from './BombSystem';
 import type { DungeonManager, RoomNode } from './DungeonManager';
@@ -56,7 +56,8 @@ export class RoomTransitionSystem {
     this.clearTransientObjects(false);
     const spawnPosition = this.roomController.getSpawnPositionForEntry(entryDirection);
     this.movePlayerTo(spawnPosition.x, spawnPosition.y);
-    this.roomController.enterCurrentRoom();
+    this.player.grantInvulnerability(ROOM_ENTRY_PROTECTION_MS);
+    this.roomController.enterCurrentRoom(spawnPosition);
     this.restorePendingReward(room);
     this.restoreFloorExit(room);
   }

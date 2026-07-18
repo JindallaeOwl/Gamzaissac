@@ -210,6 +210,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return true;
   }
 
+  grantInvulnerability(durationMs: number): void {
+    this.invulnerableUntil = Math.max(
+      this.invulnerableUntil,
+      this.scene.time.now + Math.max(0, durationMs),
+    );
+  }
+
   private updateMovement(time: number, controls: PlayerControls): void {
     const inputX = Number(controls.right.isDown) - Number(controls.left.isDown);
     const inputY = Number(controls.down.isDown) - Number(controls.up.isDown);
