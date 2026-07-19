@@ -4,6 +4,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../config/gameConfig';
 import { gameFontStack, t } from '../i18n';
 import { applyRenderScale } from '../utils/render';
 import { getRenderScale } from '../systems/GameSettings';
+import { TITLE_TRANSITION_SCENE_KEY } from './TitleTransitionScene';
 
 interface GameOverData {
   clearedRooms: number;
@@ -13,12 +14,14 @@ interface GameOverData {
 
 export class GameOverScene extends Phaser.Scene {
   private restartKeys?: Phaser.Input.Keyboard.Key[];
+  private transitionStarted = false;
 
   constructor() {
     super('GameOverScene');
   }
 
   create(data: GameOverData): void {
+    this.transitionStarted = false;
     applyRenderScale(this);
     this.add.tileSprite(
       GAME_WIDTH / 2,
@@ -99,6 +102,13 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private restart(): void {
-    this.scene.start('GameScene');
+    if (this.transitionStarted) {
+      return;
+    }
+
+    this.transitionStarted = true;
+    this.input.enabled = false;
+    this.input.keyboard?.resetKeys();
+    this.scene.launch(TITLE_TRANSITION_SCENE_KEY);
   }
 }

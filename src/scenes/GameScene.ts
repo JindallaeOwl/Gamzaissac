@@ -64,6 +64,7 @@ import { isPauseCode } from '../ui/PauseMenuRules';
 import { UiCameraSystem } from '../ui/UiCameraSystem';
 import { applyRenderScale } from '../utils/render';
 import { isGameOverRestartCode } from '../utils/gameOverInput';
+import { TITLE_TRANSITION_SCENE_KEY } from './TitleTransitionScene';
 
 interface GameOverData {
   clearedRooms: number;
@@ -104,8 +105,13 @@ export class GameScene extends Phaser.Scene {
   private gameOverTitle!: HTMLElement;
   private gameOverSummary!: HTMLElement;
   private gameOverRestartButton!: HTMLButtonElement;
+  private gameOverTransitionStarted = false;
   private readonly handleGameOverKeyDown = (event: KeyboardEvent): void => {
-    if (!this.gameOverStarted || !isGameOverRestartCode(event.code)) {
+    if (
+      !this.gameOverStarted ||
+      this.gameOverTransitionStarted ||
+      !isGameOverRestartCode(event.code)
+    ) {
       return;
     }
 
@@ -162,6 +168,7 @@ export class GameScene extends Phaser.Scene {
     this.debugVisible = false;
     this.nextDoorAt = 0;
     this.gameOverStarted = false;
+    this.gameOverTransitionStarted = false;
     this.floorTransitionStarted = false;
     this.playerDamageFeedbackQueued = false;
     this.pauseTransitionStarted = false;
@@ -566,10 +573,13 @@ export class GameScene extends Phaser.Scene {
     this.gameOverSummary = summary;
     this.gameOverRestartButton = restartButton;
     this.gameOverOverlay.hidden = true;
+    this.gameOverOverlay.classList.remove('is-leaving');
+    this.gameOverRestartButton.disabled = false;
     this.gameOverRestartButton.onclick = () => this.restartAfterGameOver();
     document.addEventListener('keydown', this.handleGameOverKeyDown, true);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       document.removeEventListener('keydown', this.handleGameOverKeyDown, true);
+      this.resetGameOverOverlay();
     });
   }
 
@@ -586,14 +596,21 @@ export class GameScene extends Phaser.Scene {
   }
 
   private restartAfterGameOver(): void {
-    if (!this.gameOverStarted) {
+    if (!this.gameOverStarted || this.gameOverTransitionStarted) {
       return;
     }
 
-    // A full reload rebuilds Phaser, the Scene Manager, and the physics world.
-    // Keep the overlay visible until navigation starts so a failed queued Scene
-    // restart can never leave the player on a frozen game frame again.
-    window.location.reload();
+    this.gameOverTransitionStarted = true;
+    this.gameOverRestartButton.disabled = true;
+    this.gameOverOverlay.classList.add('is-leaving');
+    this.scene.launch(TITLE_TRANSITION_SCENE_KEY);
+  }
+
+  private resetGameOverOverlay(): void {
+    this.gameOverOverlay.hidden = true;
+    this.gameOverOverlay.classList.remove('is-leaving');
+    this.gameOverRestartButton.disabled = false;
+    this.gameOverRestartButton.onclick = null;
   }
 
   private setupAudioUnlock(): void {

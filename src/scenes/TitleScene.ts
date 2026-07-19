@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { MusicKeys, TextureKeys } from '../config/assets';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH } from '../config/gameConfig';
+import { DEPTH, GAME_HEIGHT, GAME_WIDTH, TITLE_TRANSITION_MS } from '../config/gameConfig';
 import { gameFontStack, t } from '../i18n';
 import { AudioSystem } from '../systems/AudioSystem';
 import { getGameSettings, getRenderScale } from '../systems/GameSettings';
@@ -24,6 +24,10 @@ type MenuAction = 'start' | 'settings' | 'quit' | SettingsMenuAction;
 interface MenuItem {
   label: string;
   action: MenuAction;
+}
+
+interface TitleSceneData {
+  inputLocked?: boolean;
 }
 
 export class TitleScene extends Phaser.Scene {
@@ -75,8 +79,12 @@ export class TitleScene extends Phaser.Scene {
     super('TitleScene');
   }
 
-  create(): void {
+  create(data: TitleSceneData = {}): void {
     this.suppressNextFullscreenLeaveNavigation = false;
+    this.input.enabled = !data.inputLocked;
+    if (this.input.keyboard) {
+      this.input.keyboard.enabled = !data.inputLocked;
+    }
     applyRenderScale(this);
     this.audio = new AudioSystem();
     this.music = new MusicSystem(this);
@@ -106,6 +114,8 @@ export class TitleScene extends Phaser.Scene {
       this.scale.off(Phaser.Scale.Events.LEAVE_FULLSCREEN, this.handleLeaveFullscreen);
     });
     this.renderMenu('main');
+    this.input.keyboard?.resetKeys();
+    this.cameras.main.fadeIn(TITLE_TRANSITION_MS, 5, 9, 14);
   }
 
   update(): void {

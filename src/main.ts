@@ -6,6 +6,7 @@ import { GameOverScene } from './scenes/GameOverScene';
 import { GameScene } from './scenes/GameScene';
 import { PauseScene } from './scenes/PauseScene';
 import { TitleScene } from './scenes/TitleScene';
+import { TitleTransitionScene } from './scenes/TitleTransitionScene';
 import { getRenderScale } from './systems/GameSettings';
 
 const initialRenderScale = getRenderScale();
@@ -45,7 +46,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, TitleScene, GameScene, PauseScene, GameOverScene],
+  scene: [BootScene, TitleScene, GameScene, PauseScene, GameOverScene, TitleTransitionScene],
 };
 
 new Phaser.Game(config);

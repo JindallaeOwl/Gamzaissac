@@ -17,6 +17,7 @@ import {
   type PauseMode,
 } from '../ui/PauseMenuRules';
 import { applyCurrentRenderScaleToGame, applyRenderScale } from '../utils/render';
+import { TITLE_TRANSITION_SCENE_KEY } from './TitleTransitionScene';
 
 type PauseAction = PauseMainAction | SettingsMenuAction;
 
@@ -36,6 +37,7 @@ export class PauseScene extends Phaser.Scene {
   private upKeys: Phaser.Input.Keyboard.Key[] = [];
   private downKeys: Phaser.Input.Keyboard.Key[] = [];
   private confirmKeys: Phaser.Input.Keyboard.Key[] = [];
+  private transitionStarted = false;
   private readonly handleEscapeKeyDown = (event: KeyboardEvent): void => {
     if (!isPauseCode(event.code) || event.repeat || !this.scene.isActive()) {
       return;
@@ -55,6 +57,7 @@ export class PauseScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.transitionStarted = false;
     applyRenderScale(this);
     this.music = new MusicSystem(this);
     this.add
@@ -98,6 +101,10 @@ export class PauseScene extends Phaser.Scene {
   }
 
   update(): void {
+    if (this.transitionStarted) {
+      return;
+    }
+
     if (this.upKeys.some((key) => Phaser.Input.Keyboard.JustDown(key))) {
       this.selectedIndex = Phaser.Math.Wrap(this.selectedIndex - 1, 0, this.items.length);
       this.refreshSelection();
@@ -186,6 +193,10 @@ export class PauseScene extends Phaser.Scene {
   }
 
   private activateSelection(): void {
+    if (this.transitionStarted) {
+      return;
+    }
+
     const action = this.items[this.selectedIndex]?.action;
     if (action === 'continue') {
       this.resumeGame();
@@ -198,8 +209,7 @@ export class PauseScene extends Phaser.Scene {
     }
 
     if (action === 'exit') {
-      this.scene.stop('GameScene');
-      this.scene.start('TitleScene');
+      this.exitToTitle();
       return;
     }
 
@@ -253,7 +263,18 @@ export class PauseScene extends Phaser.Scene {
   }
 
   private resumeGame(): void {
+    if (this.transitionStarted) {
+      return;
+    }
+
     this.scene.resume('GameScene');
     this.scene.stop();
+  }
+
+  private exitToTitle(): void {
+    this.transitionStarted = true;
+    this.input.enabled = false;
+    this.input.keyboard?.resetKeys();
+    this.scene.launch(TITLE_TRANSITION_SCENE_KEY);
   }
 }
