@@ -3,7 +3,7 @@ import { itemIconKey } from '../config/assets';
 import { DEPTH } from '../config/gameConfig';
 import type { PassiveItemDefinition } from '../data/items';
 
-export type ItemPickupSource = 'room' | 'secret';
+export type ItemPickupSource = 'room' | 'boss' | 'secret';
 
 export class ItemPickup extends Phaser.Physics.Arcade.Sprite {
   readonly item: PassiveItemDefinition;

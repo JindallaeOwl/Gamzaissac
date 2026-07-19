@@ -21,6 +21,7 @@ import type { DungeonManager, RoomNode } from './DungeonManager';
 import type { RunState } from './RunState';
 import { DIRECTIONS, type Direction } from '../utils/directions';
 import { randomInt, randomOf, type RandomSource } from '../utils/random';
+import { BossRewardSystem } from './BossRewardSystem';
 import {
   canEnemiesActAfterRoomEntry,
   getRoomEntryEnemyAiResumeAt,
@@ -52,6 +53,7 @@ export class RoomController {
   private readonly enemies: Phaser.Physics.Arcade.Group;
   private readonly items: Phaser.Physics.Arcade.Group;
   private readonly itemSystem: ItemSystem;
+  private readonly bossRewardSystem: BossRewardSystem;
   private readonly runState: RunState;
   private readonly onRoomCleared: (room: RoomNode) => void;
   private readonly onEnemyDefeated: (score: number) => void;
@@ -68,6 +70,7 @@ export class RoomController {
     this.enemies = config.enemies;
     this.items = config.items;
     this.itemSystem = config.itemSystem;
+    this.bossRewardSystem = new BossRewardSystem(config.itemSystem);
     this.runState = config.runState;
     this.onRoomCleared = config.onRoomCleared;
     this.onEnemyDefeated = config.onEnemyDefeated;
@@ -111,6 +114,10 @@ export class RoomController {
       this.spawnTreasure(room);
     }
 
+    if (room.type === 'boss' && room.cleared) {
+      this.spawnBossReward(room);
+    }
+
     this.spawnObstacles(room);
   }
 
@@ -135,6 +142,20 @@ export class RoomController {
 
   canEnemiesAct(time: number): boolean {
     return canEnemiesActAfterRoomEntry(time, this.enemyAiResumeAt);
+  }
+
+  spawnBossReward(room: RoomNode): void {
+    if (room.type !== 'boss') {
+      return;
+    }
+
+    const item = this.bossRewardSystem.resolveReward(room, this.runState.collectedItemIds);
+
+    if (!item) {
+      return;
+    }
+
+    this.items.add(new ItemPickup(this.scene, GAME_CENTER_X, GAME_CENTER_Y + 40, item, 'boss'));
   }
 
   updateDoorEntryGates(playerBody: Phaser.Physics.Arcade.Body): void {

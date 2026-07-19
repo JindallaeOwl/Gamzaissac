@@ -106,6 +106,10 @@ export const ko: TranslationTree = {
     boss: '보스',
   },
   items: {
+    lifeSeed: {
+      name: '생명 씨앗',
+      description: '최대 하트가 1개 늘고 하트 1개를 회복합니다.',
+    },
     pulseRelay: {
       name: '맥동 릴레이',
       description: '연사 속도가 빨라집니다 (연사 +0.55).',

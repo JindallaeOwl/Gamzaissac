@@ -611,6 +611,8 @@ export class GameScene extends Phaser.Scene {
       this.dungeon.markCurrentRewardClaimed();
     } else if (pickup.source === 'room' && currentRoom.type === 'treasure') {
       this.dungeon.markCurrentTreasureClaimed();
+    } else if (pickup.source === 'boss' && currentRoom.type === 'boss') {
+      this.dungeon.markCurrentBossRewardClaimed();
     }
 
     this.hud.showMessage(
@@ -675,6 +677,7 @@ export class GameScene extends Phaser.Scene {
     this.audio.play('roomClear');
 
     if (room.type === 'boss') {
+      this.roomController.spawnBossReward(room);
       this.roomTransitions.spawnFloorExit();
       this.hud.showMessage(t('messages.nextFloorOpening'), 2200);
     }

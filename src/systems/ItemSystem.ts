@@ -1,4 +1,5 @@
 import { PASSIVE_ITEMS, type PassiveItemDefinition } from '../data/items';
+import { BOSS_REWARD_ITEM_IDS } from '../data/bossRewards';
 import type { PlayerAttackProfile, PlayerStats } from '../config/gameConfig';
 import { clamp } from '../utils/math';
 import { randomOf, type RandomSource } from '../utils/random';
@@ -9,7 +10,10 @@ export interface ItemAcquisitionResult {
 }
 
 export class ItemSystem {
-  constructor(private readonly random: RandomSource = Math.random) {}
+  constructor(
+    private readonly random: RandomSource = Math.random,
+    private readonly bossRewardItemIds: readonly string[] = BOSS_REWARD_ITEM_IDS,
+  ) {}
 
   pickRewardItem(collectedItemIds: readonly string[]): PassiveItemDefinition {
     return this.pickItem(collectedItemIds, { includeTreasureOnly: false });
@@ -17,6 +21,20 @@ export class ItemSystem {
 
   pickTreasureItem(collectedItemIds: readonly string[]): PassiveItemDefinition {
     return this.pickItem(collectedItemIds, { includeTreasureOnly: true });
+  }
+
+  pickBossRewardItem(collectedItemIds: readonly string[]): PassiveItemDefinition | null {
+    const bossRewardIds = new Set(this.bossRewardItemIds);
+    const pool = PASSIVE_ITEMS.filter(
+      (item) => bossRewardIds.has(item.id) && isStatOnlyBossReward(item),
+    );
+
+    if (pool.length === 0) {
+      return null;
+    }
+
+    const unseenItems = pool.filter((item) => !collectedItemIds.includes(item.id));
+    return randomOf(unseenItems.length > 0 ? unseenItems : pool, this.random);
   }
 
   acquireItem(runState: RunState, item: PassiveItemDefinition): ItemAcquisitionResult {
@@ -83,8 +101,14 @@ export class ItemSystem {
     collectedItemIds: readonly string[],
     options: { includeTreasureOnly: boolean },
   ): PassiveItemDefinition {
-    const pool = PASSIVE_ITEMS.filter((item) => options.includeTreasureOnly || !item.treasureOnly);
+    const pool = PASSIVE_ITEMS.filter(
+      (item) => !item.bossOnly && (options.includeTreasureOnly || !item.treasureOnly),
+    );
     const unseenItems = pool.filter((item) => !collectedItemIds.includes(item.id));
     return randomOf(unseenItems.length > 0 ? unseenItems : pool, this.random);
   }
+}
+
+export function isStatOnlyBossReward(item: PassiveItemDefinition): boolean {
+  return !item.attackModifiers && !item.abilityId;
 }

@@ -23,9 +23,18 @@ export interface PassiveItemDefinition {
   attackModifiers?: AttackProfileModifier;
   abilityId?: 'charge-beam';
   treasureOnly?: boolean;
+  bossOnly?: boolean;
 }
 
 export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
+  {
+    id: 'life-seed',
+    nameKey: 'items.lifeSeed.name',
+    descriptionKey: 'items.lifeSeed.description',
+    tint: 0xff5d72,
+    modifiers: { maxHealth: 2, heal: 2 },
+    bossOnly: true,
+  },
   {
     id: 'quad-shot',
     nameKey: 'items.quadShot.name',

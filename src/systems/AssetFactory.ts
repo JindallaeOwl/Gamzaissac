@@ -443,6 +443,14 @@ function drawItemSymbol(
   tint: number,
 ): void {
   switch (id) {
+    case 'life-seed': {
+      // maximum health: a simple heart-shaped seed
+      graphics.fillStyle(color, 1);
+      graphics.fillCircle(12, 13, 6);
+      graphics.fillCircle(20, 13, 6);
+      graphics.fillTriangle(7, 14, 25, 14, 16, 26);
+      break;
+    }
     case 'pulse-relay': {
       // fire rate: two small ">" chevrons, rapid-fire cue
       graphics.fillStyle(color, 1);

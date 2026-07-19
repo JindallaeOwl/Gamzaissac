@@ -106,6 +106,10 @@ export const en: TranslationTree = {
     boss: 'Boss',
   },
   items: {
+    lifeSeed: {
+      name: 'Life Seed',
+      description: 'Adds one maximum heart and restores one full heart.',
+    },
     pulseRelay: {
       name: 'Pulse Relay',
       description: 'Fire rate increases (+0.55).',
