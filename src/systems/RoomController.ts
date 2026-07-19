@@ -3,6 +3,7 @@ import { Door } from '../entities/Door';
 import { ItemPickup } from '../entities/ItemPickup';
 import { Obstacle } from '../entities/Obstacle';
 import { ShopOffer } from '../entities/ShopOffer';
+import { ShopNpc } from '../entities/ShopNpc';
 import { createEnemy } from '../entities/enemies/EnemyFactory';
 import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import {
@@ -17,8 +18,7 @@ import {
 } from '../config/gameConfig';
 import { PASSIVE_ITEMS } from '../data/items';
 import { getRoomTemplate } from '../data/rooms';
-import { SHOP_NPC_DISPLAY_SIZE, SHOP_NPC_POSITION, SHOP_OFFER_POSITIONS } from '../data/shop';
-import { AnimationKeys, TextureKeys } from '../config/assets';
+import { SHOP_NPC_POSITION, SHOP_OFFER_POSITIONS } from '../data/shop';
 import type { ItemSystem } from './ItemSystem';
 import type { DungeonManager, RoomNode } from './DungeonManager';
 import type { RunState } from './RunState';
@@ -55,6 +55,7 @@ export class RoomController {
   readonly doors: Phaser.Physics.Arcade.Group;
   readonly obstacles: Phaser.Physics.Arcade.StaticGroup;
   readonly shopOffers: Phaser.GameObjects.Group;
+  readonly shopNpcs: Phaser.Physics.Arcade.Group;
 
   private readonly scene: Phaser.Scene;
   private readonly dungeon: DungeonManager;
@@ -95,6 +96,7 @@ export class RoomController {
     this.doors = this.scene.physics.add.group({ allowGravity: false, immovable: true });
     this.obstacles = this.scene.physics.add.staticGroup();
     this.shopOffers = this.scene.add.group();
+    this.shopNpcs = this.scene.physics.add.group({ allowGravity: false });
     this.shopDecorations = this.scene.add.group();
 
     this.createWalls();
@@ -106,6 +108,7 @@ export class RoomController {
     this.items.clear(true, true);
     this.obstacles.clear(true, true);
     this.shopOffers.clear(true, true);
+    this.shopNpcs.clear(true, true);
     this.shopDecorations.clear(true, true);
 
     const room = this.dungeon.getCurrentRoom();
@@ -137,6 +140,12 @@ export class RoomController {
   }
 
   update(): void {
+    for (const npc of this.shopNpcs.getChildren() as ShopNpc[]) {
+      if (npc.active) {
+        npc.updateMotion(this.scene.time.now);
+      }
+    }
+
     const room = this.dungeon.getCurrentRoom();
 
     if ((room.type !== 'combat' && room.type !== 'boss') || room.cleared) {
@@ -167,6 +176,7 @@ export class RoomController {
     }
 
     this.shopOffers.clear(true, true);
+    this.shopNpcs.clear(true, true);
     this.shopDecorations.clear(true, true);
     this.spawnShop(room, false);
     return true;
@@ -290,24 +300,33 @@ export class RoomController {
       room.shopOffers = this.shopSystem.createOffers(this.runState.collectedItemIds);
     }
 
-    const npc = this.scene.add.sprite(
-      SHOP_NPC_POSITION.x,
-      SHOP_NPC_POSITION.y,
-      TextureKeys.shopNpcIdleA,
-    );
-    if (this.scene.anims.exists(AnimationKeys.shopNpcIdle)) {
-      npc.play(AnimationKeys.shopNpcIdle);
-    }
-    npc.setDisplaySize(SHOP_NPC_DISPLAY_SIZE, SHOP_NPC_DISPLAY_SIZE);
-    npc.setDepth(DEPTH.actor);
-    this.shopDecorations.add(npc);
+    const npc = new ShopNpc(this.scene, SHOP_NPC_POSITION.x, SHOP_NPC_POSITION.y);
+    this.shopNpcs.add(npc);
 
     if (showGreeting) {
+      const shopRoomId = room.id;
       const greeting = createShopNpcSpeechBubble(
         this.scene,
         SHOP_NPC_POSITION.x,
         SHOP_NPC_POSITION.y - 36,
         t('shop.greeting'),
+        {
+          visibleMs: 3000,
+          onDismiss: () => {
+            if (this.dungeon.getCurrentRoom().id !== shopRoomId) {
+              return;
+            }
+
+            const followUp = createShopNpcSpeechBubble(
+              this.scene,
+              SHOP_NPC_POSITION.x,
+              SHOP_NPC_POSITION.y - 36,
+              t('shop.greetingFollowUp'),
+              { visibleMs: 3000 },
+            );
+            this.shopDecorations.add(followUp);
+          },
+        },
       );
       this.shopDecorations.add(greeting);
     }

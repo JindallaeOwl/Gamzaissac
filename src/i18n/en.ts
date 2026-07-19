@@ -112,7 +112,8 @@ export const en: TranslationTree = {
     boss: 'Boss',
   },
   shop: {
-    greeting: 'Welcome! Take a look around.',
+    greeting: 'Well, look who came by! Come on in.',
+    greetingFollowUp: "Take your time. There's no rush at all.",
     products: {
       heart: {
         name: 'Healing Heart',

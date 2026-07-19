@@ -89,7 +89,7 @@ export const SHOP_OFFER_POSITIONS = [
 ] as const;
 
 export const SHOP_NPC_POSITION = { x: 240, y: 90 } as const;
-export const SHOP_NPC_DISPLAY_SIZE = 60;
+export const SHOP_NPC_DISPLAY_SIZE = 64;
 export const SHOP_INTERACTION_RADIUS = 44;
 export const SHOP_DISCOUNT_CHANCE = 0.3;
 export const SHOP_DISCOUNT_RATE = 0.5;

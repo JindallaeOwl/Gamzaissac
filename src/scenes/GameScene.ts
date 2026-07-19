@@ -5,6 +5,7 @@ import { Door } from '../entities/Door';
 import { FloorExit } from '../entities/FloorExit';
 import { ItemPickup } from '../entities/ItemPickup';
 import { Player, type BeamFiredEvent, type PlayerControls } from '../entities/Player';
+import { ShopNpc } from '../entities/ShopNpc';
 import { RewardPickup } from '../entities/RewardPickup';
 import { ShopOffer } from '../entities/ShopOffer';
 import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
@@ -426,6 +427,15 @@ export class GameScene extends Phaser.Scene {
 
   private setupPhysics(): void {
     this.combatCollisions.register();
+
+    this.physics.add.collider(
+      this.player,
+      this.roomController.shopNpcs,
+      (playerObject, npcObject) => {
+        const player = playerObject as Player;
+        (npcObject as ShopNpc).pushFrom(player.x, player.y, this.time.now);
+      },
+    );
 
     this.physics.add.overlap(this.player, this.items, (_playerObject, itemObject) => {
       this.collectItem(itemObject as ItemPickup);
