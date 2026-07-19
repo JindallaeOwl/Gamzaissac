@@ -94,17 +94,17 @@ export class Hud {
       TextureKeys.keyPickup,
       0x8bd3ff,
     );
-    this.coinCountText = this.createText(RESOURCE_VALUE_X, RESOURCE_START_Y + 2, 9).setFontStyle(
+    this.coinCountText = this.createText(RESOURCE_VALUE_X, RESOURCE_START_Y + 1, 9).setFontStyle(
       'bold',
     );
     this.bombCountText = this.createText(
       RESOURCE_VALUE_X,
-      RESOURCE_START_Y + RESOURCE_ROW_GAP + 2,
+      RESOURCE_START_Y + RESOURCE_ROW_GAP + 1,
       9,
     ).setFontStyle('bold');
     this.keyCountText = this.createText(
       RESOURCE_VALUE_X,
-      RESOURCE_START_Y + RESOURCE_ROW_GAP * 2 + 2,
+      RESOURCE_START_Y + RESOURCE_ROW_GAP * 2 + 1,
       9,
     ).setFontStyle('bold');
     this.statValueTexts = {
