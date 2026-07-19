@@ -55,6 +55,13 @@ export const HUD_ICON_ASSETS = [
   { key: TextureKeys.hudCoin, path: 'assets/icons/nikoichu/hud-coin.png' },
 ] as const;
 
+export const ITEM_IMAGE_ASSETS = [
+  {
+    key: itemIconKey('red-mushroom'),
+    path: 'assets/items/red-mushroom.png',
+  },
+] as const;
+
 export const PICKUP_SPRITESHEET_ASSETS = [
   {
     key: TextureKeys.chestPickup,

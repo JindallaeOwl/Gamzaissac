@@ -418,7 +418,9 @@ function createDoorTexture(scene: Phaser.Scene, key: string, width: number, heig
 // tell apart at a glance).
 function createPassiveItemIcons(scene: Phaser.Scene): void {
   for (const item of PASSIVE_ITEMS) {
-    createItemIcon(scene, item.id, item.tint);
+    if (!scene.textures.exists(itemIconKey(item.id))) {
+      createItemIcon(scene, item.id, item.tint);
+    }
   }
 }
 
@@ -444,7 +446,7 @@ function drawItemSymbol(
   tint: number,
 ): void {
   switch (id) {
-    case 'life-seed': {
+    case 'red-mushroom': {
       // maximum health: a simple heart-shaped seed
       graphics.fillStyle(color, 1);
       graphics.fillCircle(12, 13, 6);

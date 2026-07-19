@@ -127,8 +127,8 @@ export const en: TranslationTree = {
     },
   },
   items: {
-    lifeSeed: {
-      name: 'Life Seed',
+    redMushroom: {
+      name: 'Red Mushroom',
       description: 'Adds one maximum heart and restores one full heart.',
     },
     pulseRelay: {

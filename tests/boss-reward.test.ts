@@ -32,10 +32,10 @@ describe('boss rewards', () => {
     expect(system.resolveReward(room, [])).toBeNull();
   });
 
-  it('contains the Life Seed and only stat-up items in the configured boss pool', () => {
+  it('contains the Red Mushroom and only stat-up items in the configured boss pool', () => {
     const pool = PASSIVE_ITEMS.filter((item) => BOSS_REWARD_ITEM_IDS.includes(item.id));
 
-    expect(pool.map((item) => item.id)).toContain('life-seed');
+    expect(pool.map((item) => item.id)).toContain('red-mushroom');
     expect(pool).toHaveLength(BOSS_REWARD_ITEM_IDS.length);
     expect(pool.every(isStatOnlyBossReward)).toBe(true);
   });
@@ -46,11 +46,11 @@ describe('boss rewards', () => {
     expect(system.pickBossRewardItem([])?.id).toBe('pulse-relay');
   });
 
-  it('applies one full heart of maximum health and healing from the Life Seed', () => {
-    const lifeSeed = PASSIVE_ITEMS.find((item) => item.id === 'life-seed');
+  it('applies one full heart of maximum health and healing from the Red Mushroom', () => {
+    const redMushroom = PASSIVE_ITEMS.find((item) => item.id === 'red-mushroom');
     const itemSystem = new ItemSystem(() => 0);
 
-    expect(lifeSeed).toBeDefined();
+    expect(redMushroom).toBeDefined();
     const stats = itemSystem.applyItem(
       {
         health: 6,
@@ -65,7 +65,7 @@ describe('boss rewards', () => {
         fireRateMultiplier: 1,
         projectileSpeedMultiplier: 1,
       },
-      lifeSeed!,
+      redMushroom!,
     );
 
     expect(stats.maxHealth).toBe(8);

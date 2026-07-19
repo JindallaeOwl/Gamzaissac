@@ -127,8 +127,8 @@ export const ko: TranslationTree = {
     },
   },
   items: {
-    lifeSeed: {
-      name: '생명 씨앗',
+    redMushroom: {
+      name: '빨간 버섯',
       description: '최대 하트가 1개 늘고 하트 1개를 회복합니다.',
     },
     pulseRelay: {

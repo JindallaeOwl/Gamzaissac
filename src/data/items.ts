@@ -28,9 +28,9 @@ export interface PassiveItemDefinition {
 
 export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
   {
-    id: 'life-seed',
-    nameKey: 'items.lifeSeed.name',
-    descriptionKey: 'items.lifeSeed.description',
+    id: 'red-mushroom',
+    nameKey: 'items.redMushroom.name',
+    descriptionKey: 'items.redMushroom.description',
     tint: 0xff5d72,
     modifiers: { maxHealth: 2, heal: 2 },
     bossOnly: true,

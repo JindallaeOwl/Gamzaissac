@@ -1,5 +1,10 @@
 # Asset Credits
 
+## Original Item Artwork
+
+- `red-mushroom.png`: original 32×32 pixel art created by the project owner
+- Usage: Red Mushroom maximum-health boss reward icon
+
 ## Cute & Silly RPG Music Pack
 
 - Creator: chajamakesmusic

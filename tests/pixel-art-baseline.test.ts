@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   HUD_ICON_ASSETS,
+  ITEM_IMAGE_ASSETS,
   PLAYER_DIRECTION_ROWS,
   PLAYER_IMAGE_ASSETS,
   PLAYER_SPRITESHEET_ASSETS,
@@ -42,6 +43,15 @@ describe('pixel art baseline', () => {
       { key: TextureKeys.hudKey, path: 'assets/icons/nikoichu/hud-key.png' },
       { key: TextureKeys.hudBomb, path: 'assets/icons/nikoichu/hud-bomb.png' },
       { key: TextureKeys.hudCoin, path: 'assets/icons/nikoichu/hud-coin.png' },
+    ]);
+  });
+
+  it('registers the original Red Mushroom item icon', () => {
+    expect(ITEM_IMAGE_ASSETS).toEqual([
+      {
+        key: 'item-icon-red-mushroom',
+        path: 'assets/items/red-mushroom.png',
+      },
     ]);
   });
 
