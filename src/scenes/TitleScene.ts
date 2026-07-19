@@ -7,6 +7,7 @@ import { getGameSettings } from '../systems/GameSettings';
 import {
   activateSettingsMenuAction,
   buildSettingsMenuItems,
+  preserveMenuSelection,
   type SettingsMenuAction,
 } from '../ui/SettingsMenu';
 import {
@@ -227,7 +228,10 @@ export class TitleScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
 
       text.on('pointerover', () => this.selectIndex(index));
-      text.on('pointerdown', () => this.activateSelection());
+      text.on('pointerdown', () => {
+        this.selectIndex(index);
+        this.activateSelection();
+      });
       this.menuContainer?.add(text);
       this.menuTexts.push(text);
     });
@@ -303,7 +307,8 @@ export class TitleScene extends Phaser.Scene {
     }
 
     this.soundEnabled = result.settings?.soundEnabled ?? getGameSettings().soundEnabled;
-    this.renderMenu('settings');
+    this.hintText?.setText('');
+    this.refreshMenuText();
 
     if (result.showRestartHint) {
       this.hintText?.setText(t('settings.nextLaunch'));
@@ -312,6 +317,7 @@ export class TitleScene extends Phaser.Scene {
 
   private refreshMenuText(): void {
     this.menuItems = this.buildMenuItems(this.mode);
+    this.selectedIndex = preserveMenuSelection(this.selectedIndex, this.menuItems.length);
 
     this.menuTexts.forEach((text, index) => {
       const selected = index === this.selectedIndex;

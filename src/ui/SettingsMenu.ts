@@ -97,3 +97,7 @@ export function getSettingsPatch(
 
   return { renderQuality: nextRenderQuality(settings.renderQuality) };
 }
+
+export function preserveMenuSelection(selectedIndex: number, itemCount: number): number {
+  return Math.max(0, Math.min(selectedIndex, Math.max(0, itemCount - 1)));
+}

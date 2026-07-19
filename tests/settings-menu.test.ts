@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getGameSettings, getRenderScale, type GameSettings } from '../src/systems/GameSettings';
-import { getSettingsPatch } from '../src/ui/SettingsMenu';
+import { getSettingsPatch, preserveMenuSelection } from '../src/ui/SettingsMenu';
 
 const settings: GameSettings = {
   soundEnabled: true,
@@ -33,5 +33,10 @@ describe('SettingsMenu rules', () => {
     expect(getSettingsPatch('quality', { ...settings, renderQuality: 'high' })).toEqual({
       renderQuality: 'low',
     });
+  });
+
+  it('keeps the selected setting after its displayed value is refreshed', () => {
+    expect(preserveMenuSelection(3, 6)).toBe(3);
+    expect(preserveMenuSelection(8, 6)).toBe(5);
   });
 });

@@ -4,6 +4,7 @@ import { gameFontStack, t } from '../i18n';
 import {
   activateSettingsMenuAction,
   buildSettingsMenuItems,
+  preserveMenuSelection,
   type SettingsMenuAction,
 } from '../ui/SettingsMenu';
 import {
@@ -214,7 +215,8 @@ export class PauseScene extends Phaser.Scene {
       return;
     }
 
-    this.renderMenu('settings');
+    this.hintText?.setText('');
+    this.refreshSelection();
 
     if (result.showRestartHint) {
       this.hintText?.setText(t('settings.nextLaunch'));
@@ -223,6 +225,7 @@ export class PauseScene extends Phaser.Scene {
 
   private refreshSelection(): void {
     this.items = this.buildItems(this.mode);
+    this.selectedIndex = preserveMenuSelection(this.selectedIndex, this.items.length);
     this.itemTexts.forEach((text, index) => {
       const selected = index === this.selectedIndex;
       text.setText(this.items[index]?.label ?? '');
