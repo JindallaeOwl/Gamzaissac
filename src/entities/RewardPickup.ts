@@ -7,9 +7,8 @@ import {
   CHEST_PUSH_SPEED,
   getChestPushVelocity,
 } from '../systems/ChestPushRules';
+import { getRewardPickupPresentation } from '../systems/RewardPickupPresentation';
 import type { RewardDrop } from '../systems/RewardSystem';
-
-const CHEST_DISPLAY_SCALE = 0.7;
 
 export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
   readonly reward: RewardDrop;
@@ -17,7 +16,8 @@ export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
   private nextChestPushAt = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, reward: RewardDrop) {
-    super(scene, x, y, textureForReward(reward));
+    const presentation = getRewardPickupPresentation(reward);
+    super(scene, x, y, presentation.textureKey);
     this.reward = reward;
     scene.add.existing(this);
 
@@ -27,11 +27,11 @@ export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
 
     scene.physics.add.existing(this);
     this.setDepth(DEPTH.item);
-    const baseScale = reward.kind === 'chest' ? CHEST_DISPLAY_SCALE : 0.5;
+    const baseScale = presentation.scale;
     this.setScale(baseScale);
 
-    if (!this.isChest) {
-      this.setTint(reward.tint);
+    if (presentation.tint !== null) {
+      this.setTint(presentation.tint);
     }
 
     const body = this.body as Phaser.Physics.Arcade.Body;
@@ -39,7 +39,7 @@ export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
     const chestOffsetX = this.width >= 64 ? 19 : 3;
     const chestOffsetY = this.height >= 64 ? 27 : 3;
     body.setCircle(
-      this.isChest ? 13 : 10,
+      presentation.bodyRadius,
       this.isChest ? chestOffsetX : 0,
       this.isChest ? chestOffsetY : 0,
     );
@@ -107,22 +107,4 @@ export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
     this.nextChestPushAt = time + CHEST_PUSH_COOLDOWN_MS;
     return true;
   }
-}
-
-function textureForReward(reward: RewardDrop): string {
-  const { kind } = reward;
-
-  if (kind === 'keys') {
-    return TextureKeys.keyPickup;
-  }
-
-  if (kind === 'bombs') {
-    return TextureKeys.bombPickup;
-  }
-
-  if (kind === 'coins') {
-    return reward.appearance === 'five-coin' ? TextureKeys.fiveCoinPickup : TextureKeys.coinPickup;
-  }
-
-  return TextureKeys.chestPickup;
 }

@@ -5,6 +5,7 @@ export type DeveloperCommand =
   | { type: 'clear' }
   | { type: 'god' }
   | { type: 'heal' }
+  | { type: 'items' }
   | { type: 'add-resource'; resource: ConsumableType; amount: number }
   | { type: 'kill' }
   | { type: 'boss' }
@@ -21,6 +22,7 @@ export const DEVELOPER_CONSOLE_HELP = [
   'help                 명령어 목록',
   'god                  무적 켜기/끄기',
   'heal                 체력 완전 회복',
+  'items                아이템 번호와 ID 목록',
   'coin 20              코인 추가',
   'key 5                열쇠 추가',
   'bomb 5               폭탄 추가',
@@ -28,8 +30,11 @@ export const DEVELOPER_CONSOLE_HELP = [
   'boss                  현재 층의 보스방으로 이동',
   'shop                  현재 층의 상점방으로 이동',
   'treasure              현재 층의 보물방으로 이동',
-  'spawn prism-lance    원하는 아이템 생성',
+  'spawn 013            아이템 번호로 생성',
+  'spawn prism-lance    영문 ID로 아이템 생성',
   'spawn chest          닫힌 상자 생성',
+  'spawn coin           노란색 1코인 생성',
+  'spawn five-coin      회색 5코인 생성',
   'sale                  현재 상점 상품 하나 강제 할인',
   'floor 2              지정한 층으로 이동',
   'clear                 콘솔 출력 지우기',
@@ -53,7 +58,13 @@ export function parseDeveloperCommand(input: string): DeveloperCommandParseResul
     return { ok: false, error: '명령어를 입력해주세요.' };
   }
 
-  if (name === 'help' || name === 'clear' || name === 'god' || name === 'heal') {
+  if (
+    name === 'help' ||
+    name === 'clear' ||
+    name === 'god' ||
+    name === 'heal' ||
+    name === 'items'
+  ) {
     return args.length === 0 ? { ok: true, command: { type: name } } : usageError(name);
   }
 

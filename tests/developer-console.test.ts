@@ -10,6 +10,7 @@ describe('developer console commands', () => {
     expect(parseDeveloperCommand('help')).toEqual({ ok: true, command: { type: 'help' } });
     expect(parseDeveloperCommand('god')).toEqual({ ok: true, command: { type: 'god' } });
     expect(parseDeveloperCommand('heal')).toEqual({ ok: true, command: { type: 'heal' } });
+    expect(parseDeveloperCommand('items')).toEqual({ ok: true, command: { type: 'items' } });
     expect(parseDeveloperCommand('coin 20')).toEqual({
       ok: true,
       command: { type: 'add-resource', resource: 'coins', amount: 20 },
@@ -33,9 +34,21 @@ describe('developer console commands', () => {
       ok: true,
       command: { type: 'spawn', itemId: 'prism-lance' },
     });
+    expect(parseDeveloperCommand('spawn 013')).toEqual({
+      ok: true,
+      command: { type: 'spawn', itemId: '013' },
+    });
     expect(parseDeveloperCommand('spawn CHEST')).toEqual({
       ok: true,
       command: { type: 'spawn', itemId: 'chest' },
+    });
+    expect(parseDeveloperCommand('spawn COIN')).toEqual({
+      ok: true,
+      command: { type: 'spawn', itemId: 'coin' },
+    });
+    expect(parseDeveloperCommand('spawn FIVE-COIN')).toEqual({
+      ok: true,
+      command: { type: 'spawn', itemId: 'five-coin' },
     });
     expect(parseDeveloperCommand('sale')).toEqual({ ok: true, command: { type: 'sale' } });
     expect(parseDeveloperCommand('floor 2')).toEqual({
@@ -43,7 +56,7 @@ describe('developer console commands', () => {
       command: { type: 'floor', floor: 2 },
     });
     expect(parseDeveloperCommand('clear')).toEqual({ ok: true, command: { type: 'clear' } });
-    expect(DEVELOPER_CONSOLE_HELP).toHaveLength(15);
+    expect(DEVELOPER_CONSOLE_HELP).toHaveLength(19);
   });
 
   it('rejects unsafe amounts, malformed arguments, and unknown commands', () => {

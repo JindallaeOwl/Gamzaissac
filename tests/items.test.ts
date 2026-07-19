@@ -1,9 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { PASSIVE_ITEMS } from '../src/data/items';
+import { findItemByReference, formatItemNumber, PASSIVE_ITEMS } from '../src/data/items';
 import { ItemSystem } from '../src/systems/ItemSystem';
 import { createInitialRunState } from '../src/systems/RunState';
 
 describe('ItemSystem', () => {
+  it('assigns unique shared catalog numbers with three-digit display labels', () => {
+    const itemNumbers = PASSIVE_ITEMS.map((item) => item.itemNumber);
+
+    expect(new Set(itemNumbers).size).toBe(PASSIVE_ITEMS.length);
+    expect(itemNumbers.every((itemNumber) => Number.isInteger(itemNumber) && itemNumber > 0)).toBe(
+      true,
+    );
+    expect(formatItemNumber(1)).toBe('ID: 001');
+    expect(formatItemNumber(13)).toBe('ID: 013');
+    expect(findItemByReference('001')?.id).toBe('red-mushroom');
+    expect(findItemByReference('13')?.id).toBe('prism-lance');
+    expect(findItemByReference('quad-shot')?.itemNumber).toBe(2);
+  });
+
   it('applies stat and attack-profile modifiers without mutating the originals', () => {
     const state = createInitialRunState();
     const item = PASSIVE_ITEMS.find((candidate) => candidate.id === 'quad-shot');

@@ -18,7 +18,13 @@ import {
   ITEM_PREVIEW_RADIUS,
   ROOM_RECT,
 } from '../config/gameConfig';
-import { PASSIVE_ITEMS, PRISM_LANCE_ITEM_ID, QUAD_SHOT_ITEM_ID } from '../data/items';
+import {
+  findItemByReference,
+  formatItemNumber,
+  PASSIVE_ITEMS,
+  PRISM_LANCE_ITEM_ID,
+  QUAD_SHOT_ITEM_ID,
+} from '../data/items';
 import { ROOM_CLEAR_REWARDS } from '../data/rewards';
 import { getShopProduct, SHOP_INTERACTION_RADIUS, type ShopProductDefinition } from '../data/shop';
 import { t, toggleLocale } from '../i18n';
@@ -601,6 +607,14 @@ export class GameScene extends Phaser.Scene {
       return { clear: true };
     }
 
+    if (parsed.command.type === 'items') {
+      return {
+        lines: PASSIVE_ITEMS.map(
+          (item) => `${formatItemNumber(item.itemNumber)}  ${item.id}  (${t(item.nameKey)})`,
+        ),
+      };
+    }
+
     this.markAdminUsed();
     return this.applyDeveloperCommand(parsed.command);
   }
@@ -684,13 +698,21 @@ export class GameScene extends Phaser.Scene {
       return this.spawnDeveloperChest();
     }
 
-    const item = PASSIVE_ITEMS.find((candidate) => candidate.id === itemId);
+    if (itemId === 'coin') {
+      return this.spawnDeveloperCoin(1);
+    }
+
+    if (itemId === 'five-coin') {
+      return this.spawnDeveloperCoin(5);
+    }
+
+    const item = findItemByReference(itemId);
 
     if (!item) {
       return {
         lines: [
           `아이템을 찾을 수 없습니다: ${itemId}`,
-          `사용 가능: chest, ${PASSIVE_ITEMS.map((candidate) => candidate.id).join(', ')}`,
+          `사용 가능: chest, coin, five-coin, ${PASSIVE_ITEMS.map((candidate) => candidate.id).join(', ')}`,
         ],
       };
     }
@@ -700,7 +722,7 @@ export class GameScene extends Phaser.Scene {
     const y = Phaser.Math.Clamp(this.player.y, ROOM_RECT.top + 24, ROOM_RECT.bottom - 24);
     this.items.add(new ItemPickup(this, x, y, item, 'secret'));
     this.effects.pickup(x, y);
-    return { lines: [`아이템 생성: ${item.id}`] };
+    return { lines: [`아이템 생성: ${formatItemNumber(item.itemNumber)} ${item.id}`] };
   }
 
   private spawnDeveloperChest(): DeveloperConsoleCommandResult {
@@ -722,6 +744,28 @@ export class GameScene extends Phaser.Scene {
     this.rewards.add(chest);
     this.effects.pickup(x, y);
     return { lines: ['상자 생성: chest'] };
+  }
+
+  private spawnDeveloperCoin(amount: 1 | 5): DeveloperConsoleCommandResult {
+    const definition = ROOM_CLEAR_REWARDS.find((reward) => reward.kind === 'coins');
+
+    if (!definition) {
+      return { lines: ['코인 정보를 찾을 수 없습니다.'] };
+    }
+
+    const offsetX = this.player.x < GAME_CENTER_X ? 44 : -44;
+    const x = Phaser.Math.Clamp(this.player.x + offsetX, ROOM_RECT.left + 24, ROOM_RECT.right - 24);
+    const y = Phaser.Math.Clamp(this.player.y, ROOM_RECT.top + 24, ROOM_RECT.bottom - 24);
+    const coin = new RewardPickup(this, x, y, {
+      kind: 'coins',
+      amount,
+      labelKey: definition.labelKey,
+      tint: definition.tint,
+      appearance: amount === 5 ? 'five-coin' : undefined,
+    });
+    this.rewards.add(coin);
+    this.effects.pickup(x, y);
+    return { lines: [`코인 생성: ${amount}코인`] };
   }
 
   private moveToDeveloperRoom(

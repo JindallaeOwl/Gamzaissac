@@ -15,6 +15,8 @@ export interface AttackProfileModifier {
 }
 
 export interface PassiveItemDefinition {
+  /** Shared catalog number used by both passive and future active items. */
+  itemNumber: number;
   id: string;
   nameKey: string;
   descriptionKey: string;
@@ -28,6 +30,7 @@ export interface PassiveItemDefinition {
 
 export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
   {
+    itemNumber: 1,
     id: 'red-mushroom',
     nameKey: 'items.redMushroom.name',
     descriptionKey: 'items.redMushroom.description',
@@ -36,6 +39,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     bossOnly: true,
   },
   {
+    itemNumber: 2,
     id: 'quad-shot',
     nameKey: 'items.quadShot.name',
     descriptionKey: 'items.quadShot.description',
@@ -44,6 +48,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     attackModifiers: { seedCountAdd: 3, spreadStepDegrees: 12, extraForeheadEyeCountAdd: 2 },
   },
   {
+    itemNumber: 3,
     id: 'mega-seed',
     nameKey: 'items.megaSeed.name',
     descriptionKey: 'items.megaSeed.description',
@@ -52,6 +57,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     attackModifiers: { overflowPenetration: true, seedScaleMultiplier: 1.65 },
   },
   {
+    itemNumber: 4,
     id: 'toothpick',
     nameKey: 'items.toothpick.name',
     descriptionKey: 'items.toothpick.description',
@@ -60,6 +66,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     attackModifiers: { forceRedSeeds: true, hasToothpickCosmetic: true },
   },
   {
+    itemNumber: 5,
     id: 'pulse-relay',
     nameKey: 'items.pulseRelay.name',
     descriptionKey: 'items.pulseRelay.description',
@@ -67,6 +74,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     modifiers: { fireRate: 0.55 },
   },
   {
+    itemNumber: 6,
     id: 'glass-fern',
     nameKey: 'items.glassFern.name',
     descriptionKey: 'items.glassFern.description',
@@ -74,6 +82,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     modifiers: { damage: 0.45 },
   },
   {
+    itemNumber: 7,
     id: 'feather-coil',
     nameKey: 'items.featherCoil.name',
     descriptionKey: 'items.featherCoil.description',
@@ -81,6 +90,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     modifiers: { moveSpeed: 34 },
   },
   {
+    itemNumber: 8,
     id: 'hot-pebble',
     nameKey: 'items.hotPebble.name',
     descriptionKey: 'items.hotPebble.description',
@@ -88,6 +98,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     modifiers: { range: 85, projectileSpeed: 72, damage: 0.15 },
   },
   {
+    itemNumber: 9,
     id: 'pocket-battery',
     nameKey: 'items.pocketBattery.name',
     descriptionKey: 'items.pocketBattery.description',
@@ -95,6 +106,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     modifiers: { maxHealth: 2, heal: 2 },
   },
   {
+    itemNumber: 10,
     id: 'steady-pin',
     nameKey: 'items.steadyPin.name',
     descriptionKey: 'items.steadyPin.description',
@@ -102,6 +114,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     modifiers: { fireRate: 0.35, projectileSpeed: 40 },
   },
   {
+    itemNumber: 11,
     id: 'moon-dial',
     nameKey: 'items.moonDial.name',
     descriptionKey: 'items.moonDial.description',
@@ -109,6 +122,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     modifiers: { luck: 1 },
   },
   {
+    itemNumber: 12,
     id: 'long-echo',
     nameKey: 'items.longEcho.name',
     descriptionKey: 'items.longEcho.description',
@@ -116,6 +130,7 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     modifiers: { range: 115 },
   },
   {
+    itemNumber: 13,
     id: 'prism-lance',
     nameKey: 'items.prismLance.name',
     descriptionKey: 'items.prismLance.description',
@@ -128,3 +143,16 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
 
 export const PRISM_LANCE_ITEM_ID = 'prism-lance';
 export const QUAD_SHOT_ITEM_ID = 'quad-shot';
+
+export function formatItemNumber(itemNumber: number): string {
+  return `ID: ${itemNumber.toString().padStart(3, '0')}`;
+}
+
+export function findItemByReference(reference: string): PassiveItemDefinition | undefined {
+  if (/^\d+$/.test(reference)) {
+    const itemNumber = Number(reference);
+    return PASSIVE_ITEMS.find((item) => item.itemNumber === itemNumber);
+  }
+
+  return PASSIVE_ITEMS.find((item) => item.id === reference);
+}
