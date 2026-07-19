@@ -5,6 +5,7 @@ import {
   PLAYER_DIRECTION_ROWS,
   PLAYER_IMAGE_ASSETS,
   PLAYER_SPRITESHEET_ASSETS,
+  SHOP_NPC_IMAGE_ASSETS,
   TextureKeys,
 } from '../src/config/assets';
 import {
@@ -75,6 +76,19 @@ describe('pixel art baseline', () => {
       {
         key: 'item-icon-red-mushroom',
         path: 'assets/items/red-mushroom.png',
+      },
+    ]);
+  });
+
+  it('registers the two 48-pixel potato merchant idle frames', () => {
+    expect(SHOP_NPC_IMAGE_ASSETS).toEqual([
+      {
+        key: TextureKeys.shopNpcIdleA,
+        path: 'assets/npcs/potato-merchant/idle-a.png',
+      },
+      {
+        key: TextureKeys.shopNpcIdleB,
+        path: 'assets/npcs/potato-merchant/idle-b.png',
       },
     ]);
   });

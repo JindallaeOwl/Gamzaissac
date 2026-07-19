@@ -1,5 +1,10 @@
 # Asset Credits
 
+## Original Potato Merchant Artwork
+
+- `idle-a.png`, `idle-b.png`: original 48×48 pixel art created by the project owner
+- Usage: two-frame idle animation for the shop-room merchant NPC
+
 ## Original Item Artwork
 
 - `red-mushroom.png`: original 32×32 pixel art created by the project owner

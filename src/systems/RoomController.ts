@@ -17,8 +17,8 @@ import {
 } from '../config/gameConfig';
 import { PASSIVE_ITEMS } from '../data/items';
 import { getRoomTemplate } from '../data/rooms';
-import { SHOP_NPC_POSITION, SHOP_OFFER_POSITIONS } from '../data/shop';
-import { TextureKeys } from '../config/assets';
+import { SHOP_NPC_DISPLAY_SIZE, SHOP_NPC_POSITION, SHOP_OFFER_POSITIONS } from '../data/shop';
+import { AnimationKeys, TextureKeys } from '../config/assets';
 import type { ItemSystem } from './ItemSystem';
 import type { DungeonManager, RoomNode } from './DungeonManager';
 import type { RunState } from './RunState';
@@ -288,7 +288,15 @@ export class RoomController {
       room.shopOffers = this.shopSystem.createOffers(this.runState.collectedItemIds);
     }
 
-    const npc = this.scene.add.image(SHOP_NPC_POSITION.x, SHOP_NPC_POSITION.y, TextureKeys.shopNpc);
+    const npc = this.scene.add.sprite(
+      SHOP_NPC_POSITION.x,
+      SHOP_NPC_POSITION.y,
+      TextureKeys.shopNpcIdleA,
+    );
+    if (this.scene.anims.exists(AnimationKeys.shopNpcIdle)) {
+      npc.play(AnimationKeys.shopNpcIdle);
+    }
+    npc.setDisplaySize(SHOP_NPC_DISPLAY_SIZE, SHOP_NPC_DISPLAY_SIZE);
     npc.setDepth(DEPTH.actor);
     this.shopDecorations.add(npc);
 

@@ -44,7 +44,8 @@ export const TextureKeys = {
   floorTile: 'floor-tile',
   wall: 'wall',
   obstacleCrate: 'obstacle-crate',
-  shopNpc: 'shop-npc',
+  shopNpcIdleA: 'shop-npc-idle-a',
+  shopNpcIdleB: 'shop-npc-idle-b',
 } as const;
 
 export const MusicKeys = {
@@ -139,6 +140,17 @@ export const PLAYER_IMAGE_ASSETS = [
   },
 ] as const;
 
+export const SHOP_NPC_IMAGE_ASSETS = [
+  {
+    key: TextureKeys.shopNpcIdleA,
+    path: 'assets/npcs/potato-merchant/idle-a.png',
+  },
+  {
+    key: TextureKeys.shopNpcIdleB,
+    path: 'assets/npcs/potato-merchant/idle-b.png',
+  },
+] as const;
+
 // Snoblin sheets are arranged top-to-bottom as down, side, then up.
 // Left-facing movement reuses the side row with horizontal flipping.
 export const PLAYER_DIRECTION_ROWS = {
@@ -164,6 +176,7 @@ export const AnimationKeys = {
   playerShadowDeathDown: 'player-shadow-death-down',
   playerShadowDeathUp: 'player-shadow-death-up',
   playerShadowDeathSide: 'player-shadow-death-side',
+  shopNpcIdle: 'shop-npc-idle',
 } as const;
 
 // Passive item pickups each get their own generated icon (see AssetFactory)
