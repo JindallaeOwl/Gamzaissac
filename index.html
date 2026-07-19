@@ -20,9 +20,9 @@
       </section>
     </div>
     <aside id="developer-console" hidden aria-label="개발자 콘솔">
-      <header>
+      <header id="developer-console-drag-handle">
         <strong>DEV CONSOLE</strong>
-        <span>` 또는 Esc로 닫기</span>
+        <span>드래그로 이동 · ` 또는 Esc로 닫기</span>
       </header>
       <div id="developer-console-output" role="log" aria-live="polite"></div>
       <form id="developer-console-form" autocomplete="off">
@@ -36,6 +36,13 @@
           aria-label="개발자 명령어"
         />
       </form>
+      <div
+        id="developer-console-suggestions"
+        hidden
+        role="listbox"
+        aria-label="명령어 자동완성"
+      ></div>
+      <div id="developer-console-resize-handle" aria-hidden="true"></div>
     </aside>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -71,15 +71,16 @@ canvas {
 
 #developer-console {
   position: fixed;
-  right: max(12px, env(safe-area-inset-right));
-  bottom: max(12px, env(safe-area-inset-bottom));
-  left: max(12px, env(safe-area-inset-left));
+  top: max(8px, env(safe-area-inset-top));
+  left: max(8px, env(safe-area-inset-left));
   z-index: 1200;
   display: grid;
-  grid-template-rows: auto minmax(120px, 32vh) auto;
-  max-width: 920px;
-  max-height: 52vh;
-  margin: 0 auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  width: min(560px, calc(100vw - 16px));
+  height: min(400px, calc(100vh - 16px));
+  min-width: min(320px, calc(100vw - 16px));
+  min-height: min(240px, calc(100vh - 16px));
+  overflow: hidden;
   border: 2px solid #ff5d72;
   color: #f7f3e8;
   background: rgb(5 8 13 / 96%);
@@ -102,6 +103,9 @@ canvas {
   border-bottom: 1px solid #70303d;
   color: #ff8b9b;
   background: #171019;
+  cursor: move;
+  touch-action: none;
+  user-select: none;
 }
 
 #developer-console header span {
@@ -139,6 +143,62 @@ canvas {
   color: #f7f3e8;
   background: transparent;
   font: inherit;
+}
+
+#developer-console-suggestions {
+  max-height: min(180px, 30vh);
+  overflow: auto;
+  border-top: 1px solid #70303d;
+  background: rgb(8 11 17 / 98%);
+  scrollbar-color: #70303d #0b0f16;
+}
+
+#developer-console-suggestions[hidden] {
+  display: none;
+}
+
+#developer-console-suggestions button {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 6px 12px;
+  color: #c8d0d9;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#developer-console-suggestions button:hover,
+#developer-console-suggestions button.selected {
+  color: #f7f3e8;
+  background: #263d5a;
+}
+
+#developer-console-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+#developer-console-resize-handle::after {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid #ff8b9b;
+  border-bottom: 2px solid #ff8b9b;
+  content: '';
+}
+
+body.developer-console-adjusting {
+  cursor: move;
+  user-select: none;
 }
 
 .game-over-panel {
