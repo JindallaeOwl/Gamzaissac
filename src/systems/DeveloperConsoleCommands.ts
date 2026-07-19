@@ -7,6 +7,9 @@ export type DeveloperCommand =
   | { type: 'heal' }
   | { type: 'add-resource'; resource: ConsumableType; amount: number }
   | { type: 'kill' }
+  | { type: 'boss' }
+  | { type: 'shop' }
+  | { type: 'treasure' }
   | { type: 'spawn'; itemId: string }
   | { type: 'sale' }
   | { type: 'floor'; floor: number };
@@ -22,7 +25,11 @@ export const DEVELOPER_CONSOLE_HELP = [
   'key 5                열쇠 추가',
   'bomb 5               폭탄 추가',
   'kill                  현재 방의 적 전부 처치',
+  'boss                  현재 층의 보스방으로 이동',
+  'shop                  현재 층의 상점방으로 이동',
+  'treasure              현재 층의 보물방으로 이동',
   'spawn prism-lance    원하는 아이템 생성',
+  'spawn chest          닫힌 상자 생성',
   'sale                  현재 상점 상품 하나 강제 할인',
   'floor 2              지정한 층으로 이동',
   'clear                 콘솔 출력 지우기',
@@ -50,7 +57,13 @@ export function parseDeveloperCommand(input: string): DeveloperCommandParseResul
     return args.length === 0 ? { ok: true, command: { type: name } } : usageError(name);
   }
 
-  if (name === 'kill' || name === 'sale') {
+  if (
+    name === 'kill' ||
+    name === 'boss' ||
+    name === 'shop' ||
+    name === 'treasure' ||
+    name === 'sale'
+  ) {
     return args.length === 0 ? { ok: true, command: { type: name } } : usageError(name);
   }
 

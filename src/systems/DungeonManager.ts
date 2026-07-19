@@ -15,6 +15,7 @@ export interface PendingRoomReward {
   reward: RewardDrop;
   x: number;
   y: number;
+  opened?: boolean;
 }
 
 export interface GridCoord {
@@ -108,6 +109,18 @@ export class DungeonManager {
     return [...this.rooms.values()];
   }
 
+  moveToRoom(roomId: string): RoomNode | null {
+    const room = this.rooms.get(roomId);
+
+    if (!room) {
+      return null;
+    }
+
+    this.currentKey = room.id;
+    room.discovered = true;
+    return room;
+  }
+
   move(direction: Direction): RoomNode | null {
     const currentRoom = this.getCurrentRoom();
 
@@ -166,6 +179,19 @@ export class DungeonManager {
     if (room) {
       room.pendingReward = undefined;
     }
+  }
+
+  updatePendingChest(roomId: string, x: number, y: number, opened: boolean): void {
+    const room = this.rooms.get(roomId);
+    const pending = room?.pendingReward;
+
+    if (!pending || pending.reward.kind !== 'chest') {
+      return;
+    }
+
+    pending.x = x;
+    pending.y = y;
+    pending.opened = opened;
   }
 
   unlockRoom(roomId: string): void {

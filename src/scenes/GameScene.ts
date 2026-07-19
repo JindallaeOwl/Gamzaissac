@@ -19,6 +19,7 @@ import {
   ROOM_RECT,
 } from '../config/gameConfig';
 import { PASSIVE_ITEMS, PRISM_LANCE_ITEM_ID, QUAD_SHOT_ITEM_ID } from '../data/items';
+import { ROOM_CLEAR_REWARDS } from '../data/rewards';
 import { getShopProduct, SHOP_INTERACTION_RADIUS, type ShopProductDefinition } from '../data/shop';
 import { t, toggleLocale } from '../i18n';
 import { AudioSystem } from '../systems/AudioSystem';
@@ -391,9 +392,34 @@ export class GameScene extends Phaser.Scene {
       this.collectItem(itemObject as ItemPickup);
     });
 
-    this.physics.add.overlap(this.player, this.rewards, (_playerObject, rewardObject) => {
-      this.collectReward(rewardObject as RewardPickup);
-    });
+    this.physics.add.overlap(
+      this.player,
+      this.rewards,
+      (_playerObject, rewardObject) => {
+        this.collectReward(rewardObject as RewardPickup);
+      },
+      (_playerObject, rewardObject) => !(rewardObject as RewardPickup).isChest,
+    );
+    this.physics.add.collider(
+      this.player,
+      this.rewards,
+      (_playerObject, rewardObject) => {
+        this.handleChestCollision(rewardObject as RewardPickup);
+      },
+      (_playerObject, rewardObject) => (rewardObject as RewardPickup).isChest,
+    );
+    this.physics.add.collider(
+      this.rewards,
+      this.roomController.walls,
+      undefined,
+      (rewardObject) => (rewardObject as RewardPickup).isChest,
+    );
+    this.physics.add.collider(
+      this.rewards,
+      this.roomController.obstacles,
+      undefined,
+      (rewardObject) => (rewardObject as RewardPickup).isChest,
+    );
 
     this.physics.add.overlap(
       this.player,
@@ -615,6 +641,18 @@ export class GameScene extends Phaser.Scene {
       return { lines: [`적 ${activeEnemies.length}명 처치`] };
     }
 
+    if (command.type === 'boss') {
+      return this.moveToDeveloperRoom('boss', '보스방');
+    }
+
+    if (command.type === 'shop') {
+      return this.moveToDeveloperRoom('shop', '상점방');
+    }
+
+    if (command.type === 'treasure') {
+      return this.moveToDeveloperRoom('treasure', '보물방');
+    }
+
     if (command.type === 'spawn') {
       return this.spawnDeveloperItem(command.itemId);
     }
@@ -637,13 +675,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnDeveloperItem(itemId: string): DeveloperConsoleCommandResult {
+    if (itemId === 'chest') {
+      return this.spawnDeveloperChest();
+    }
+
     const item = PASSIVE_ITEMS.find((candidate) => candidate.id === itemId);
 
     if (!item) {
       return {
         lines: [
           `아이템을 찾을 수 없습니다: ${itemId}`,
-          `사용 가능: ${PASSIVE_ITEMS.map((candidate) => candidate.id).join(', ')}`,
+          `사용 가능: chest, ${PASSIVE_ITEMS.map((candidate) => candidate.id).join(', ')}`,
         ],
       };
     }
@@ -654,6 +696,55 @@ export class GameScene extends Phaser.Scene {
     this.items.add(new ItemPickup(this, x, y, item, 'secret'));
     this.effects.pickup(x, y);
     return { lines: [`아이템 생성: ${item.id}`] };
+  }
+
+  private spawnDeveloperChest(): DeveloperConsoleCommandResult {
+    const definition = ROOM_CLEAR_REWARDS.find((reward) => reward.kind === 'chest');
+
+    if (!definition) {
+      return { lines: ['상자 정보를 찾을 수 없습니다.'] };
+    }
+
+    const offsetX = this.player.x < GAME_CENTER_X ? 44 : -44;
+    const x = Phaser.Math.Clamp(this.player.x + offsetX, ROOM_RECT.left + 24, ROOM_RECT.right - 24);
+    const y = Phaser.Math.Clamp(this.player.y, ROOM_RECT.top + 24, ROOM_RECT.bottom - 24);
+    const chest = new RewardPickup(this, x, y, {
+      kind: definition.kind,
+      amount: definition.amountMin,
+      labelKey: definition.labelKey,
+      tint: definition.tint,
+    });
+    this.rewards.add(chest);
+    this.effects.pickup(x, y);
+    return { lines: ['상자 생성: chest'] };
+  }
+
+  private moveToDeveloperRoom(
+    roomType: Extract<RoomNode['type'], 'boss' | 'shop' | 'treasure'>,
+    roomLabel: string,
+  ): DeveloperConsoleCommandResult {
+    const currentRoom = this.dungeon.getCurrentRoom();
+
+    if (currentRoom.type === roomType) {
+      return { lines: [`이미 ${roomLabel}에 있습니다.`] };
+    }
+
+    const targetRoom = this.dungeon.getRooms().find((room) => room.type === roomType);
+
+    if (!targetRoom) {
+      return { lines: [`현재 층에서 ${roomLabel}을 찾을 수 없습니다.`] };
+    }
+
+    if (roomType === 'shop' || roomType === 'treasure') {
+      this.dungeon.unlockRoom(targetRoom.id);
+    }
+
+    if (!this.dungeon.moveToRoom(targetRoom.id)) {
+      return { lines: [`${roomLabel} 이동에 실패했습니다.`] };
+    }
+
+    this.roomTransitions.enterRoomDirect(targetRoom);
+    return { lines: [`${this.runState.floor}층 ${roomLabel}으로 이동`] };
   }
 
   private forceDeveloperShopSale(): DeveloperConsoleCommandResult {
@@ -906,7 +997,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private collectReward(pickup: RewardPickup): void {
-    if (!pickup.active) {
+    if (!pickup.active || pickup.isOpenedChest) {
       return;
     }
 
@@ -923,6 +1014,11 @@ export class GameScene extends Phaser.Scene {
       }
 
       this.hud.showMessage(this.formatChestResult(result.chestResult), 1600);
+      pickup.openChest();
+      this.roomTransitions.markPendingChestOpened(pickup);
+      this.effects.pickup(pickup.x, pickup.y);
+      this.audio.play('pickup');
+      return;
     } else {
       this.hud.showMessage(
         t('messages.rewardGain', {
@@ -937,6 +1033,21 @@ export class GameScene extends Phaser.Scene {
     this.audio.play('pickup');
     this.roomTransitions.clearPendingRewardForPickup(pickup);
     pickup.destroy();
+  }
+
+  private handleChestCollision(pickup: RewardPickup): void {
+    if (!pickup.active || !pickup.isChest) {
+      return;
+    }
+
+    this.collectReward(pickup);
+    const inputX = Number(this.controls.right.isDown) - Number(this.controls.left.isDown);
+    const inputY = Number(this.controls.down.isDown) - Number(this.controls.up.isDown);
+    const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
+    const hasMovementInput = inputX !== 0 || inputY !== 0;
+    const pushX = hasMovementInput ? inputX : playerBody.velocity.x;
+    const pushY = hasMovementInput ? inputY : playerBody.velocity.y;
+    pickup.push(pushX, pushY, this.time.now);
   }
 
   private handleRoomCleared(room: RoomNode): void {

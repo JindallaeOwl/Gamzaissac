@@ -46,6 +46,32 @@ describe('DungeonManager', () => {
     dungeon.generateFloor(2);
     expect(dungeon.getRooms().find((room) => room.type === 'boss')?.templateId).toBe('root-cellar');
   });
+
+  it('can directly select a generated room for developer navigation', () => {
+    const dungeon = new DungeonManager(() => 0);
+    dungeon.generateFloor(1);
+    const bossRoom = dungeon.getRooms().find((room) => room.type === 'boss')!;
+
+    expect(dungeon.moveToRoom(bossRoom.id)).toBe(bossRoom);
+    expect(dungeon.getCurrentRoom()).toBe(bossRoom);
+    expect(bossRoom.discovered).toBe(true);
+    expect(dungeon.moveToRoom('missing-room')).toBeNull();
+  });
+
+  it('keeps an opened chest position in its source room', () => {
+    const dungeon = new DungeonManager(() => 0);
+    dungeon.generateFloor(1);
+    const room = dungeon.getCurrentRoom();
+    room.pendingReward = {
+      reward: { kind: 'chest', amount: 1, labelKey: 'resources.chest', tint: 0xd6a15f },
+      x: 240,
+      y: 136,
+    };
+
+    dungeon.updatePendingChest(room.id, 252, 142, true);
+
+    expect(room.pendingReward).toMatchObject({ x: 252, y: 142, opened: true });
+  });
 });
 
 function getReachableRoomIds(dungeon: DungeonManager): Set<string> {

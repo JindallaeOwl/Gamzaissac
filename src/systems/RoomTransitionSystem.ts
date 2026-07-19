@@ -62,6 +62,16 @@ export class RoomTransitionSystem {
     this.restoreFloorExit(room);
   }
 
+  enterRoomDirect(room: RoomNode): void {
+    this.clearTransientObjects(false);
+    const spawnPosition = this.roomController.getSpawnPositionForEntry('north');
+    this.movePlayerTo(spawnPosition.x, spawnPosition.y);
+    this.player.grantInvulnerability(ROOM_ENTRY_PROTECTION_MS);
+    this.roomController.enterCurrentRoom(spawnPosition);
+    this.restorePendingReward(room);
+    this.restoreFloorExit(room);
+  }
+
   enterFloor(floor: number, hasChargeBeam: boolean): void {
     this.movePlayerTo(GAME_CENTER_X, GAME_CENTER_Y);
     this.clearTransientObjects(true);
@@ -79,7 +89,20 @@ export class RoomTransitionSystem {
 
     const pickup = new RewardPickup(this.scene, pending.x, pending.y, pending.reward);
     pickup.setData('sourceRoomId', room.id);
+
+    if (pending.opened) {
+      pickup.openChest();
+    }
+
     this.rewards.add(pickup);
+  }
+
+  markPendingChestOpened(pickup: RewardPickup): void {
+    const sourceRoomId = pickup.getData('sourceRoomId') as string | undefined;
+
+    if (sourceRoomId && pickup.isChest) {
+      this.dungeon.updatePendingChest(sourceRoomId, pickup.x, pickup.y, true);
+    }
   }
 
   clearPendingRewardForPickup(pickup: RewardPickup): void {
@@ -99,6 +122,7 @@ export class RoomTransitionSystem {
   }
 
   private clearTransientObjects(includeRoomEntities: boolean): void {
+    this.savePendingChestPositions();
     this.playerBullets.clear(true, true);
     this.enemyBullets.clear(true, true);
     this.beams.clear(true, true);
@@ -109,6 +133,16 @@ export class RoomTransitionSystem {
     if (includeRoomEntities) {
       this.enemies.clear(true, true);
       this.items.clear(true, true);
+    }
+  }
+
+  private savePendingChestPositions(): void {
+    for (const pickup of this.rewards.getChildren() as RewardPickup[]) {
+      const sourceRoomId = pickup.getData('sourceRoomId') as string | undefined;
+
+      if (pickup.active && pickup.isChest && sourceRoomId) {
+        this.dungeon.updatePendingChest(sourceRoomId, pickup.x, pickup.y, pickup.isOpenedChest);
+      }
     }
   }
 

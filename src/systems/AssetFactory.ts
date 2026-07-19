@@ -630,21 +630,67 @@ function createFiveCoinTexture(scene: Phaser.Scene): void {
 }
 
 function createChestTexture(scene: Phaser.Scene): void {
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(0x05090e, 0.45);
-  graphics.fillEllipse(20, 36, 35, 6);
-  graphics.fillStyle(0x8b5a2b, 1);
-  graphics.fillRoundedRect(3, 9, 34, 24, 4);
-  graphics.fillStyle(0xd6a15f, 1);
-  graphics.fillRect(3, 17, 34, 5);
-  graphics.lineStyle(3, 0x2b1b10, 1);
-  graphics.strokeRoundedRect(3, 9, 34, 24, 4);
-  graphics.fillStyle(0xf7f3e8, 1);
-  graphics.fillRect(18, 18, 5, 7);
-  graphics.lineStyle(2, 0xffd166, 0.75);
-  graphics.lineBetween(7, 13, 33, 13);
-  graphics.generateTexture(TextureKeys.chestPickup, 40, 40);
-  graphics.destroy();
+  const closed = scene.add.graphics();
+  closed.fillStyle(0x05090e, 0.48);
+  closed.fillRect(5, 29, 22, 2);
+  closed.fillStyle(0x28140f, 1);
+  closed.fillRect(5, 6, 22, 22);
+  closed.fillRect(3, 10, 26, 15);
+  closed.fillStyle(0xe6a61f, 1);
+  closed.fillRect(6, 7, 20, 19);
+  closed.fillStyle(0x6e3025, 1);
+  closed.fillRect(8, 9, 16, 7);
+  closed.fillRect(8, 19, 16, 5);
+  closed.fillStyle(0x39191a, 1);
+  closed.fillRect(8, 14, 16, 4);
+  closed.fillStyle(0xffd65a, 1);
+  closed.fillRect(8, 7, 3, 19);
+  closed.fillRect(21, 7, 3, 19);
+  closed.fillRect(4, 16, 24, 3);
+  closed.fillStyle(0xffefb0, 1);
+  closed.fillRect(14, 15, 4, 7);
+  closed.fillStyle(0x55301c, 1);
+  closed.fillRect(15, 18, 2, 3);
+  closed.fillStyle(0xe6a61f, 1);
+  closed.fillRect(5, 26, 4, 3);
+  closed.fillRect(23, 26, 4, 3);
+  closed.generateTexture(TextureKeys.chestPickup, 32, 32);
+  closed.destroy();
+
+  const opened = scene.add.graphics();
+  opened.fillStyle(0x05090e, 0.48);
+  opened.fillRect(4, 29, 24, 2);
+  opened.fillStyle(0x28140f, 1);
+  opened.fillRect(7, 2, 18, 3);
+  opened.fillRect(5, 5, 22, 10);
+  opened.fillStyle(0xe6a61f, 1);
+  opened.fillRect(8, 3, 16, 2);
+  opened.fillRect(6, 6, 20, 7);
+  opened.fillStyle(0x6e3025, 1);
+  opened.fillRect(8, 7, 16, 4);
+  opened.fillStyle(0xffd65a, 1);
+  opened.fillRect(10, 5, 3, 9);
+  opened.fillRect(20, 5, 3, 9);
+  opened.fillStyle(0x28140f, 1);
+  opened.fillRect(4, 15, 24, 14);
+  opened.fillRect(2, 18, 28, 8);
+  opened.fillStyle(0xe6a61f, 1);
+  opened.fillRect(5, 17, 22, 10);
+  opened.fillStyle(0x130c0d, 1);
+  opened.fillRect(7, 17, 18, 5);
+  opened.fillStyle(0x6e3025, 1);
+  opened.fillRect(7, 23, 18, 3);
+  opened.fillStyle(0xffd65a, 1);
+  opened.fillRect(5, 21, 22, 3);
+  opened.fillStyle(0xffefb0, 1);
+  opened.fillRect(14, 20, 4, 6);
+  opened.fillStyle(0x55301c, 1);
+  opened.fillRect(15, 22, 2, 3);
+  opened.fillStyle(0xe6a61f, 1);
+  opened.fillRect(4, 27, 4, 3);
+  opened.fillRect(24, 27, 4, 3);
+  opened.generateTexture(TextureKeys.chestOpenPickup, 32, 32);
+  opened.destroy();
 }
 
 function createFloorExitTexture(scene: Phaser.Scene): void {
