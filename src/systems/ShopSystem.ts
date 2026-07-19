@@ -60,6 +60,31 @@ export class ShopSystem {
     }));
   }
 
+  forceDiscount(offers: ShopOfferState[]): ShopOfferState | null {
+    const existingDiscount = offers.find((offer) => offer.discounted && !offer.purchased);
+
+    if (existingDiscount) {
+      return existingDiscount;
+    }
+
+    const candidates = offers.filter((offer) => !offer.purchased);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    const offer = randomOf(candidates, this.random);
+    const product = getShopProduct(offer.productId);
+
+    if (!product) {
+      return null;
+    }
+
+    offer.discounted = true;
+    offer.price = calculateShopDiscountPrice(product.price);
+    return offer;
+  }
+
   purchase(runState: RunState, offer: ShopOfferState): ShopPurchaseResult {
     if (offer.purchased) {
       return { status: 'sold-out' };

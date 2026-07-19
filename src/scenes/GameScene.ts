@@ -16,6 +16,7 @@ import {
   GAME_HEIGHT,
   GAME_WIDTH,
   ITEM_PREVIEW_RADIUS,
+  ROOM_RECT,
 } from '../config/gameConfig';
 import { PASSIVE_ITEMS, PRISM_LANCE_ITEM_ID, QUAD_SHOT_ITEM_ID } from '../data/items';
 import { getShopProduct, SHOP_INTERACTION_RADIUS, type ShopProductDefinition } from '../data/shop';
@@ -25,6 +26,12 @@ import { BombSystem } from '../systems/BombSystem';
 import { CombatCollisionSystem } from '../systems/CombatCollisionSystem';
 import { DungeonManager, type RoomNode } from '../systems/DungeonManager';
 import { EffectsSystem } from '../systems/EffectsSystem';
+import {
+  DEVELOPER_CONSOLE_HELP,
+  parseDeveloperCommand,
+  type DeveloperCommand,
+} from '../systems/DeveloperConsoleCommands';
+import { addConsumable } from '../systems/InventorySystem';
 import { ItemSystem } from '../systems/ItemSystem';
 import { RewardSystem } from '../systems/RewardSystem';
 import { RoomController } from '../systems/RoomController';
@@ -41,6 +48,7 @@ import {
 import { createInitialRunState, type RunState } from '../systems/RunState';
 import { getEffectiveDamage } from '../systems/PlayerStatSystem';
 import { BossHud } from '../ui/BossHud';
+import { DeveloperConsole, type DeveloperConsoleCommandResult } from '../ui/DeveloperConsole';
 import { Hud } from '../ui/Hud';
 import { isPauseCode } from '../ui/PauseMenuRules';
 import { UiCameraSystem } from '../ui/UiCameraSystem';
@@ -73,6 +81,8 @@ export class GameScene extends Phaser.Scene {
   private bombKey?: Phaser.Input.Keyboard.Key;
   private interactKey?: Phaser.Input.Keyboard.Key;
   private secretCodeTracker!: SecretCodeTracker;
+  private developerConsole!: DeveloperConsole;
+  private godModeEnabled = false;
   private debugVisible = false;
   private nextDoorAt = 0;
   private gameOverStarted = false;
@@ -113,6 +123,7 @@ export class GameScene extends Phaser.Scene {
   };
   private readonly handleGameSceneResume = (): void => {
     this.pauseTransitionStarted = false;
+    this.godModeEnabled = false;
   };
 
   private enemies!: Phaser.Physics.Arcade.Group;
@@ -212,6 +223,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.hud = new Hud(this, this.uiCameraSystem.register);
+    this.setupDeveloperConsole();
     this.prepareGameOverOverlay();
     this.combatCollisions = new CombatCollisionSystem({
       scene: this,
@@ -512,6 +524,163 @@ export class GameScene extends Phaser.Scene {
   private setupAudioUnlock(): void {
     this.input.once('pointerdown', () => this.audio.unlock());
     this.input.keyboard?.once('keydown', () => this.audio.unlock());
+  }
+
+  private setupDeveloperConsole(): void {
+    this.developerConsole = new DeveloperConsole({
+      canOpen: () => !this.gameOverStarted && !this.pauseTransitionStarted && this.scene.isActive(),
+      onOpenChanged: (open) => {
+        const keyboard = this.input.keyboard;
+
+        if (open) {
+          keyboard?.resetKeys();
+          keyboard?.disableGlobalCapture();
+
+          if (keyboard) {
+            keyboard.enabled = false;
+          }
+
+          this.scene.pause();
+        } else if (!this.gameOverStarted) {
+          if (keyboard) {
+            keyboard.enabled = true;
+          }
+
+          keyboard?.enableGlobalCapture();
+          keyboard?.resetKeys();
+          this.scene.resume();
+        }
+      },
+      onCommand: (input) => this.executeDeveloperCommand(input),
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.developerConsole.destroy());
+  }
+
+  private executeDeveloperCommand(input: string): DeveloperConsoleCommandResult {
+    const parsed = parseDeveloperCommand(input);
+
+    if (!parsed.ok) {
+      return { lines: [parsed.error] };
+    }
+
+    if (parsed.command.type === 'help') {
+      return { lines: DEVELOPER_CONSOLE_HELP };
+    }
+
+    if (parsed.command.type === 'clear') {
+      return { clear: true };
+    }
+
+    this.markAdminUsed();
+    return this.applyDeveloperCommand(parsed.command);
+  }
+
+  private applyDeveloperCommand(command: DeveloperCommand): DeveloperConsoleCommandResult {
+    if (command.type === 'god') {
+      this.godModeEnabled = !this.godModeEnabled;
+      this.player.setGodMode(this.godModeEnabled);
+      return { lines: [`무적 모드: ${this.godModeEnabled ? 'ON' : 'OFF'}`] };
+    }
+
+    if (command.type === 'heal') {
+      this.runState.stats.health = this.runState.stats.maxHealth;
+      this.player.setStats(this.runState.stats);
+      return {
+        lines: [`체력 회복: ${this.runState.stats.health}/${this.runState.stats.maxHealth}`],
+      };
+    }
+
+    if (command.type === 'add-resource') {
+      this.runState.inventory = addConsumable(
+        this.runState.inventory,
+        command.resource,
+        command.amount,
+      );
+      return {
+        lines: [
+          `${t(`resources.${command.resource}`)}: ${this.runState.inventory[command.resource]}`,
+        ],
+      };
+    }
+
+    if (command.type === 'kill') {
+      const activeEnemies = (this.enemies.getChildren() as BaseEnemy[]).filter(
+        (enemy) => enemy.active,
+      );
+
+      for (const enemy of activeEnemies) {
+        enemy.takeDamage(Number.MAX_SAFE_INTEGER, this.player.x, this.player.y);
+      }
+
+      return { lines: [`적 ${activeEnemies.length}명 처치`] };
+    }
+
+    if (command.type === 'spawn') {
+      return this.spawnDeveloperItem(command.itemId);
+    }
+
+    if (command.type === 'sale') {
+      return this.forceDeveloperShopSale();
+    }
+
+    if (command.type === 'floor') {
+      this.runState.floor = command.floor;
+      this.floorTransitionStarted = false;
+      this.roomTransitions.enterFloor(
+        command.floor,
+        this.runState.unlockedAbilityIds.includes('charge-beam'),
+      );
+      return { lines: [`${command.floor}층으로 이동`] };
+    }
+
+    return { lines: ['실행할 수 없는 명령어입니다.'] };
+  }
+
+  private spawnDeveloperItem(itemId: string): DeveloperConsoleCommandResult {
+    const item = PASSIVE_ITEMS.find((candidate) => candidate.id === itemId);
+
+    if (!item) {
+      return {
+        lines: [
+          `아이템을 찾을 수 없습니다: ${itemId}`,
+          `사용 가능: ${PASSIVE_ITEMS.map((candidate) => candidate.id).join(', ')}`,
+        ],
+      };
+    }
+
+    const offsetX = this.player.x < GAME_CENTER_X ? 44 : -44;
+    const x = Phaser.Math.Clamp(this.player.x + offsetX, ROOM_RECT.left + 24, ROOM_RECT.right - 24);
+    const y = Phaser.Math.Clamp(this.player.y, ROOM_RECT.top + 24, ROOM_RECT.bottom - 24);
+    this.items.add(new ItemPickup(this, x, y, item, 'secret'));
+    this.effects.pickup(x, y);
+    return { lines: [`아이템 생성: ${item.id}`] };
+  }
+
+  private forceDeveloperShopSale(): DeveloperConsoleCommandResult {
+    const room = this.dungeon.getCurrentRoom();
+
+    if (room.type !== 'shop' || !room.shopOffers) {
+      return { lines: ['상점방에서만 사용할 수 있습니다.'] };
+    }
+
+    const offer = this.shopSystem.forceDiscount(room.shopOffers);
+
+    if (!offer) {
+      return { lines: ['할인할 수 있는 상품이 없습니다.'] };
+    }
+
+    this.roomController.refreshCurrentShop();
+    const product = getShopProduct(offer.productId);
+    return {
+      lines: [
+        `세일 적용: ${product ? this.getShopProductName(product) : offer.productId} ${offer.price}코인`,
+      ],
+    };
+  }
+
+  private markAdminUsed(): void {
+    this.runState.adminUsed = true;
+    this.hud.setAdminVisible(true);
   }
 
   private setupPauseInput(): void {

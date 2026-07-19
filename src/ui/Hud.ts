@@ -33,6 +33,7 @@ export class Hud {
   private readonly messageText: Phaser.GameObjects.Text;
   private readonly itemHintText: Phaser.GameObjects.Text;
   private readonly debugText: Phaser.GameObjects.Text;
+  private readonly adminText: Phaser.GameObjects.Text;
   private readonly minimap: Phaser.GameObjects.Graphics;
   private messageUntil = 0;
   private debugVisible = false;
@@ -92,6 +93,12 @@ export class Hud {
     this.debugText = this.createText(statsTextX, PANEL_TOP + STATS_PANEL_HEIGHT + 6, 6).setVisible(
       false,
     );
+    this.adminText = this.createText(GAME_WIDTH / 2, PANEL_TOP + 2, 8)
+      .setOrigin(0.5, 0)
+      .setColor('#ff5d72')
+      .setFontStyle('bold')
+      .setText('ADMIN')
+      .setVisible(false);
     this.minimap = this.registerUiObject(scene.add.graphics());
     this.minimap.setDepth(DEPTH.ui);
   }
@@ -99,6 +106,10 @@ export class Hud {
   setDebugVisible(visible: boolean): void {
     this.debugVisible = visible;
     this.debugText.setVisible(visible);
+  }
+
+  setAdminVisible(visible: boolean): void {
+    this.adminText.setVisible(visible);
   }
 
   showMessage(message: string, durationMs = 2200): void {

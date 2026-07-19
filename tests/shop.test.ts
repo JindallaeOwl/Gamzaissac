@@ -46,6 +46,18 @@ describe('ShopSystem', () => {
     expect(system.createOffers([]).some((offer) => offer.discounted)).toBe(false);
   });
 
+  it('can force a discount on one available offer for developer testing', () => {
+    const system = new ShopSystem(new ItemSystem(() => 0.999999), () => 0.999999);
+    const offers = system.createOffers([]);
+
+    expect(offers.some((offer) => offer.discounted)).toBe(false);
+    const discounted = system.forceDiscount(offers);
+
+    expect(discounted).not.toBeNull();
+    expect(discounted?.discounted).toBe(true);
+    expect(offers.filter((offer) => offer.discounted)).toHaveLength(1);
+  });
+
   it('does not charge coins when the player cannot afford an offer', () => {
     const system = new ShopSystem(new ItemSystem(() => 0), () => 0);
     const state = createInitialRunState();

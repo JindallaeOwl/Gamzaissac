@@ -69,6 +69,78 @@ canvas {
   display: none;
 }
 
+#developer-console {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: max(12px, env(safe-area-inset-left));
+  z-index: 1200;
+  display: grid;
+  grid-template-rows: auto minmax(120px, 32vh) auto;
+  max-width: 920px;
+  max-height: 52vh;
+  margin: 0 auto;
+  border: 2px solid #ff5d72;
+  color: #f7f3e8;
+  background: rgb(5 8 13 / 96%);
+  box-shadow: 0 8px 0 rgb(0 0 0 / 45%);
+  font-family:
+    Galmuri11, DungGeunMo, DOSGothic, 'Noto Sans KR', 'Malgun Gothic', ui-monospace, monospace;
+  font-size: clamp(12px, 1.5vw, 16px);
+}
+
+#developer-console[hidden] {
+  display: none;
+}
+
+#developer-console header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #70303d;
+  color: #ff8b9b;
+  background: #171019;
+}
+
+#developer-console header span {
+  color: #9aa7b4;
+  font-size: 0.8em;
+}
+
+#developer-console-output {
+  overflow: auto;
+  padding: 10px 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  scrollbar-color: #70303d #0b0f16;
+}
+
+#developer-console-output .command {
+  color: #ffd166;
+}
+
+#developer-console-form {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid #70303d;
+  color: #ff8b9b;
+  background: #0b0f16;
+}
+
+#developer-console-input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #f7f3e8;
+  background: transparent;
+  font: inherit;
+}
+
 .game-over-panel {
   width: min(600px, 90vw);
   padding: 44px 28px 36px;

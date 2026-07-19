@@ -157,6 +157,19 @@ export class RoomController {
     return canEnemiesActAfterRoomEntry(time, this.enemyAiResumeAt);
   }
 
+  refreshCurrentShop(): boolean {
+    const room = this.dungeon.getCurrentRoom();
+
+    if (room.type !== 'shop') {
+      return false;
+    }
+
+    this.shopOffers.clear(true, true);
+    this.shopDecorations.clear(true, true);
+    this.spawnShop(room);
+    return true;
+  }
+
   spawnBossReward(room: RoomNode): void {
     if (room.type !== 'boss') {
       return;

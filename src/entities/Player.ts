@@ -93,6 +93,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private hurtAnimationUntil = 0;
   private facing: PlayerFacing = 'down';
   private dead = false;
+  private godMode = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -179,7 +180,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   damage(amount: number, sourceX: number, sourceY: number): boolean {
-    if (!this.active || !this.body) {
+    if (!this.active || !this.body || this.godMode) {
       return false;
     }
 
@@ -215,6 +216,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.invulnerableUntil,
       this.scene.time.now + Math.max(0, durationMs),
     );
+  }
+
+  setGodMode(enabled: boolean): void {
+    this.godMode = enabled;
   }
 
   private updateMovement(time: number, controls: PlayerControls): void {

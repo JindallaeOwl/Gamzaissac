@@ -19,6 +19,24 @@
         <button id="game-over-restart" type="button"></button>
       </section>
     </div>
+    <aside id="developer-console" hidden aria-label="개발자 콘솔">
+      <header>
+        <strong>DEV CONSOLE</strong>
+        <span>` 또는 Esc로 닫기</span>
+      </header>
+      <div id="developer-console-output" role="log" aria-live="polite"></div>
+      <form id="developer-console-form" autocomplete="off">
+        <label for="developer-console-input">&gt;</label>
+        <input
+          id="developer-console-input"
+          type="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          aria-label="개발자 명령어"
+        />
+      </form>
+    </aside>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -9,6 +9,7 @@ import type { ConsumableType } from '../data/rewards';
 export type InventoryState = Record<ConsumableType, number>;
 
 export interface RunState {
+  adminUsed: boolean;
   floor: number;
   clearedRooms: number;
   score: number;
@@ -21,6 +22,7 @@ export interface RunState {
 
 export function createInitialRunState(): RunState {
   return {
+    adminUsed: false,
     floor: 1,
     clearedRooms: 0,
     score: 0,
@@ -34,4 +36,8 @@ export function createInitialRunState(): RunState {
     stats: { ...PLAYER_BASE_STATS },
     attackProfile: { ...PLAYER_BASE_ATTACK_PROFILE },
   };
+}
+
+export function isRunEligibleForRanking(runState: RunState): boolean {
+  return !runState.adminUsed;
 }
