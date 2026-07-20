@@ -18,6 +18,14 @@ function reward(overrides: Partial<RewardDrop>): RewardDrop {
 }
 
 describe('reward pickup presentation', () => {
+  it('reuses the HUD heart artwork for room-clear hearts', () => {
+    expect(getRewardPickupPresentation(reward({ kind: 'heart' }))).toMatchObject({
+      textureKey: TextureKeys.hudHeart,
+      scale: 1,
+      tint: null,
+    });
+  });
+
   it('reuses the 1-bit HUD artwork for bombs and one-coin pickups', () => {
     expect(getRewardPickupPresentation(reward({ kind: 'bombs' }))).toMatchObject({
       textureKey: TextureKeys.hudBomb,

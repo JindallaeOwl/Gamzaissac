@@ -100,6 +100,7 @@ export const en: TranslationTree = {
     objective: 'Objective: clear combat rooms and defeat the boss',
   },
   resources: {
+    hearts: 'Hearts',
     keys: 'Keys',
     bombs: 'Bombs',
     coins: 'Coins',

@@ -12,6 +12,15 @@ export const ONE_COIN_TINT = 0xffd166;
 export const FIVE_COIN_TINT = 0xa8adb7;
 
 export function getRewardPickupPresentation(reward: RewardDrop): RewardPickupPresentation {
+  if (reward.kind === 'heart') {
+    return {
+      textureKey: TextureKeys.hudHeart,
+      scale: 1,
+      bodyRadius: 8,
+      tint: null,
+    };
+  }
+
   if (reward.kind === 'keys') {
     return {
       textureKey: TextureKeys.keyPickup,

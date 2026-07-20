@@ -100,6 +100,7 @@ export const ko: TranslationTree = {
     objective: '목표: 전투방을 정리하고 보스를 찾아 처치하세요',
   },
   resources: {
+    hearts: '하트',
     keys: '열쇠',
     bombs: '폭탄',
     coins: '코인',

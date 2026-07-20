@@ -1,6 +1,11 @@
-import { INVENTORY_TUNING, type PlayerStats } from '../config/gameConfig';
+import {
+  INVENTORY_TUNING,
+  PLAYER_HEALTH_UNITS_PER_HEART,
+  type PlayerStats,
+} from '../config/gameConfig';
 import {
   REWARD_DROP_TUNING,
+  ROOM_CLEAR_REWARD_THRESHOLDS,
   ROOM_CLEAR_REWARDS,
   type ConsumableType,
   type RewardDefinition,
@@ -24,27 +29,52 @@ export type ChestResult =
   | { type: 'consumable'; consumable: ConsumableType; amount: number };
 
 export type RewardPickupResult =
-  | { collected: false; type: 'resource-full'; labelKey: string }
+  | { collected: false; type: 'resource-full' | 'health-full'; labelKey: string }
   | { collected: true; type: 'chest'; chestResult: ChestResult }
+  | { collected: true; type: 'health'; amount: number; labelKey: string }
   | { collected: true; type: 'consumable'; amount: number; labelKey: string };
 
 export class RewardSystem {
   constructor(private readonly random: RandomSource = Math.random) {}
 
   rollRoomClearReward(stats: PlayerStats): RewardDrop | null {
-    const chance = Math.min(
-      REWARD_DROP_TUNING.maxRoomClearChance,
-      REWARD_DROP_TUNING.baseRoomClearChance + stats.luck * REWARD_DROP_TUNING.luckChanceBonus,
-    );
+    const luck = clamp(stats.luck, 0, REWARD_DROP_TUNING.roomClearMaxLuck);
+    const roll = this.random() + this.random() * luck * REWARD_DROP_TUNING.roomClearLuckScale;
 
-    if (this.random() > chance) {
+    if (roll < ROOM_CLEAR_REWARD_THRESHOLDS.nothing) {
       return null;
     }
 
-    const reward = pickWeightedReward(ROOM_CLEAR_REWARDS, this.random);
+    const kind: RewardKind =
+      roll < ROOM_CLEAR_REWARD_THRESHOLDS.coins
+        ? 'coins'
+        : roll < ROOM_CLEAR_REWARD_THRESHOLDS.heart
+          ? 'heart'
+          : roll < ROOM_CLEAR_REWARD_THRESHOLDS.keys
+            ? 'keys'
+            : roll < ROOM_CLEAR_REWARD_THRESHOLDS.bombs
+              ? 'bombs'
+              : 'chest';
+    const reward = ROOM_CLEAR_REWARDS.find((candidate) => candidate.kind === kind);
+
+    if (!reward) {
+      return null;
+    }
+
+    if (kind === 'coins') {
+      const isFiveCoin = this.random() < REWARD_DROP_TUNING.roomClearFiveCoinChance;
+
+      return {
+        kind,
+        amount: isFiveCoin ? 5 : 1,
+        labelKey: reward.labelKey,
+        tint: reward.tint,
+        appearance: isFiveCoin ? 'five-coin' : undefined,
+      };
+    }
 
     return {
-      kind: reward.kind,
+      kind,
       amount: randomInt(reward.amountMin, reward.amountMax, this.random),
       labelKey: reward.labelKey,
       tint: reward.tint,
@@ -62,7 +92,7 @@ export class RewardSystem {
     }
 
     const consumable = pickWeightedReward(
-      ROOM_CLEAR_REWARDS.filter((reward) => reward.kind !== 'chest'),
+      ROOM_CLEAR_REWARDS.filter((reward) => reward.kind !== 'chest' && reward.kind !== 'heart'),
       this.random,
     ).kind as ConsumableType;
 
@@ -108,6 +138,24 @@ export class RewardSystem {
       }
 
       return { collected: true, type: 'chest', chestResult };
+    }
+
+    if (reward.kind === 'heart') {
+      if (runState.stats.health >= runState.stats.maxHealth) {
+        return { collected: false, type: 'health-full', labelKey: reward.labelKey };
+      }
+
+      runState.stats.health = clamp(
+        runState.stats.health + reward.amount * PLAYER_HEALTH_UNITS_PER_HEART,
+        0,
+        runState.stats.maxHealth,
+      );
+      return {
+        collected: true,
+        type: 'health',
+        amount: reward.amount,
+        labelKey: reward.labelKey,
+      };
     }
 
     const consumable = reward.kind;

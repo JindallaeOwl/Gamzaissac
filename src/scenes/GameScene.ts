@@ -1129,6 +1129,10 @@ export class GameScene extends Phaser.Scene {
       this.audio.play('pickup');
       return;
     } else {
+      if (result.type === 'health') {
+        this.player.setStats(this.runState.stats);
+      }
+
       this.hud.showMessage(
         t('messages.rewardGain', {
           amount: result.amount,
