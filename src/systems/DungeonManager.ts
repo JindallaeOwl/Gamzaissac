@@ -194,6 +194,15 @@ export class DungeonManager {
     pending.opened = opened;
   }
 
+  updatePendingRewardPosition(roomId: string, x: number, y: number): void {
+    const pending = this.rooms.get(roomId)?.pendingReward;
+
+    if (pending) {
+      pending.x = x;
+      pending.y = y;
+    }
+  }
+
   unlockRoom(roomId: string): void {
     const room = this.rooms.get(roomId);
 

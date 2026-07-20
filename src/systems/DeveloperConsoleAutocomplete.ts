@@ -27,6 +27,7 @@ const SPECIAL_SPAWN_TARGETS: readonly DeveloperConsoleSuggestion[] = [
   { completion: 'spawn chest', label: 'spawn chest — 닫힌 상자' },
   { completion: 'spawn coin', label: 'spawn coin — 노란색 1코인' },
   { completion: 'spawn five-coin', label: 'spawn five-coin — 회색 5코인' },
+  { completion: 'spawn heart', label: 'spawn heart — 회복 하트' },
 ];
 
 export function getDeveloperConsoleSuggestions(

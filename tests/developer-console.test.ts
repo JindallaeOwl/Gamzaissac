@@ -50,13 +50,17 @@ describe('developer console commands', () => {
       ok: true,
       command: { type: 'spawn', itemId: 'five-coin' },
     });
+    expect(parseDeveloperCommand('spawn HEART')).toEqual({
+      ok: true,
+      command: { type: 'spawn', itemId: 'heart' },
+    });
     expect(parseDeveloperCommand('sale')).toEqual({ ok: true, command: { type: 'sale' } });
     expect(parseDeveloperCommand('floor 2')).toEqual({
       ok: true,
       command: { type: 'floor', floor: 2 },
     });
     expect(parseDeveloperCommand('clear')).toEqual({ ok: true, command: { type: 'clear' } });
-    expect(DEVELOPER_CONSOLE_HELP).toHaveLength(19);
+    expect(DEVELOPER_CONSOLE_HELP).toHaveLength(20);
   });
 
   it('rejects unsafe amounts, malformed arguments, and unknown commands', () => {

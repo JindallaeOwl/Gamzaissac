@@ -29,5 +29,8 @@ describe('developer console autocomplete', () => {
     expect(getDeveloperConsoleSuggestions('spawn fi')[0]).toMatchObject({
       completion: 'spawn five-coin',
     });
+    expect(getDeveloperConsoleSuggestions('spawn hea')[0]).toMatchObject({
+      completion: 'spawn heart',
+    });
   });
 });

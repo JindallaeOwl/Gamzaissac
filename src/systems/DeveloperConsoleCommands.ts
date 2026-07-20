@@ -35,6 +35,7 @@ export const DEVELOPER_CONSOLE_HELP = [
   'spawn chest          닫힌 상자 생성',
   'spawn coin           노란색 1코인 생성',
   'spawn five-coin      회색 5코인 생성',
+  'spawn heart          회복 하트 생성',
   'sale                  현재 상점 상품 하나 강제 할인',
   'floor 2              지정한 층으로 이동',
   'clear                 콘솔 출력 지우기',

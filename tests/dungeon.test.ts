@@ -72,6 +72,21 @@ describe('DungeonManager', () => {
 
     expect(room.pendingReward).toMatchObject({ x: 252, y: 142, opened: true });
   });
+
+  it('keeps a pushed heart position in its source room', () => {
+    const dungeon = new DungeonManager(() => 0);
+    dungeon.generateFloor(1);
+    const room = dungeon.getCurrentRoom();
+    room.pendingReward = {
+      reward: { kind: 'heart', amount: 1, labelKey: 'resources.hearts', tint: 0xff5f74 },
+      x: 240,
+      y: 136,
+    };
+
+    dungeon.updatePendingRewardPosition(room.id, 247, 139);
+
+    expect(room.pendingReward).toMatchObject({ x: 247, y: 139 });
+  });
 });
 
 function getReachableRoomIds(dungeon: DungeonManager): Set<string> {

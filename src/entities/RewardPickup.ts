@@ -5,7 +5,11 @@ import {
   CHEST_PUSH_COOLDOWN_MS,
   CHEST_PUSH_DRAG,
   CHEST_PUSH_SPEED,
+  HEART_PUSH_COOLDOWN_MS,
+  HEART_PUSH_DRAG,
+  HEART_PUSH_SPEED,
   getChestPushVelocity,
+  getHeartPushVelocity,
 } from '../systems/ChestPushRules';
 import { getRewardPickupPresentation } from '../systems/RewardPickupPresentation';
 import type { RewardDrop } from '../systems/RewardSystem';
@@ -13,7 +17,7 @@ import type { RewardDrop } from '../systems/RewardSystem';
 export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
   readonly reward: RewardDrop;
   private chestOpened = false;
-  private nextChestPushAt = 0;
+  private nextPushAt = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, reward: RewardDrop) {
     const presentation = getRewardPickupPresentation(reward);
@@ -44,12 +48,16 @@ export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
       this.isChest ? chestOffsetY : 0,
     );
 
-    if (this.isChest) {
-      body.setDrag(CHEST_PUSH_DRAG, CHEST_PUSH_DRAG);
-      body.setMaxVelocity(CHEST_PUSH_SPEED, CHEST_PUSH_SPEED);
-      body.setMass(2.5);
-      body.setBounce(0.08, 0.08);
-    } else {
+    if (this.isPushable) {
+      const drag = this.isChest ? CHEST_PUSH_DRAG : HEART_PUSH_DRAG;
+      const speed = this.isChest ? CHEST_PUSH_SPEED : HEART_PUSH_SPEED;
+      body.setDrag(drag, drag);
+      body.setMaxVelocity(speed, speed);
+      body.setMass(this.isChest ? 2.5 : 0.7);
+      body.setBounce(this.isChest ? 0.08 : 0.16, this.isChest ? 0.08 : 0.16);
+    }
+
+    if (!this.isChest) {
       scene.tweens.add({
         targets: this,
         scale: baseScale * 1.08,
@@ -63,6 +71,14 @@ export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
 
   get isChest(): boolean {
     return this.reward.kind === 'chest';
+  }
+
+  get isHeart(): boolean {
+    return this.reward.kind === 'heart';
+  }
+
+  get isPushable(): boolean {
+    return this.isChest || this.isHeart;
   }
 
   get isOpenedChest(): boolean {
@@ -87,11 +103,13 @@ export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
   }
 
   push(directionX: number, directionY: number, time: number): boolean {
-    if (!this.isChest || time < this.nextChestPushAt) {
+    if (!this.isPushable || time < this.nextPushAt) {
       return false;
     }
 
-    const velocity = getChestPushVelocity(directionX, directionY);
+    const velocity = this.isChest
+      ? getChestPushVelocity(directionX, directionY)
+      : getHeartPushVelocity(directionX, directionY);
 
     if (!velocity) {
       return false;
@@ -104,7 +122,7 @@ export class RewardPickup extends Phaser.Physics.Arcade.Sprite {
     }
 
     body.setVelocity(velocity.x, velocity.y);
-    this.nextChestPushAt = time + CHEST_PUSH_COOLDOWN_MS;
+    this.nextPushAt = time + (this.isChest ? CHEST_PUSH_COOLDOWN_MS : HEART_PUSH_COOLDOWN_MS);
     return true;
   }
 }

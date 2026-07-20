@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   CHEST_PUSH_SPEED,
   estimateChestSlideDistance,
+  estimateHeartSlideDistance,
   getChestPushVelocity,
+  getHeartPushVelocity,
+  HEART_PUSH_SPEED,
 } from '../src/systems/ChestPushRules';
 
 describe('chest push rules', () => {
@@ -17,5 +20,12 @@ describe('chest push rules', () => {
   it('stops after sliding only a few gameplay pixels', () => {
     expect(estimateChestSlideDistance()).toBeGreaterThan(5);
     expect(estimateChestSlideDistance()).toBeLessThan(8);
+  });
+
+  it('gives a full-health heart a light, short slide', () => {
+    expect(getHeartPushVelocity(0, 0)).toBeNull();
+    expect(getHeartPushVelocity(1, 0)).toEqual({ x: HEART_PUSH_SPEED, y: 0 });
+    expect(estimateHeartSlideDistance()).toBeGreaterThan(2);
+    expect(estimateHeartSlideDistance()).toBeLessThan(3);
   });
 });

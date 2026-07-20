@@ -456,27 +456,36 @@ export class GameScene extends Phaser.Scene {
       (_playerObject, rewardObject) => {
         this.collectReward(rewardObject as RewardPickup);
       },
-      (_playerObject, rewardObject) => !(rewardObject as RewardPickup).isChest,
+      (_playerObject, rewardObject) => !(rewardObject as RewardPickup).isPushable,
     );
     this.physics.add.collider(
       this.player,
       this.rewards,
       (_playerObject, rewardObject) => {
-        this.handleChestCollision(rewardObject as RewardPickup);
+        this.handlePushableRewardCollision(rewardObject as RewardPickup);
       },
-      (_playerObject, rewardObject) => (rewardObject as RewardPickup).isChest,
+      (_playerObject, rewardObject) => (rewardObject as RewardPickup).isPushable,
     );
     this.physics.add.collider(
       this.rewards,
       this.roomController.walls,
       undefined,
-      (rewardObject) => (rewardObject as RewardPickup).isChest,
+      (rewardObject) => (rewardObject as RewardPickup).isPushable,
     );
     this.physics.add.collider(
       this.rewards,
       this.roomController.obstacles,
       undefined,
-      (rewardObject) => (rewardObject as RewardPickup).isChest,
+      (rewardObject) => (rewardObject as RewardPickup).isPushable,
+    );
+    this.physics.add.collider(
+      this.rewards,
+      this.rewards,
+      undefined,
+      (firstRewardObject, secondRewardObject) =>
+        firstRewardObject !== secondRewardObject &&
+        (firstRewardObject as RewardPickup).isPushable &&
+        (secondRewardObject as RewardPickup).isPushable,
     );
 
     this.physics.add.overlap(
@@ -764,13 +773,17 @@ export class GameScene extends Phaser.Scene {
       return this.spawnDeveloperCoin(5);
     }
 
+    if (itemId === 'heart') {
+      return this.spawnDeveloperHeart();
+    }
+
     const item = findItemByReference(itemId);
 
     if (!item) {
       return {
         lines: [
           `아이템을 찾을 수 없습니다: ${itemId}`,
-          `사용 가능: chest, coin, five-coin, ${PASSIVE_ITEMS.map((candidate) => candidate.id).join(', ')}`,
+          `사용 가능: chest, coin, five-coin, heart, ${PASSIVE_ITEMS.map((candidate) => candidate.id).join(', ')}`,
         ],
       };
     }
@@ -824,6 +837,27 @@ export class GameScene extends Phaser.Scene {
     this.rewards.add(coin);
     this.effects.pickup(x, y);
     return { lines: [`코인 생성: ${amount}코인`] };
+  }
+
+  private spawnDeveloperHeart(): DeveloperConsoleCommandResult {
+    const definition = ROOM_CLEAR_REWARDS.find((reward) => reward.kind === 'heart');
+
+    if (!definition) {
+      return { lines: ['하트 정보를 찾을 수 없습니다.'] };
+    }
+
+    const offsetX = this.player.x < GAME_CENTER_X ? 44 : -44;
+    const x = Phaser.Math.Clamp(this.player.x + offsetX, ROOM_RECT.left + 24, ROOM_RECT.right - 24);
+    const y = Phaser.Math.Clamp(this.player.y, ROOM_RECT.top + 24, ROOM_RECT.bottom - 24);
+    const heart = new RewardPickup(this, x, y, {
+      kind: 'heart',
+      amount: 1,
+      labelKey: definition.labelKey,
+      tint: definition.tint,
+    });
+    this.rewards.add(heart);
+    this.effects.pickup(x, y);
+    return { lines: ['하트 생성: heart'] };
   }
 
   private moveToDeveloperRoom(
@@ -1148,12 +1182,16 @@ export class GameScene extends Phaser.Scene {
     pickup.destroy();
   }
 
-  private handleChestCollision(pickup: RewardPickup): void {
-    if (!pickup.active || !pickup.isChest) {
+  private handlePushableRewardCollision(pickup: RewardPickup): void {
+    if (!pickup.active || !pickup.isPushable) {
       return;
     }
 
     this.collectReward(pickup);
+    if (!pickup.active) {
+      return;
+    }
+
     const inputX = Number(this.controls.right.isDown) - Number(this.controls.left.isDown);
     const inputY = Number(this.controls.down.isDown) - Number(this.controls.up.isDown);
     const playerBody = this.player.body as Phaser.Physics.Arcade.Body;

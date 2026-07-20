@@ -122,7 +122,7 @@ export class RoomTransitionSystem {
   }
 
   private clearTransientObjects(includeRoomEntities: boolean): void {
-    this.savePendingChestPositions();
+    this.savePendingRewardPositions();
     this.playerBullets.clear(true, true);
     this.enemyBullets.clear(true, true);
     this.beams.clear(true, true);
@@ -136,12 +136,18 @@ export class RoomTransitionSystem {
     }
   }
 
-  private savePendingChestPositions(): void {
+  private savePendingRewardPositions(): void {
     for (const pickup of this.rewards.getChildren() as RewardPickup[]) {
       const sourceRoomId = pickup.getData('sourceRoomId') as string | undefined;
 
-      if (pickup.active && pickup.isChest && sourceRoomId) {
+      if (!pickup.active || !pickup.isPushable || !sourceRoomId) {
+        continue;
+      }
+
+      if (pickup.isChest) {
         this.dungeon.updatePendingChest(sourceRoomId, pickup.x, pickup.y, pickup.isOpenedChest);
+      } else {
+        this.dungeon.updatePendingRewardPosition(sourceRoomId, pickup.x, pickup.y);
       }
     }
   }
