@@ -284,11 +284,6 @@ export class GameScene extends Phaser.Scene {
     this.setupPauseInput();
     this.hud.showMessage(t('messages.floor', { floor: 1 }));
     this.cameras.main.fadeIn(220, 5, 9, 14);
-    this.time.delayedCall(1500, () => {
-      if (!this.gameOverStarted) {
-        this.hud.showMessage(t('messages.objective'), 2600);
-      }
-    });
   }
 
   update(time: number, delta: number): void {

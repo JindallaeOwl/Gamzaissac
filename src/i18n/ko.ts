@@ -101,7 +101,6 @@ export const ko: TranslationTree = {
     localeEn: '영어',
     quitHint: '브라우저 탭을 닫아 종료하세요',
     startFailed: '게임 시작에 실패했습니다. 다시 시도해주세요',
-    objective: '목표: 전투방을 정리하고 보스를 찾아 처치하세요',
   },
   resources: {
     hearts: '하트',
