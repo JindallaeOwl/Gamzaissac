@@ -402,7 +402,6 @@ export class TitleScene extends Phaser.Scene {
         `${selected ? '> ' : '  '}${this.menuItems[index].label}${selected ? ' <' : '  '}`,
       );
       text.setColor(selected ? '#ffe39b' : '#f7f3e8');
-      text.setBackgroundColor(selected ? '#17313b' : '#00000000');
       text.setScale(selected ? 1.08 : 1);
       text.setAlpha(selected ? 1 : 0.72);
     });
