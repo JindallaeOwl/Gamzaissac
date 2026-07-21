@@ -132,6 +132,10 @@ export class RoomController {
       this.spawnTreasure(room);
     }
 
+    if (room.type === 'combat' && room.cleared) {
+      this.spawnCombatItemReward(room);
+    }
+
     if (room.type === 'boss' && room.cleared) {
       this.spawnBossReward(room);
     }
@@ -194,6 +198,26 @@ export class RoomController {
     }
 
     this.items.add(new ItemPickup(this.scene, GAME_CENTER_X, GAME_CENTER_Y + 40, item, 'boss'));
+  }
+
+  spawnCombatItemReward(room: RoomNode): void {
+    if (room.type !== 'combat' || room.combatItemRewardClaimed) {
+      return;
+    }
+
+    if (!room.combatItemRewardRolled) {
+      room.combatItemRewardRolled = true;
+      room.combatItemRewardId = this.itemSystem.rollCombatRewardItem(
+        this.runState.collectedItemIds,
+        this.runState.stats.luck,
+      )?.id;
+    }
+
+    const item = PASSIVE_ITEMS.find((candidate) => candidate.id === room.combatItemRewardId);
+
+    if (item) {
+      this.items.add(new ItemPickup(this.scene, GAME_CENTER_X, GAME_CENTER_Y - 26, item));
+    }
   }
 
   updateDoorEntryGates(playerBody: Phaser.Physics.Arcade.Body): void {
@@ -350,7 +374,7 @@ export class RoomController {
     }
 
     if (!room.treasureItemId) {
-      room.treasureItemId = this.itemSystem.pickTreasureItem(this.runState.collectedItemIds).id;
+      room.treasureItemId = this.itemSystem.pickTreasureItem(this.runState.collectedItemIds)?.id;
     }
 
     const item = PASSIVE_ITEMS.find((candidate) => candidate.id === room.treasureItemId);

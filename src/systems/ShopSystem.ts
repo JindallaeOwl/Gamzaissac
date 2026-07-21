@@ -13,7 +13,7 @@ import {
 import { clamp } from '../utils/math';
 import { chance, randomInt, randomOf, shuffled, type RandomSource } from '../utils/random';
 import { addConsumable, spendConsumable } from './InventorySystem';
-import type { ItemAcquisitionResult, ItemSystem } from './ItemSystem';
+import { isItemAtStackLimit, type ItemAcquisitionResult, type ItemSystem } from './ItemSystem';
 import type { RunState } from './RunState';
 
 export type ShopPurchaseResult =
@@ -21,6 +21,7 @@ export type ShopPurchaseResult =
   | { status: 'coins-needed'; price: number }
   | { status: 'health-full' }
   | { status: 'resource-full'; product: ShopProductDefinition }
+  | { status: 'item-capped'; item: PassiveItemDefinition }
   | { status: 'invalid-product' }
   | {
       status: 'purchased';
@@ -37,10 +38,16 @@ export class ShopSystem {
 
   createOffers(collectedItemIds: readonly string[]): ShopOfferState[] {
     const unseenPassives = SHOP_PASSIVE_PRODUCTS.filter(
-      (product) => product.kind === 'passive' && !collectedItemIds.includes(product.itemId),
+      (product) => {
+        if (product.kind !== 'passive') {
+          return false;
+        }
+
+        const item = PASSIVE_ITEMS.find((candidate) => candidate.id === product.itemId);
+        return item ? !isItemAtStackLimit(item, collectedItemIds) : false;
+      },
     );
-    const passivePool = unseenPassives.length >= 2 ? unseenPassives : SHOP_PASSIVE_PRODUCTS;
-    const passiveProducts = shuffled(passivePool, this.random).slice(0, 2);
+    const passiveProducts = shuffled(unseenPassives, this.random).slice(0, 2);
     const utilityProduct = randomOf(SHOP_CONSUMABLE_PRODUCTS, this.random);
     const products = shuffled(
       [...passiveProducts, SHOP_HEART_PRODUCT, utilityProduct],
@@ -107,6 +114,19 @@ export class ShopSystem {
       return { status: 'resource-full', product };
     }
 
+    const passiveItem =
+      product.kind === 'passive'
+        ? PASSIVE_ITEMS.find((candidate) => candidate.id === product.itemId)
+        : undefined;
+
+    if (product.kind === 'passive' && !passiveItem) {
+      return { status: 'invalid-product' };
+    }
+
+    if (passiveItem && isItemAtStackLimit(passiveItem, runState.collectedItemIds)) {
+      return { status: 'item-capped', item: passiveItem };
+    }
+
     const paidInventory = spendConsumable(runState.inventory, 'coins', offer.price);
 
     if (!paidInventory) {
@@ -130,9 +150,7 @@ export class ShopSystem {
       return { status: 'purchased', product };
     }
 
-    const item = PASSIVE_ITEMS.find((candidate) => candidate.id === product.itemId);
-
-    if (!item) {
+    if (!passiveItem) {
       // The catalog is invalid. Restore payment and stock instead of silently
       // charging the player for an item that cannot be granted.
       runState.inventory = addConsumable(runState.inventory, 'coins', offer.price);
@@ -140,7 +158,7 @@ export class ShopSystem {
       return { status: 'invalid-product' };
     }
 
-    const acquisition = this.itemSystem.acquireItem(runState, item);
-    return { status: 'purchased', product, item, acquisition };
+    const acquisition = this.itemSystem.acquireItem(runState, passiveItem);
+    return { status: 'purchased', product, item: passiveItem, acquisition };
   }
 }

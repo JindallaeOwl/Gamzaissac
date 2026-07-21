@@ -1,4 +1,5 @@
 import type { ConsumableType } from './rewards';
+import { PASSIVE_ITEMS, type ItemRarity } from './items';
 
 export type ShopProductDefinition =
   | {
@@ -33,17 +34,21 @@ export interface ShopOfferState {
   purchased: boolean;
 }
 
-export const SHOP_PASSIVE_PRODUCTS: readonly ShopProductDefinition[] = [
-  { id: 'shop-pulse-relay', kind: 'passive', itemId: 'pulse-relay', price: 15 },
-  { id: 'shop-glass-fern', kind: 'passive', itemId: 'glass-fern', price: 15 },
-  { id: 'shop-feather-coil', kind: 'passive', itemId: 'feather-coil', price: 12 },
-  { id: 'shop-hot-pebble', kind: 'passive', itemId: 'hot-pebble', price: 15 },
-  { id: 'shop-pocket-battery', kind: 'passive', itemId: 'pocket-battery', price: 15 },
-  { id: 'shop-steady-pin', kind: 'passive', itemId: 'steady-pin', price: 15 },
-  { id: 'shop-moon-dial', kind: 'passive', itemId: 'moon-dial', price: 12 },
-  { id: 'shop-long-echo', kind: 'passive', itemId: 'long-echo', price: 12 },
-  { id: 'shop-toothpick', kind: 'passive', itemId: 'toothpick', price: 18 },
-] as const;
+const SHOP_PRICE_BY_RARITY: Record<ItemRarity, number> = {
+  common: 12,
+  uncommon: 16,
+  rare: 22,
+  legendary: 30,
+};
+
+export const SHOP_PASSIVE_PRODUCTS: readonly ShopProductDefinition[] = PASSIVE_ITEMS.filter(
+  (item) => item.dropSources.includes('shop'),
+).map((item) => ({
+  id: `shop-${item.id}`,
+  kind: 'passive',
+  itemId: item.id,
+  price: SHOP_PRICE_BY_RARITY[item.rarity],
+}));
 
 export const SHOP_HEART_PRODUCT: ShopProductDefinition = {
   id: 'shop-full-heart',

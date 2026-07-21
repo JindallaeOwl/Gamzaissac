@@ -9,4 +9,6 @@ export const BOSS_REWARD_ITEM_IDS: readonly string[] = [
   'steady-pin',
   'moon-dial',
   'long-echo',
+  'amber-heart',
+  'star-fertilizer',
 ];

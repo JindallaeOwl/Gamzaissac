@@ -37,6 +37,9 @@ export interface RoomNode {
   treasureClaimed: boolean;
   bossRewardClaimed: boolean;
   bossRewardItemId?: string;
+  combatItemRewardClaimed: boolean;
+  combatItemRewardRolled: boolean;
+  combatItemRewardId?: string;
   obstacleHealth?: number[];
   pendingReward?: PendingRoomReward;
 }
@@ -173,6 +176,10 @@ export class DungeonManager {
     this.getCurrentRoom().bossRewardClaimed = true;
   }
 
+  markCurrentCombatItemRewardClaimed(): void {
+    this.getCurrentRoom().combatItemRewardClaimed = true;
+  }
+
   clearPendingReward(roomId: string): void {
     const room = this.rooms.get(roomId);
 
@@ -236,6 +243,8 @@ export class DungeonManager {
       specialRoomUnlocked: this.floor === 1 || (type !== 'shop' && type !== 'treasure'),
       treasureClaimed: false,
       bossRewardClaimed: false,
+      combatItemRewardClaimed: false,
+      combatItemRewardRolled: false,
     };
 
     this.rooms.set(key, node);

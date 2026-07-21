@@ -15,6 +15,7 @@ export interface RunState {
   score: number;
   collectedItemIds: string[];
   unlockedAbilityIds: string[];
+  activatedSynergyIds: string[];
   inventory: InventoryState;
   stats: PlayerStats;
   attackProfile: PlayerAttackProfile;
@@ -28,6 +29,7 @@ export function createInitialRunState(): RunState {
     score: 0,
     collectedItemIds: [],
     unlockedAbilityIds: [],
+    activatedSynergyIds: [],
     inventory: {
       keys: 1,
       bombs: 1,
