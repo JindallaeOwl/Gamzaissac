@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { moveItemPickerSelection } from '../src/ui/DeveloperItemPickerRules';
+import {
+  isItemPickerToggleInput,
+  moveItemPickerSelection,
+} from '../src/ui/DeveloperItemPickerRules';
+
+describe('isItemPickerToggleInput', () => {
+  it('accepts F2 only after authentication and ignores held keys', () => {
+    expect(isItemPickerToggleInput(true, 'F2', false)).toBe(true);
+    expect(isItemPickerToggleInput(false, 'F2', false)).toBe(false);
+    expect(isItemPickerToggleInput(true, 'F2', true)).toBe(false);
+    expect(isItemPickerToggleInput(true, 'F3', false)).toBe(false);
+  });
+});
 
 describe('moveItemPickerSelection', () => {
   it('moves horizontally and wraps across the item list', () => {

@@ -1,5 +1,15 @@
 export type ItemPickerDirection = 'left' | 'right' | 'up' | 'down';
 
+export const ITEM_PICKER_TOGGLE_CODE = 'F2';
+
+export function isItemPickerToggleInput(
+  authenticated: boolean,
+  code: string,
+  repeat: boolean,
+): boolean {
+  return authenticated && code === ITEM_PICKER_TOGGLE_CODE && !repeat;
+}
+
 export function moveItemPickerSelection(
   currentIndex: number,
   direction: ItemPickerDirection,

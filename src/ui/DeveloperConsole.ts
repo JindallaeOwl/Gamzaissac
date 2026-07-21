@@ -4,6 +4,7 @@ import {
 } from '../systems/DeveloperConsoleAutocomplete';
 import { verifyDeveloperConsolePassword } from '../systems/DeveloperConsoleAccess';
 import { DeveloperItemPicker, type DeveloperItemPickerOption } from './DeveloperItemPicker';
+import { isItemPickerToggleInput } from './DeveloperItemPickerRules';
 
 export interface DeveloperConsoleCommandResult {
   lines?: readonly string[];
@@ -192,6 +193,23 @@ export class DeveloperConsole {
   }
 
   private readonly handleDocumentKeyDown = (event: KeyboardEvent): void => {
+    if (isItemPickerToggleInput(this.authenticated, event.code, event.repeat)) {
+      if (!this.itemPicker.isOpen && !this.config.canOpen()) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      if (this.itemPicker.isOpen) {
+        this.itemPicker.close();
+      } else {
+        this.itemPicker.open();
+      }
+
+      return;
+    }
+
     const isToggle = event.code === 'Backquote';
     const isClose = this.openState && event.code === 'Escape';
     const isPickerClose = !this.openState && this.itemPicker.isOpen && event.code === 'Escape';
@@ -331,6 +349,7 @@ export class DeveloperConsole {
         this.updateAuthenticationInputMode();
         this.appendLine('확인되었습니다.', 'success');
         this.appendLine('help를 입력하면 명령어 목록을 볼 수 있습니다.');
+        this.appendLine('F2로 아이템 생성 창을 열고 닫을 수 있습니다.');
       } else {
         this.appendLine('알 수 없는 명령어입니다.');
       }
