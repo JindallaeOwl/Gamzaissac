@@ -13,14 +13,36 @@ export const PIXEL_ART_SIZES = {
   boss: [64, 96],
 } as const;
 
+// 방 내부 크기 배율. 1이면 기존 한 화면 방과 동일하게 동작한다.
+// (2배 실험 결과: 개방감은 전투방 크기가 아니라 오버월드에서 얻기로 결정.
+// 카메라 추적과 좌표 변환 배관은 오버월드 개발에 재사용한다.)
+export const ROOM_SIZE_SCALE = 1;
+
+const BASE_ROOM = { left: 32, top: 32, width: 416, height: 208 };
+
 export const ROOM_RECT = {
-  left: 32,
-  right: 448,
-  top: 32,
-  bottom: 240,
-  width: 416,
-  height: 208,
+  left: BASE_ROOM.left,
+  top: BASE_ROOM.top,
+  right: BASE_ROOM.left + BASE_ROOM.width * ROOM_SIZE_SCALE,
+  bottom: BASE_ROOM.top + BASE_ROOM.height * ROOM_SIZE_SCALE,
+  width: BASE_ROOM.width * ROOM_SIZE_SCALE,
+  height: BASE_ROOM.height * ROOM_SIZE_SCALE,
 };
+
+// 벽 여백까지 포함한 월드 크기와 방 중심 좌표.
+export const WORLD_WIDTH = ROOM_RECT.right + BASE_ROOM.left;
+export const WORLD_HEIGHT = ROOM_RECT.bottom + BASE_ROOM.top;
+export const ROOM_CENTER_X = (ROOM_RECT.left + ROOM_RECT.right) / 2;
+export const ROOM_CENTER_Y = (ROOM_RECT.top + ROOM_RECT.bottom) / 2;
+
+// 방 템플릿의 좌표는 기존 480×272 한 화면 기준으로 작성되어 있다.
+// 현재 방 크기에 비례하도록 사상해, 배치 간격이 방과 함께 넓어지게 한다.
+export function scaleRoomTemplatePoint(x: number, y: number): { x: number; y: number } {
+  return {
+    x: ROOM_RECT.left + (x - BASE_ROOM.left) * ROOM_SIZE_SCALE,
+    y: ROOM_RECT.top + (y - BASE_ROOM.top) * ROOM_SIZE_SCALE,
+  };
+}
 
 export const WALL_THICKNESS = 16;
 

@@ -12,10 +12,10 @@ import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import {
   BEAM_TUNING,
   COMBAT_TUNING,
-  GAME_CENTER_X,
-  GAME_CENTER_Y,
-  GAME_HEIGHT,
-  GAME_WIDTH,
+  ROOM_CENTER_X,
+  ROOM_CENTER_Y,
+  WORLD_HEIGHT,
+  WORLD_WIDTH,
   ITEM_PREVIEW_RADIUS,
 } from '../config/gameConfig';
 import { PASSIVE_ITEMS, PRISM_LANCE_ITEM_ID, QUAD_SHOT_ITEM_ID } from '../data/items';
@@ -165,7 +165,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0d1117');
     applyRenderScale(this);
     this.uiCameraSystem = new UiCameraSystem(this);
-    this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.physics.world.resume();
 
     this.runState = createInitialRunState();
@@ -189,12 +189,17 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new Player(
       this,
-      GAME_CENTER_X,
-      GAME_CENTER_Y,
+      ROOM_CENTER_X,
+      ROOM_CENTER_Y,
       this.runState.stats,
       this.runState.attackProfile,
     );
     this.controls = this.createControls();
+
+    // 방이 화면보다 크면 카메라가 플레이어를 따라간다. ROOM_SIZE_SCALE이 1이면
+    // 카메라 경계가 화면과 같아져 기존처럼 고정 화면으로 동작한다.
+    this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+    this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
 
     this.roomController = new RoomController({
       scene: this,
@@ -1000,8 +1005,8 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const x = GAME_CENTER_X + Phaser.Math.Between(-30, 30);
-    const y = GAME_CENTER_Y + Phaser.Math.Between(-20, 20);
+    const x = ROOM_CENTER_X + Phaser.Math.Between(-30, 30);
+    const y = ROOM_CENTER_Y + Phaser.Math.Between(-20, 20);
     room.pendingReward = { reward, x, y };
     this.roomTransitions.spawnPendingReward(room);
   }

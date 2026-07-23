@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { FloorExit } from '../entities/FloorExit';
 import type { Player } from '../entities/Player';
 import { RewardPickup } from '../entities/RewardPickup';
-import { GAME_CENTER_X, GAME_CENTER_Y, ROOM_ENTRY_PROTECTION_MS } from '../config/gameConfig';
+import { ROOM_CENTER_X, ROOM_CENTER_Y, ROOM_ENTRY_PROTECTION_MS } from '../config/gameConfig';
 import type { Direction } from '../utils/directions';
 import type { BombSystem } from './BombSystem';
 import type { DungeonManager, PendingDroppedReward, RoomNode } from './DungeonManager';
@@ -76,7 +76,7 @@ export class RoomTransitionSystem {
   }
 
   enterFloor(floor: number, hasChargeBeam: boolean): void {
-    this.movePlayerTo(GAME_CENTER_X, GAME_CENTER_Y);
+    this.movePlayerTo(ROOM_CENTER_X, ROOM_CENTER_Y);
     this.clearTransientObjects(true);
     this.dungeon.generateFloor(floor);
     this.player.hasChargeBeam = hasChargeBeam;
@@ -155,7 +155,7 @@ export class RoomTransitionSystem {
       return;
     }
 
-    this.floorExits.add(new FloorExit(this.scene, GAME_CENTER_X, GAME_CENTER_Y));
+    this.floorExits.add(new FloorExit(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y));
   }
 
   private clearTransientObjects(includeRoomEntities: boolean): void {

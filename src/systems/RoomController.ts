@@ -8,12 +8,13 @@ import { createEnemy } from '../entities/enemies/EnemyFactory';
 import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import {
   DEPTH,
-  GAME_CENTER_X,
-  GAME_CENTER_Y,
+  ROOM_CENTER_X,
+  ROOM_CENTER_Y,
   OBSTACLE_TUNING,
   PIXEL_GRID_SIZE,
   ROOM_CLEAR_DOOR_DELAY_MS,
   ROOM_RECT,
+  scaleRoomTemplatePoint,
   WALL_THICKNESS,
 } from '../config/gameConfig';
 import { PASSIVE_ITEMS } from '../data/items';
@@ -203,7 +204,7 @@ export class RoomController {
       return;
     }
 
-    this.items.add(new ItemPickup(this.scene, GAME_CENTER_X, GAME_CENTER_Y + 40, item, 'boss'));
+    this.items.add(new ItemPickup(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y + 40, item, 'boss'));
   }
 
   spawnCombatItemReward(room: RoomNode): void {
@@ -222,7 +223,7 @@ export class RoomController {
     const item = PASSIVE_ITEMS.find((candidate) => candidate.id === room.combatItemRewardId);
 
     if (item) {
-      this.items.add(new ItemPickup(this.scene, GAME_CENTER_X, GAME_CENTER_Y - 26, item));
+      this.items.add(new ItemPickup(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y - 26, item));
     }
   }
 
@@ -236,40 +237,47 @@ export class RoomController {
 
   getSpawnPositionForEntry(direction: Direction | null): { x: number; y: number } {
     if (!direction) {
-      return { x: GAME_CENTER_X, y: GAME_CENTER_Y };
+      return { x: ROOM_CENTER_X, y: ROOM_CENTER_Y };
     }
 
     if (direction === 'north') {
-      return { x: GAME_CENTER_X, y: ROOM_RECT.bottom - 28 };
+      return { x: ROOM_CENTER_X, y: ROOM_RECT.bottom - 28 };
     }
 
     if (direction === 'south') {
-      return { x: GAME_CENTER_X, y: ROOM_RECT.top + 28 };
+      return { x: ROOM_CENTER_X, y: ROOM_RECT.top + 28 };
     }
 
     if (direction === 'east') {
-      return { x: ROOM_RECT.left + 28, y: GAME_CENTER_Y };
+      return { x: ROOM_RECT.left + 28, y: ROOM_CENTER_Y };
     }
 
-    return { x: ROOM_RECT.right - 28, y: GAME_CENTER_Y };
+    return { x: ROOM_RECT.right - 28, y: ROOM_CENTER_Y };
   }
 
   private spawnCombatRoom(room: RoomNode, entryPosition?: RoomPoint): void {
     const template = getRoomTemplate(room.templateId);
-    const spawnSet = [...randomOf(template.spawnSets, this.random)];
+    // Template coordinates are authored in the original one-screen room space,
+    // so they are mapped into the current (possibly larger) room first.
+    const spawnSet = randomOf(template.spawnSets, this.random).map((spawn) => ({
+      ...spawn,
+      ...scaleRoomTemplatePoint(spawn.x, spawn.y),
+    }));
     const extraEnemies = getReinforcementCount(this.runState.floor, room.type);
     const extraPool = getReinforcementPool(this.runState.floor);
 
     for (let i = 0; i < extraEnemies; i += 1) {
       spawnSet.push({
         enemyId: randomOf(extraPool, this.random),
-        x: randomInt(96, 384, this.random),
-        y: randomInt(64, 208, this.random),
+        x: randomInt(ROOM_RECT.left + 64, ROOM_RECT.right - 64, this.random),
+        y: randomInt(ROOM_RECT.top + 32, ROOM_RECT.bottom - 32, this.random),
       });
     }
 
     const occupiedPositions: RoomPoint[] = [];
-    const obstaclePositions = template.obstacles ?? [];
+    const obstaclePositions = (template.obstacles ?? []).map((position) =>
+      scaleRoomTemplatePoint(position.x, position.y),
+    );
 
     for (const spawn of spawnSet) {
       const safePosition = resolveEnemySpawnAwayFromEntry(
@@ -322,7 +330,9 @@ export class RoomController {
   }
 
   private spawnObstacles(room: RoomNode): void {
-    const positions = getRoomTemplate(room.templateId).obstacles ?? [];
+    const positions = (getRoomTemplate(room.templateId).obstacles ?? []).map((position) =>
+      scaleRoomTemplatePoint(position.x, position.y),
+    );
 
     if (!room.obstacleHealth) {
       room.obstacleHealth = positions.map(() => OBSTACLE_TUNING.maxHealth);
@@ -356,15 +366,16 @@ export class RoomController {
       room.shopOffers = this.shopSystem.createOffers(this.runState.collectedItemIds);
     }
 
-    const npc = new ShopNpc(this.scene, SHOP_NPC_POSITION.x, SHOP_NPC_POSITION.y);
+    const npcPosition = scaleRoomTemplatePoint(SHOP_NPC_POSITION.x, SHOP_NPC_POSITION.y);
+    const npc = new ShopNpc(this.scene, npcPosition.x, npcPosition.y);
     this.shopNpcs.add(npc);
 
     if (showGreeting) {
       const shopRoomId = room.id;
       const greeting = createShopNpcSpeechBubble(
         this.scene,
-        SHOP_NPC_POSITION.x,
-        SHOP_NPC_POSITION.y - 36,
+        npcPosition.x,
+        npcPosition.y - 36,
         t('shop.greeting'),
         {
           visibleMs: 3000,
@@ -375,8 +386,8 @@ export class RoomController {
 
             const followUp = createShopNpcSpeechBubble(
               this.scene,
-              SHOP_NPC_POSITION.x,
-              SHOP_NPC_POSITION.y - 36,
+              npcPosition.x,
+              npcPosition.y - 36,
               t('shop.greetingFollowUp'),
               { visibleMs: 3000 },
             );
@@ -395,7 +406,8 @@ export class RoomController {
       const position = SHOP_OFFER_POSITIONS[offer.slot];
 
       if (position) {
-        this.shopOffers.add(new ShopOffer(this.scene, position.x, position.y, offer));
+        const worldPosition = scaleRoomTemplatePoint(position.x, position.y);
+        this.shopOffers.add(new ShopOffer(this.scene, worldPosition.x, worldPosition.y, offer));
       }
     }
   }
@@ -412,7 +424,7 @@ export class RoomController {
     const item = PASSIVE_ITEMS.find((candidate) => candidate.id === room.treasureItemId);
 
     if (item) {
-      this.items.add(new ItemPickup(this.scene, GAME_CENTER_X, GAME_CENTER_Y, item));
+      this.items.add(new ItemPickup(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y, item));
     }
   }
 
@@ -507,26 +519,26 @@ export class RoomController {
 
   private createWalls(): void {
     this.addWall(
-      GAME_CENTER_X,
+      ROOM_CENTER_X,
       ROOM_RECT.top - WALL_THICKNESS / 2,
       ROOM_RECT.width,
       WALL_THICKNESS,
     );
     this.addWall(
-      GAME_CENTER_X,
+      ROOM_CENTER_X,
       ROOM_RECT.bottom + WALL_THICKNESS / 2,
       ROOM_RECT.width,
       WALL_THICKNESS,
     );
     this.addWall(
       ROOM_RECT.left - WALL_THICKNESS / 2,
-      GAME_CENTER_Y,
+      ROOM_CENTER_Y,
       WALL_THICKNESS,
       ROOM_RECT.height,
     );
     this.addWall(
       ROOM_RECT.right + WALL_THICKNESS / 2,
-      GAME_CENTER_Y,
+      ROOM_CENTER_Y,
       WALL_THICKNESS,
       ROOM_RECT.height,
     );
@@ -542,10 +554,10 @@ export class RoomController {
 
   private createDoors(): void {
     const positions: Record<Direction, { x: number; y: number }> = {
-      north: { x: GAME_CENTER_X, y: ROOM_RECT.top + 8 },
-      south: { x: GAME_CENTER_X, y: ROOM_RECT.bottom - 8 },
-      east: { x: ROOM_RECT.right - 8, y: GAME_CENTER_Y },
-      west: { x: ROOM_RECT.left + 8, y: GAME_CENTER_Y },
+      north: { x: ROOM_CENTER_X, y: ROOM_RECT.top + 8 },
+      south: { x: ROOM_CENTER_X, y: ROOM_RECT.bottom - 8 },
+      east: { x: ROOM_RECT.right - 8, y: ROOM_CENTER_Y },
+      west: { x: ROOM_RECT.left + 8, y: ROOM_CENTER_Y },
     };
 
     for (const direction of DIRECTIONS) {
