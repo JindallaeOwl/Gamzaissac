@@ -1,6 +1,14 @@
 import Phaser from 'phaser';
 import { AnimationKeys, itemIconKey, PLAYER_DIRECTION_ROWS, TextureKeys } from '../config/assets';
 import { PASSIVE_ITEMS, type ItemCategory } from '../data/items';
+import {
+  buildChaser,
+  buildDasher,
+  buildShooter,
+  buildSplitter,
+  buildSplitterling,
+  drawEnemyTexture,
+} from './enemyPixelSprites';
 
 export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createPlayerFrameTexture(scene, TextureKeys.player, 0, 0, 0, false);
@@ -256,112 +264,23 @@ function createBulletTexture(
 }
 
 function createChaserTexture(scene: Phaser.Scene): void {
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(0x05090e, 0.4);
-  graphics.fillEllipse(20, 35, 30, 7);
-  graphics.fillStyle(0xff5d72, 1);
-  graphics.lineStyle(3, 0x541725, 1);
-  graphics.fillEllipse(20, 20, 34, 31);
-  graphics.strokeEllipse(20, 20, 34, 31);
-  graphics.fillStyle(0xff8191, 0.8);
-  graphics.fillCircle(14, 12, 6);
-  graphics.fillStyle(0x1b0b12, 1);
-  graphics.fillTriangle(11, 17, 16, 17, 14, 23);
-  graphics.fillTriangle(24, 17, 29, 17, 26, 23);
-  graphics.fillStyle(0xf7f3e8, 1);
-  graphics.fillTriangle(15, 27, 19, 27, 17, 32);
-  graphics.fillTriangle(21, 27, 25, 27, 23, 32);
-  graphics.generateTexture(TextureKeys.enemyChaser, 40, 40);
-  graphics.destroy();
+  drawEnemyTexture(scene, TextureKeys.enemyChaser, buildChaser);
 }
 
 function createShooterTexture(scene: Phaser.Scene): void {
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(0x05090e, 0.4);
-  graphics.fillEllipse(21, 37, 31, 7);
-  graphics.fillStyle(0xf7bd4d, 1);
-  graphics.lineStyle(3, 0x563514, 1);
-  graphics.beginPath();
-  graphics.moveTo(21, 2);
-  graphics.lineTo(39, 20);
-  graphics.lineTo(21, 38);
-  graphics.lineTo(3, 20);
-  graphics.closePath();
-  graphics.fillPath();
-  graphics.strokePath();
-  graphics.fillStyle(0x6b4219, 1);
-  graphics.fillRect(17, 2, 8, 12);
-  graphics.fillStyle(0x17202a, 1);
-  graphics.fillCircle(21, 21, 9);
-  graphics.lineStyle(2, 0xfff0ad, 1);
-  graphics.strokeCircle(21, 21, 7);
-  graphics.fillStyle(0xff7b3d, 1);
-  graphics.fillCircle(21, 21, 4);
-  graphics.generateTexture(TextureKeys.enemyShooter, 42, 42);
-  graphics.destroy();
+  drawEnemyTexture(scene, TextureKeys.enemyShooter, buildShooter);
 }
 
 function createDasherTexture(scene: Phaser.Scene): void {
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(0x05090e, 0.4);
-  graphics.fillEllipse(21, 37, 30, 7);
-  graphics.fillStyle(0xa97cff, 1);
-  graphics.lineStyle(3, 0x352363, 1);
-  graphics.beginPath();
-  graphics.moveTo(21, 2);
-  graphics.lineTo(39, 36);
-  graphics.lineTo(21, 29);
-  graphics.lineTo(3, 36);
-  graphics.closePath();
-  graphics.fillPath();
-  graphics.strokePath();
-  graphics.lineStyle(3, 0xe6d8ff, 0.9);
-  graphics.lineBetween(21, 9, 21, 27);
-  graphics.lineStyle(2, 0x5c3a9e, 1);
-  graphics.lineBetween(10, 31, 16, 27);
-  graphics.lineBetween(32, 31, 26, 27);
-  graphics.generateTexture(TextureKeys.enemyDasher, 42, 42);
-  graphics.destroy();
+  drawEnemyTexture(scene, TextureKeys.enemyDasher, buildDasher);
 }
 
 function createSplitterTexture(scene: Phaser.Scene): void {
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(0x05090e, 0.4);
-  graphics.fillEllipse(21, 37, 32, 7);
-  graphics.fillStyle(0x3fbf9a, 1);
-  graphics.lineStyle(3, 0x11463a, 1);
-  graphics.fillCircle(21, 21, 17);
-  graphics.strokeCircle(21, 21, 17);
-  graphics.fillStyle(0x7fe6c6, 0.75);
-  graphics.fillCircle(15, 14, 5);
-  // Central seam hints that this enemy will split apart when defeated.
-  graphics.lineStyle(3, 0x0c3329, 1);
-  graphics.lineBetween(21, 5, 21, 37);
-  graphics.lineStyle(2, 0x0c3329, 1);
-  graphics.lineBetween(21, 14, 12, 20);
-  graphics.lineBetween(21, 26, 31, 30);
-  graphics.fillStyle(0x0c1a17, 1);
-  graphics.fillCircle(15, 22, 2.5);
-  graphics.fillCircle(27, 22, 2.5);
-  graphics.generateTexture(TextureKeys.enemySplitter, 42, 42);
-  graphics.destroy();
+  drawEnemyTexture(scene, TextureKeys.enemySplitter, buildSplitter);
 }
 
 function createSplitterlingTexture(scene: Phaser.Scene): void {
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(0x05090e, 0.4);
-  graphics.fillEllipse(12, 21, 18, 5);
-  graphics.fillStyle(0x5fd9b4, 1);
-  graphics.lineStyle(2, 0x11463a, 1);
-  graphics.fillCircle(12, 12, 9);
-  graphics.strokeCircle(12, 12, 9);
-  graphics.fillStyle(0xbdf4e2, 0.8);
-  graphics.fillCircle(9, 9, 2.5);
-  graphics.fillStyle(0x0c1a17, 1);
-  graphics.fillCircle(9, 13, 1.8);
-  graphics.fillCircle(15, 13, 1.8);
-  graphics.generateTexture(TextureKeys.enemySplitterling, 24, 24);
-  graphics.destroy();
+  drawEnemyTexture(scene, TextureKeys.enemySplitterling, buildSplitterling);
 }
 
 function createBossTexture(scene: Phaser.Scene): void {

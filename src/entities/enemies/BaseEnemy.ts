@@ -38,9 +38,9 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.setDepth(DEPTH.actor);
 
-    if (!this.isBoss) {
-      this.setScale(0.8);
-    }
+    // Enemy textures are authored at their intended on-screen size, so they are
+    // drawn at scale 1. (Normal enemies previously used 40-42px textures scaled
+    // to 0.8; the pixel-art sprites are 32px and need no down-scaling.)
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const bodyOffset = getCenteredCircleBodyOffset(this.width, this.height, definition.bodyRadius);
