@@ -35,6 +35,10 @@ export const en: TranslationTree = {
   bosses: {
     faultWarden: 'Fault Warden',
     rootKernel: 'ROOT KERNEL',
+    rootGnarl: 'Root Gnarl',
+    wriggleMass: 'Wriggle Mass',
+    flyQueen: 'Fly Queen',
+    thornTangle: 'Thorn Tangle',
   },
   gameOver: {
     title: 'GAME OVER',

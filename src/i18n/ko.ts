@@ -35,6 +35,10 @@ export const ko: TranslationTree = {
   bosses: {
     faultWarden: 'Fault Warden',
     rootKernel: '루트 커널',
+    rootGnarl: '뿌리 옹이',
+    wriggleMass: '꿈틀대는 덩어리',
+    flyQueen: '파리 여왕',
+    thornTangle: '가시넝쿨 뭉치',
   },
   gameOver: {
     title: 'GAME OVER',

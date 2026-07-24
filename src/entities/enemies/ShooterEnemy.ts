@@ -1,12 +1,15 @@
 import Phaser from 'phaser';
+import { shooterPulseScale } from '../../systems/EnemyScaleRules';
 import type { Player } from '../Player';
 import { BaseEnemy } from './BaseEnemy';
 
 export class ShooterEnemy extends BaseEnemy {
   private nextShotAt = 0;
   private fireAt = 0;
+  private baseScale?: number;
 
   updateAI(time: number, player: Player, enemyBullets: Phaser.Physics.Arcade.Group): void {
+    const baseScale = (this.baseScale ??= this.scaleX);
     const body = this.body as Phaser.Physics.Arcade.Body;
     const keepAwayDistance = this.definition.keepAwayDistance ?? 125;
     const distance = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
@@ -30,7 +33,7 @@ export class ShooterEnemy extends BaseEnemy {
     if (this.fireAt > 0 && time >= this.fireAt) {
       this.fireAt = 0;
       this.clearTint();
-      this.setScale(0.8);
+      this.setScale(shooterPulseScale(baseScale, 'idle'));
       this.fireAtPlayer(
         player,
         enemyBullets,
@@ -44,7 +47,7 @@ export class ShooterEnemy extends BaseEnemy {
       this.nextShotAt = time + (this.definition.fireCooldownMs ?? 1400);
       this.fireAt = time + 240;
       this.setTint(0xfff0ad);
-      this.setScale(0.9);
+      this.setScale(shooterPulseScale(baseScale, 'telegraph'));
     }
   }
 }

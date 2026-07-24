@@ -5,6 +5,7 @@ import { Bullet } from '../Bullet';
 import type { Player } from '../Player';
 import { normalizeVector } from '../../utils/math';
 import { getCenteredCircleBodyOffset } from '../../utils/collisionBody';
+import { effectiveBodyRadius } from '../../systems/EnemyScaleRules';
 import { t } from '../../i18n';
 
 export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
@@ -12,6 +13,8 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   readonly scoreValue: number;
   contactDamage: number;
   readonly isBoss: boolean;
+  // displayScale이 반영된 월드 기준 몸 반경 (탄환 생성 위치·방 경계 여백에 사용)
+  readonly effectiveBodyRadius: number;
 
   protected hp: number;
   protected floorScale: number;
@@ -33,14 +36,19 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     this.contactDamage = definition.contactDamage;
     this.scoreValue = Math.round(definition.score * this.floorScale);
     this.isBoss = definition.kind === 'boss';
+    this.effectiveBodyRadius = effectiveBodyRadius(definition.bodyRadius, definition.displayScale);
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(DEPTH.actor);
 
-    // Enemy textures are authored at their intended on-screen size, so they are
-    // drawn at scale 1. (Normal enemies previously used 40-42px textures scaled
-    // to 0.8; the pixel-art sprites are 32px and need no down-scaling.)
+    // Enemy textures are authored at their intended on-screen size and drawn at
+    // scale 1. Minibosses temporarily reuse normal-enemy textures enlarged via
+    // displayScale; the Arcade body scales with the sprite, so bodyRadius below
+    // stays in unscaled texture pixels.
+    if (definition.displayScale !== undefined) {
+      this.setScale(definition.displayScale);
+    }
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const bodyOffset = getCenteredCircleBodyOffset(this.width, this.height, definition.bodyRadius);
@@ -166,8 +174,8 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     const direction = normalizeVector(player.x - this.x, player.y - this.y);
 
     this.fireBullet(
-      this.x + direction.x * (this.definition.bodyRadius + 4),
-      this.y + direction.y * (this.definition.bodyRadius + 4),
+      this.x + direction.x * (this.effectiveBodyRadius + 4),
+      this.y + direction.y * (this.effectiveBodyRadius + 4),
       direction,
       enemyBullets,
       speed,
@@ -195,7 +203,7 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   protected constrainToRoom(): void {
-    const margin = this.definition.bodyRadius + 2;
+    const margin = this.effectiveBodyRadius + 2;
     this.x = Phaser.Math.Clamp(this.x, ROOM_RECT.left + margin, ROOM_RECT.right - margin);
     this.y = Phaser.Math.Clamp(this.y, ROOM_RECT.top + margin, ROOM_RECT.bottom - margin);
   }
