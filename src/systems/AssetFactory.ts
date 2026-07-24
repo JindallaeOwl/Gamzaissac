@@ -38,6 +38,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createFiveCoinTexture(scene);
   createChestTexture(scene);
   createFloorExitTexture(scene);
+  createFloorExitEscapeTexture(scene);
   createFloorTile(scene);
   createWallTexture(scene);
   createObstacleTexture(scene);
@@ -733,6 +734,32 @@ function createFloorExitTexture(scene: Phaser.Scene): void {
   graphics.fillStyle(0x17242b, 0.8);
   graphics.fillEllipse(32, 18, 31, 10);
   graphics.generateTexture(TextureKeys.floorExit, 64, 40);
+  graphics.destroy();
+}
+
+// 최종층 탈출구: 같은 규격(64x40)의 굴이지만 지상의 빛이 새어들어 밝게 빛난다.
+// 규격을 일반 출구와 동일하게 유지해 FloorExit의 물리 몸 설정을 공유한다.
+function createFloorExitEscapeTexture(scene: Phaser.Scene): void {
+  const graphics = scene.add.graphics();
+  graphics.fillStyle(0x020407, 0.55);
+  graphics.fillEllipse(32, 24, 62, 30);
+  graphics.fillStyle(0x1a1607, 1);
+  graphics.fillEllipse(32, 20, 54, 25);
+  graphics.lineStyle(4, 0x8a7d55, 1);
+  graphics.strokeEllipse(32, 20, 56, 27);
+  // 새어드는 빛: 중심으로 갈수록 밝은 노란 띠
+  graphics.fillStyle(0xffd65a, 0.55);
+  graphics.fillEllipse(32, 19, 40, 15);
+  graphics.fillStyle(0xffe9a0, 0.85);
+  graphics.fillEllipse(32, 18, 28, 10);
+  graphics.fillStyle(0xfff7d6, 1);
+  graphics.fillEllipse(32, 18, 16, 6);
+  // 빛줄기 몇 가닥
+  graphics.lineStyle(2, 0xffe9a0, 0.7);
+  graphics.lineBetween(24, 14, 20, 4);
+  graphics.lineBetween(32, 13, 32, 2);
+  graphics.lineBetween(40, 14, 44, 4);
+  graphics.generateTexture(TextureKeys.floorExitEscape, 64, 40);
   graphics.destroy();
 }
 

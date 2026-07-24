@@ -43,6 +43,7 @@ export const TextureKeys = {
   chestPickup: 'chest-pickup',
   chestOpenPickup: 'chest-open-pickup',
   floorExit: 'floor-exit',
+  floorExitEscape: 'floor-exit-escape',
   floorTile: 'floor-tile',
   wall: 'wall',
   obstacleCrate: 'obstacle-crate',

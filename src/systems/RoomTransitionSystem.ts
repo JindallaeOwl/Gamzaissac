@@ -6,6 +6,7 @@ import { ROOM_CENTER_X, ROOM_CENTER_Y, ROOM_ENTRY_PROTECTION_MS } from '../confi
 import type { Direction } from '../utils/directions';
 import type { BombSystem } from './BombSystem';
 import type { DungeonManager, PendingDroppedReward, RoomNode } from './DungeonManager';
+import { floorExitKindForFloor, restoredFloorExitKind, type FloorExitKind } from './FloorExitRules';
 import type { RewardDrop } from './RewardSystem';
 import type { RoomController } from './RoomController';
 
@@ -151,11 +152,15 @@ export class RoomTransitionSystem {
   }
 
   spawnFloorExit(): void {
+    this.spawnFloorExitOfKind(floorExitKindForFloor(this.dungeon.floor));
+  }
+
+  private spawnFloorExitOfKind(kind: FloorExitKind): void {
     if (this.floorExits.countActive(true) > 0) {
       return;
     }
 
-    this.floorExits.add(new FloorExit(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y));
+    this.floorExits.add(new FloorExit(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y, kind));
   }
 
   private clearTransientObjects(includeRoomEntities: boolean): void {
@@ -216,8 +221,10 @@ export class RoomTransitionSystem {
   }
 
   private restoreFloorExit(room: RoomNode): void {
-    if (room.type === 'boss' && room.cleared) {
-      this.spawnFloorExit();
+    const kind = restoredFloorExitKind(this.dungeon.floor, room.type, room.cleared);
+
+    if (kind !== undefined) {
+      this.spawnFloorExitOfKind(kind);
     }
   }
 }

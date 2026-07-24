@@ -42,6 +42,7 @@ import {
   KONAMI_CODE,
   SecretCodeTracker,
 } from '../systems/SecretCodeSystem';
+import { floorExitKindForFloor } from '../systems/FloorExitRules';
 import { createInitialRunState, isRunEnded, type RunState } from '../systems/RunState';
 import { getEffectiveDamage } from '../systems/PlayerStatSystem';
 import { BossHud } from '../ui/BossHud';
@@ -966,7 +967,11 @@ export class GameScene extends Phaser.Scene {
       this.music.play(getRoomMusicKey('combat'));
       this.roomController.spawnBossReward(room);
       this.roomTransitions.spawnFloorExit();
-      this.hud.showMessage(t('messages.nextFloorOpening'), 2200);
+      const exitKind = floorExitKindForFloor(this.runState.floor);
+      this.hud.showMessage(
+        t(exitKind === 'escape' ? 'messages.escapeOpening' : 'messages.nextFloorOpening'),
+        2200,
+      );
     }
   }
 

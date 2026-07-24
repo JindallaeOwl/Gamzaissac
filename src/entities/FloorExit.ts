@@ -1,14 +1,16 @@
 import Phaser from 'phaser';
-import { TextureKeys } from '../config/assets';
 import { DEPTH } from '../config/gameConfig';
+import { floorExitTextureKey, type FloorExitKind } from '../systems/FloorExitRules';
 
 const ACTIVATION_DELAY_MS = 700;
 
 export class FloorExit extends Phaser.Physics.Arcade.Sprite {
+  readonly kind: FloorExitKind;
   private readonly usableAt: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, TextureKeys.floorExit);
+  constructor(scene: Phaser.Scene, x: number, y: number, kind: FloorExitKind = 'next-floor') {
+    super(scene, x, y, floorExitTextureKey(kind));
+    this.kind = kind;
     this.usableAt = scene.time.now + ACTIVATION_DELAY_MS;
     scene.add.existing(this);
     scene.physics.add.existing(this);
