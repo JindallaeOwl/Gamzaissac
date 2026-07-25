@@ -184,13 +184,13 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     bossBarColor: 0xa97cff,
   },
   // --- II층 스테이지 보스: 전용 AI 클래스를 가진다.
-  // wormKing은 아직 전용 도트가 없어 꿈틀대는 덩어리와 같은 splitter 텍스처를 확대해 쓴다.
+  // wormKing 전용 임시 도트(마디진 지렁이+왕관). displayScale로 확대해 크기는 유지한다.
   wormKing: {
     id: 'wormKing',
     kind: 'boss',
     displayName: 'Old Worm King',
     displayNameKey: 'bosses.wormKing',
-    textureKey: TextureKeys.enemySplitter,
+    textureKey: TextureKeys.enemyWormKing,
     maxHealth: WORM_KING_TUNING.maxHealth,
     speed: WORM_KING_TUNING.speed,
     contactDamage: WORM_KING_TUNING.contactDamage,

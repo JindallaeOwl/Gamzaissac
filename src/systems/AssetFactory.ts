@@ -7,6 +7,7 @@ import {
   buildShooter,
   buildSplitter,
   buildSplitterling,
+  buildWormKingFrame,
   drawEnemyTexture,
 } from './enemyPixelSprites';
 
@@ -28,6 +29,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createSplitterlingTexture(scene);
   createBossTexture(scene);
   createRootKernelTexture(scene);
+  createWormKingTexture(scene);
   createDoorTexture(scene, TextureKeys.doorHorizontal, 48, 16);
   createDoorTexture(scene, TextureKeys.doorVertical, 16, 48);
   createPassiveItemIcons(scene);
@@ -81,6 +83,7 @@ function createSeedTexture(scene: Phaser.Scene): void {
 export function createPlaceholderAnimations(scene: Phaser.Scene): void {
   createYellowPlayerAnimations(scene);
   createShopNpcAnimation(scene);
+  createWormKingAnimation(scene);
 
   if (scene.anims.exists(AnimationKeys.playerWalk)) {
     return;
@@ -95,6 +98,22 @@ export function createPlaceholderAnimations(scene: Phaser.Scene): void {
       { key: TextureKeys.playerWalkMid },
     ],
     frameRate: 9,
+    repeat: -1,
+  });
+}
+
+function createWormKingAnimation(scene: Phaser.Scene): void {
+  if (
+    scene.anims.exists(AnimationKeys.enemyWormKingIdle) ||
+    !WORM_KING_FRAME_KEYS.every((key) => scene.textures.exists(key))
+  ) {
+    return;
+  }
+
+  scene.anims.create({
+    key: AnimationKeys.enemyWormKingIdle,
+    frames: WORM_KING_FRAME_KEYS.map((key) => ({ key })),
+    frameRate: 5,
     repeat: -1,
   });
 }
@@ -282,6 +301,20 @@ function createSplitterTexture(scene: Phaser.Scene): void {
 
 function createSplitterlingTexture(scene: Phaser.Scene): void {
   drawEnemyTexture(scene, TextureKeys.enemySplitterling, buildSplitterling);
+}
+
+const WORM_KING_FRAME_KEYS = [
+  TextureKeys.enemyWormKing,
+  TextureKeys.enemyWormKing1,
+  TextureKeys.enemyWormKing2,
+  TextureKeys.enemyWormKing3,
+];
+
+function createWormKingTexture(scene: Phaser.Scene): void {
+  // 각 프레임은 위상을 균등히 나눠 몸통이 위아래로 물결치는 꿈틀 애니메이션을 만든다.
+  WORM_KING_FRAME_KEYS.forEach((key, index) => {
+    drawEnemyTexture(scene, key, buildWormKingFrame(index / WORM_KING_FRAME_KEYS.length));
+  });
 }
 
 function createBossTexture(scene: Phaser.Scene): void {

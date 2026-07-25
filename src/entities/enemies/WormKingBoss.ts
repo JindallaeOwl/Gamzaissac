@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
+import { AnimationKeys } from '../../config/assets';
 import { DEPTH, ROOM_RECT, WORM_KING_TUNING } from '../../config/gameConfig';
-import type { EnemyId } from '../../data/enemies';
+import type { EnemyDefinition, EnemyId } from '../../data/enemies';
 import type { Player } from '../Player';
 import { normalizeVector } from '../../utils/math';
 import {
@@ -30,6 +31,25 @@ export class WormKingBoss extends BaseEnemy {
   private readonly emergeTarget = { x: 0, y: 0 };
   private telegraph?: Phaser.GameObjects.Graphics;
   private cleanedUp = false;
+  // BaseEnemy가 생성자에서 setScale(displayScale)로 잡아둔 기본 배율.
+  // 잠수/재등장 트윈은 이 값을 기준으로 줄였다 되돌린다.
+  private readonly baseScale = this.definition.displayScale ?? 1;
+
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    definition: EnemyDefinition,
+    floor: number,
+  ) {
+    super(scene, x, y, definition, floor);
+
+    // 몸통이 꿈틀거리는 idle 애니메이션. 프레임 텍스처 크기는 모두 같아
+    // 히트박스·기본 배율에는 영향을 주지 않는다.
+    if (scene.anims.exists(AnimationKeys.enemyWormKingIdle)) {
+      this.play(AnimationKeys.enemyWormKingIdle);
+    }
+  }
 
   override takeDamage(amount: number, sourceX: number, sourceY: number): boolean {
     // 잠수 중에는 몸통 물리 바디가 꺼져 있어 탄에는 안 맞지만, 폭탄은 위치로
@@ -131,6 +151,8 @@ export class WormKingBoss extends BaseEnemy {
     if (!this.cleanedUp) {
       this.cleanedUp = true;
       this.clearTelegraph();
+      // 파괴 후 잠수/재등장 트윈 콜백이 사라진 대상을 건드리지 않도록 정리한다.
+      this.scene.tweens.killTweensOf(this);
     }
 
     super.destroy(fromScene);
@@ -183,9 +205,49 @@ export class WormKingBoss extends BaseEnemy {
     this.attackState = 'burrowHidden';
     this.stateEndsAt = time + WORM_KING_TUNING.burrowHiddenMs;
     this.nextBurrowAt = time + this.burrowCooldown();
-    (this.body as Phaser.Physics.Arcade.Body).stop();
-    // active는 유지(=updateAI 계속 실행), 몸통과 표시만 끈다 → 잠수 중 무적.
-    this.disableBody(false, true);
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.stop();
+    // 몸통(물리 바디)을 즉시 꺼 잠수 중 무적으로 만든다. active는 유지되어
+    // updateAI가 계속 돌고, 표시는 아래 파고드는 트윈이 끝날 때 감춘다.
+    body.enable = false;
+    this.playDiveAnimation();
+  }
+
+  // "웅— 띠용!" 스프링 잠수: 살짝 위로 튀며 세로로 늘어났다가(예비 동작),
+  // 반동으로 흙먼지와 함께 아래로 쑥 파고들며 쪼그라들어 사라진다.
+  private playDiveAnimation(): void {
+    const startY = this.y;
+    this.scene.tweens.killTweensOf(this);
+
+    this.scene.tweens.add({
+      targets: this,
+      y: startY - 10,
+      scaleX: this.baseScale * 0.82,
+      scaleY: this.baseScale * 1.28,
+      duration: 150,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        if (!this.active) {
+          return;
+        }
+
+        this.spawnDirtBurst(this.x, startY + 4);
+        this.scene.tweens.add({
+          targets: this,
+          y: startY + 6,
+          scale: this.baseScale * 0.1,
+          alpha: 0.2,
+          duration: 200,
+          ease: 'Quad.easeIn',
+          onComplete: () => {
+            if (this.active) {
+              this.setVisible(false);
+            }
+          },
+        });
+      },
+    });
   }
 
   private beginBurrowTelegraph(time: number, player: Player): void {
@@ -199,8 +261,27 @@ export class WormKingBoss extends BaseEnemy {
 
   private emergeFromBurrow(time: number, enemyBullets: Phaser.Physics.Arcade.Group): void {
     this.clearTelegraph();
-    // 몸통을 착지 지점으로 되살리고 다시 켠다(위치·속도 초기화 포함).
-    this.enableBody(true, this.emergeTarget.x, this.emergeTarget.y, true, true);
+
+    // 착지 지점으로 옮기고 몸통을 되살린다(위치·속도 초기화 포함).
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    this.setPosition(this.emergeTarget.x, this.emergeTarget.y);
+    body.reset(this.emergeTarget.x, this.emergeTarget.y);
+    body.enable = true;
+    this.setVisible(true);
+
+    // 흙을 뚫고 솟아오르는 팝 연출: 작게 시작해 기본 배율로 되돌린다.
+    this.spawnDirtBurst(this.emergeTarget.x, this.emergeTarget.y);
+    this.setScale(this.baseScale * 0.2);
+    this.setAlpha(0.5);
+    this.scene.tweens.killTweensOf(this);
+    this.scene.tweens.add({
+      targets: this,
+      scale: this.baseScale,
+      alpha: 1,
+      duration: 220,
+      ease: 'Back.easeOut',
+    });
+
     this.fireResurfaceRing(enemyBullets);
     this.attackState = 'idle';
     this.recoveryUntil = time + WORM_KING_TUNING.actionRecoveryMs;
@@ -223,6 +304,34 @@ export class WormKingBoss extends BaseEnemy {
         damage,
       );
     }
+  }
+
+  // 잠수·재등장 지점에 흙덩이가 확 퍼지는 연출. 보스와 독립된 그래픽이라
+  // 스스로 사라지며(트윈 완료 시 destroy) 보스가 죽어도 남지 않는다.
+  private spawnDirtBurst(x: number, y: number): void {
+    const dirt = this.scene.add.graphics().setDepth(this.depth - 1);
+    dirt.setPosition(x, y);
+
+    const clumps = 7;
+    dirt.fillStyle(0x6b4a2f, 1);
+    for (let i = 0; i < clumps; i += 1) {
+      const angle = (Math.PI * 2 * i) / clumps;
+      dirt.fillCircle(Math.cos(angle) * 12, Math.sin(angle) * 12, 3);
+    }
+    dirt.fillStyle(0x8a5a38, 1);
+    for (let i = 0; i < clumps; i += 1) {
+      const angle = (Math.PI * 2 * i) / clumps + 0.45;
+      dirt.fillCircle(Math.cos(angle) * 6, Math.sin(angle) * 6, 2);
+    }
+
+    this.scene.tweens.add({
+      targets: dirt,
+      scale: 1.7,
+      alpha: 0,
+      duration: 280,
+      ease: 'Quad.easeOut',
+      onComplete: () => dirt.destroy(),
+    });
   }
 
   private summonBroodlings(time: number): void {

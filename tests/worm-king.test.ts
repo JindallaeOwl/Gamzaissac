@@ -15,10 +15,10 @@ function nested(tree: TranslationTree, group: string, key: string): unknown {
 describe('worm king boss definition', () => {
   const definition = ENEMY_DEFINITIONS.wormKing;
 
-  it('is a boss-kind enemy reusing the split texture until it gets its own art', () => {
+  it('is a boss-kind enemy with its own placeholder worm texture, enlarged', () => {
     expect(definition).toBeDefined();
     expect(definition.kind).toBe('boss');
-    expect(definition.textureKey).toBe(TextureKeys.enemySplitter);
+    expect(definition.textureKey).toBe(TextureKeys.enemyWormKing);
     expect(definition.displayScale ?? 1).toBeGreaterThan(1);
   });
 

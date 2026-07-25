@@ -235,6 +235,51 @@ export const buildSplitterling: EnemySpriteBuilder = (s) => {
   s.mirror();
 };
 
+/**
+ * 지렁이 왕의 한 애니메이션 프레임. phase(0~1)에 따라 몸통 마디가 위아래로
+ * 물결쳐 꿈틀거린다. 좌우 대칭(mirror)은 유지하므로 세로 방향으로만 움직여
+ * "삐뚤빼뚤"하지 않게 한다. 머리·왕관·눈은 머리 마디를 따라 살짝 흔들린다.
+ */
+export function buildWormKingFrame(phase: number): EnemySpriteBuilder {
+  const t = phase * Math.PI * 2;
+
+  return (s) => {
+    const palette = { shade: 0x8f4b3d, base: 0xba6553, light: 0xdd907d };
+
+    // 세 마디를 서로 다른 위상으로 흔들어 몸통이 꿈틀거리게 한다.
+    const lowerY = 11.8 + Math.sin(t) * 1.1;
+    const midY = 8 + Math.sin(t + 2) * 0.9;
+    const midR = 3.5 + Math.sin(t + 1) * 0.4;
+    const headY = 4.8 + Math.sin(t + 3.6) * 0.5;
+
+    s.disc(7.5, lowerY, 3.9, palette);
+    s.disc(7.5, midY, midR, palette);
+    s.disc(7.5, headY, 3.1, palette);
+    s.outline(0x33150f);
+
+    // 마디 이음선(어두운 가로선) — 분열형 블롭과 구분되는 지렁이 느낌.
+    const seamTop = Math.round((headY + midY) / 2);
+    const seamBottom = Math.round((midY + lowerY) / 2);
+    for (let x = 4; x <= 7; x += 1) {
+      s.set(x, seamTop, 0x5c2c22);
+      s.set(x, seamBottom, 0x5c2c22);
+    }
+
+    // 금색 왕관 세 뿔 — "왕". 머리 마디를 따라 함께 흔들린다.
+    const crownY = Math.round(headY) - 4;
+    s.set(7, crownY, 0xffd166);
+    s.set(7, crownY + 1, 0xffd166);
+    s.set(5, crownY + 1, 0xffd166);
+    s.set(5, crownY + 2, 0xffd166);
+
+    s.eye(5, Math.round(headY) - 1, 0x1a0a08, 0xffe3d8);
+    s.mirror();
+  };
+}
+
+// 정지 프레임(=phase 0). 대칭 테스트와 스폰 시 기본 텍스처에 쓴다.
+export const buildWormKing: EnemySpriteBuilder = buildWormKingFrame(0);
+
 export function drawEnemyTexture(
   scene: Phaser.Scene,
   key: string,
