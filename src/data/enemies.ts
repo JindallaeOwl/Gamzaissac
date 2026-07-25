@@ -1,5 +1,10 @@
 import { TextureKeys } from '../config/assets';
-import { BOSS_TUNING, PLAYER_DAMAGE_PER_HIT, ROOT_KERNEL_TUNING } from '../config/gameConfig';
+import {
+  BOSS_TUNING,
+  PLAYER_DAMAGE_PER_HIT,
+  ROOT_KERNEL_TUNING,
+  WORM_KING_TUNING,
+} from '../config/gameConfig';
 
 export type EnemyId =
   | 'chaser'
@@ -11,6 +16,7 @@ export type EnemyId =
   | 'wriggleMass'
   | 'flyQueen'
   | 'thornTangle'
+  | 'wormKing'
   | 'faultWarden'
   | 'rootKernel';
 
@@ -176,6 +182,25 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     dashSpeed: 185,
     wanderSpeed: 58,
     bossBarColor: 0xa97cff,
+  },
+  // --- II층 스테이지 보스: 전용 AI 클래스를 가진다.
+  // wormKing은 아직 전용 도트가 없어 꿈틀대는 덩어리와 같은 splitter 텍스처를 확대해 쓴다.
+  wormKing: {
+    id: 'wormKing',
+    kind: 'boss',
+    displayName: 'Old Worm King',
+    displayNameKey: 'bosses.wormKing',
+    textureKey: TextureKeys.enemySplitter,
+    maxHealth: WORM_KING_TUNING.maxHealth,
+    speed: WORM_KING_TUNING.speed,
+    contactDamage: WORM_KING_TUNING.contactDamage,
+    bodyRadius: WORM_KING_TUNING.bodyRadius,
+    score: WORM_KING_TUNING.score,
+    displayScale: WORM_KING_TUNING.displayScale,
+    bulletDamage: WORM_KING_TUNING.bulletDamage,
+    bossBarColor: WORM_KING_TUNING.bossBarColor,
+    bossPhaseTwoBarColor: WORM_KING_TUNING.bossBarPhaseTwoColor,
+    phaseTwoMessageKey: 'messages.wormKingPhaseTwo',
   },
   faultWarden: {
     id: 'faultWarden',

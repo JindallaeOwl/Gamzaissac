@@ -22,6 +22,8 @@ import { ENEMY_DEFINITIONS, type EnemyId } from '../data/enemies';
 import { getRoomTemplate } from '../data/rooms';
 import { getStageProgress, resolveRoomAccentColor } from '../data/stages';
 import {
+  getAllowedSummonCount,
+  getBossSummonSpawns,
   getReinforcementCount,
   getReinforcementPool,
   getSplitChildSpawns,
@@ -29,7 +31,8 @@ import {
 import { SHOP_NPC_POSITION, SHOP_OFFER_POSITIONS } from '../data/shop';
 import type { ItemSystem } from './ItemSystem';
 import type { DungeonManager, RoomNode } from './DungeonManager';
-import type { RunState } from './RunState';
+import { isRunEnded, type RunState } from './RunState';
+import { shouldExecuteDeferredSummon } from './WormKingRules';
 import { DIRECTIONS, type Direction } from '../utils/directions';
 import { randomInt, randomOf, type RandomSource } from '../utils/random';
 import { BossRewardSystem } from './BossRewardSystem';
@@ -42,6 +45,13 @@ import {
   resolveEnemySpawnAwayFromEntry,
   type RoomPoint,
 } from './RoomEntrySafety';
+
+// 보스가 전투 중 새끼를 소환할 때 실어 보내는 요청. maxAlive로 동시 생존 수를 제한한다.
+interface BossSummonRequest {
+  childId: EnemyId;
+  count: number;
+  maxAlive: number;
+}
 
 interface RoomControllerConfig {
   scene: Phaser.Scene;
@@ -313,11 +323,68 @@ export class RoomController {
       enemy.once('boss-phase-two', this.onBossPhaseTwo);
     }
 
+    // A boss (e.g. the Worm King) summons adds by emitting an event repeatedly
+    // rather than creating enemies itself, mirroring the split path below.
+    if (enemy.isBoss) {
+      enemy.on('boss-summon', (payload: BossSummonRequest) =>
+        this.handleBossSummon(enemy, payload),
+      );
+    }
+
     // A splitter spawns its children while it is still counted as active, so the
     // room never briefly registers zero enemies and opens its doors early.
     if (ENEMY_DEFINITIONS[enemyId].splitChildId) {
       enemy.once('enemy-defeated', () => this.spawnSplitChildren(enemy, enemyId));
     }
+  }
+
+  private handleBossSummon(boss: BaseEnemy, request: BossSummonRequest): void {
+    const roomId = this.dungeon.getCurrentRoom().id;
+
+    // The event fires from inside the enemy update loop, so defer the spawn to
+    // avoid mutating the enemies group while it is being iterated. By the time it
+    // runs the boss may be dead, the room may have changed, or the run may have
+    // ended (game over / escape) — only summon when all three are still valid.
+    this.scene.time.delayedCall(0, () => {
+      const canSummon = shouldExecuteDeferredSummon({
+        bossActive: boss.active,
+        sameRoom: this.dungeon.getCurrentRoom().id === roomId,
+        runEnded: isRunEnded(this.runState),
+      });
+
+      if (!canSummon) {
+        return;
+      }
+
+      // countActive includes the boss itself, so subtract it to count only adds.
+      const aliveAdds = Math.max(0, this.enemies.countActive(true) - 1);
+      const spawnCount = getAllowedSummonCount(request.count, aliveAdds, request.maxAlive);
+
+      if (spawnCount <= 0) {
+        return;
+      }
+
+      const spawns = getBossSummonSpawns(
+        request.childId,
+        spawnCount,
+        boss.x,
+        boss.y,
+        ROOM_RECT,
+        this.random,
+      );
+
+      for (const spawn of spawns) {
+        const child = createEnemy(
+          this.scene,
+          this.enemies,
+          spawn.enemyId,
+          spawn.x,
+          spawn.y,
+          this.runState.floor,
+        );
+        this.registerSpawnedEnemy(child, spawn.enemyId);
+      }
+    });
   }
 
   private spawnSplitChildren(parent: BaseEnemy, parentId: EnemyId): void {

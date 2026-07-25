@@ -215,6 +215,9 @@ export class CombatCollisionSystem {
       !beam.active ||
       !enemy.active ||
       !body ||
+      // 몸통이 꺼진 적(예: 잠수 중인 지렁이 왕)은 빔에 맞지 않는다. 빔은 물리 겹침이
+      // 아니라 직접 교차 판정을 하므로, 여기서 빼지 않으면 허위 피격 효과가 난다.
+      !body.enable ||
       !beam.intersectsCircle(body.center.x, body.center.y, body.halfWidth) ||
       !beam.canDamage(enemy, this.scene.time.now)
     ) {

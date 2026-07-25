@@ -44,7 +44,7 @@ describe('DungeonManager', () => {
       [1, 'boss-rootGnarl'],
       [2, 'boss-rootKernel'],
       [3, 'boss-wriggleMass'],
-      [4, 'boss-faultWarden'],
+      [4, 'boss-wormKing'],
       [5, 'boss-flyQueen'],
       [6, 'boss-faultWarden'],
       [7, 'boss-thornTangle'],

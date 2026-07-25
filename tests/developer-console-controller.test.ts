@@ -25,7 +25,7 @@ import {
 import { DungeonManager } from '../src/systems/DungeonManager';
 import { createInitialRunState } from '../src/systems/RunState';
 
-function createController() {
+function createController(enemies: unknown = { getChildren: () => [] }) {
   const runState = createInitialRunState();
   const dungeon = new DungeonManager(() => 0);
   dungeon.generateFloor(1);
@@ -49,7 +49,7 @@ function createController() {
     hud,
     roomTransitions,
     effects,
-    enemies: { getChildren: vi.fn(() => []) },
+    enemies,
     items: { add: vi.fn() },
     shopSystem: { forceDiscount: vi.fn() },
     roomController: { refreshCurrentShop: vi.fn() },
@@ -116,5 +116,38 @@ describe('DeveloperConsoleController', () => {
       136,
     );
     expect(effects.pickup).toHaveBeenCalledTimes(2);
+  });
+
+  it('force-defeats even an invulnerable enemy and counts only real kills', () => {
+    // 잠수 중인 지렁이 왕처럼 일반 피해를 무시하는(takeDamage=false) 적도
+    // forceDefeat로는 반드시 죽고, 처치 수는 실제로 죽은 수만 센다.
+    const makeEnemy = () => {
+      const enemy = {
+        active: true,
+        takeDamage: vi.fn(() => false),
+        forceDefeat: vi.fn(() => {
+          if (!enemy.active) {
+            return false;
+          }
+
+          enemy.active = false;
+          return true;
+        }),
+      };
+
+      return enemy;
+    };
+
+    const boss = makeEnemy();
+    const grunt = makeEnemy();
+    const { controller } = createController({ getChildren: () => [boss, grunt] });
+
+    const result = controller.execute('kill');
+
+    expect(boss.forceDefeat).toHaveBeenCalled();
+    expect(grunt.forceDefeat).toHaveBeenCalled();
+    expect(boss.takeDamage).not.toHaveBeenCalled();
+    expect(boss.active).toBe(false);
+    expect(result.lines?.[0]).toContain('2');
   });
 });

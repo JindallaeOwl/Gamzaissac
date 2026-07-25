@@ -5,6 +5,7 @@ import { DasherEnemy } from './DasherEnemy';
 import { FaultWardenBoss } from './FaultWardenBoss';
 import { RootKernelBoss } from './RootKernelBoss';
 import { ShooterEnemy } from './ShooterEnemy';
+import { WormKingBoss } from './WormKingBoss';
 import type { BaseEnemy } from './BaseEnemy';
 
 export function createEnemy(
@@ -40,6 +41,9 @@ export function createEnemy(
       break;
     case 'thornTangle':
       enemy = new DasherEnemy(scene, x, y, definition, floor);
+      break;
+    case 'wormKing':
+      enemy = new WormKingBoss(scene, x, y, definition, floor);
       break;
     case 'faultWarden':
       enemy = new FaultWardenBoss(scene, x, y, definition, floor);

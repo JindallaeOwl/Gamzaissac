@@ -211,6 +211,48 @@ export const ROOT_KERNEL_TUNING = {
   ringBulletCount: 12,
 };
 
+// 2스테이지 II층 보스 "늙은 지렁이 왕". 8층 중 4층(중간 난도)에 배치한다.
+// 탄막형인 뿌리핵과 달리 근접 돌진·땅굴 잠수·새끼 소환으로 압박하는 이동형 보스다.
+export const WORM_KING_TUNING = {
+  maxHealth: 22,
+  speed: 48,
+  contactDamage: PLAYER_DAMAGE_PER_HIT,
+  bodyRadius: 13,
+  score: 150,
+  displayScale: 1.9,
+  bulletDamage: PLAYER_DAMAGE_PER_HIT,
+  // 유지 거리: 너무 가까우면 물러난다.
+  preferredMinDistance: 74,
+  // 꿈틀 돌진: 예고 후 플레이어 쪽으로 길게 파고든다.
+  chargeCooldownMs: 3200,
+  chargeWindupMs: 360,
+  chargeDurationMs: 340,
+  chargeSpeed: 214,
+  // 땅굴 잠수 → 재등장: 잠수 중에는 무적, 착지 지점에 예고 원 후 충격 링을 뿜는다.
+  burrowCooldownMs: 5200,
+  burrowHiddenMs: 620,
+  burrowTelegraphMs: 640,
+  resurfaceRingCount: 10,
+  resurfaceRingSpeed: 118,
+  // 새끼 지렁이 소환: 동시에 살아있는 새끼 수를 maxSummonedAlive로 제한한다.
+  summonCooldownMs: 6000,
+  summonCount: 2,
+  summonChildId: 'splitterling',
+  maxSummonedAlive: 5,
+  // 행동 사이 최소 간격.
+  actionRecoveryMs: 320,
+  // 2페이즈 "허물 벗기": 체력 절반에서 새끼를 한꺼번에 뿜고 이후 더 빨라진다.
+  phaseTwoThreshold: 0.5,
+  phaseTwoTint: 0x9ce86a,
+  phaseTwoTransitionLockMs: 640,
+  phaseTwoShedCount: 4,
+  phaseTwoChargeCooldownMs: 2200,
+  phaseTwoBurrowCooldownMs: 3800,
+  phaseTwoSummonCooldownMs: 4400,
+  bossBarColor: 0x6db24b,
+  bossBarPhaseTwoColor: 0x9ce86a,
+} as const;
+
 export const BOMB_TUNING = {
   damage: 5,
   radius: 115,

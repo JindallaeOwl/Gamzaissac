@@ -39,6 +39,7 @@ export const ko: TranslationTree = {
     wriggleMass: '꿈틀대는 덩어리',
     flyQueen: '파리 여왕',
     thornTangle: '가시넝쿨 뭉치',
+    wormKing: '늙은 지렁이 왕',
   },
   stages: {
     rottenRoots: '썩은 뿌리',
@@ -94,6 +95,7 @@ export const ko: TranslationTree = {
     bossRoom: '보스방',
     bossPhaseTwo: 'Fault Warden: 2페이즈',
     rootKernelPhaseTwo: 'ROOT KERNEL: 루트 권한 폭주',
+    wormKingPhaseTwo: '늙은 지렁이 왕: 허물을 벗다',
     treasureUnlocked: '보물방 개방',
     shopUnlocked: '상점방 개방',
     keyNeeded: '열쇠가 필요합니다',

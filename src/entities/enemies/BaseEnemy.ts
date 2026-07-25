@@ -94,6 +94,33 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     return false;
   }
 
+  /**
+   * Kill this enemy immediately, bypassing any invulnerability (e.g. the Worm
+   * King while burrowed). Fires the same defeat events as a normal kill so score
+   * and split children still happen. Returns true only if it actually died this
+   * call, so callers can count real defeats instead of assuming every target
+   * dropped. Used by the developer `kill` command.
+   */
+  forceDefeat(): boolean {
+    if (!this.active || this.defeated) {
+      return false;
+    }
+
+    this.hp = 0;
+    this.defeated = true;
+
+    const body = this.body as Phaser.Physics.Arcade.Body | undefined;
+
+    if (body) {
+      body.enable = false;
+      body.stop();
+    }
+
+    this.emit('enemy-defeated', this.scoreValue);
+    this.destroy();
+    return true;
+  }
+
   takeProjectileDamage(
     amount: number,
     sourceX: number,

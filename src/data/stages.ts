@@ -3,8 +3,8 @@ import type { RoomType } from './rooms';
 
 // 스테이지 정의: 감자의 농장 탈출기 — 땅속 깊은 곳에서 위로 파고 올라간다.
 // 각 스테이지는 2개 층으로 구성되고, 모든 층 마지막에는 보스방이 있다.
-// bossIds = [I층 중간보스, II층 스테이지 보스]. S2-II와 S4-II는 신규 보스
-// (늙은 지렁이 왕, 녹슨 쇠스랑의 농부)가 완성될 때까지 기존 보스를 임시 배치한다.
+// bossIds = [I층 중간보스, II층 스테이지 보스]. S4-II 최종 보스(녹슨 쇠스랑의 농부)는
+// 완성될 때까지 기존 보스를 임시 배치한다.
 export interface StageDefinition {
   id: string;
   nameKey: string;
@@ -24,7 +24,7 @@ export const STAGES: readonly StageDefinition[] = [
   {
     id: 'worm-den',
     nameKey: 'stages.wormDen',
-    bossIds: ['wriggleMass', 'faultWarden'],
+    bossIds: ['wriggleMass', 'wormKing'],
     accentColor: 0x9c5a6d,
   },
   {

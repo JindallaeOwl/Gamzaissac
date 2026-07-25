@@ -40,7 +40,7 @@ describe('getStageProgress', () => {
       [1, 1, 1, 'rootGnarl'],
       [2, 1, 2, 'rootKernel'],
       [3, 2, 1, 'wriggleMass'],
-      [4, 2, 2, 'faultWarden'],
+      [4, 2, 2, 'wormKing'],
       [5, 3, 1, 'flyQueen'],
       [6, 3, 2, 'faultWarden'],
       [7, 4, 1, 'thornTangle'],

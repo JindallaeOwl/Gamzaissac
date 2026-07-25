@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getAllowedSummonCount,
+  getBossSummonSpawns,
   getReinforcementCount,
   getReinforcementPool,
   getSplitChildSpawns,
@@ -62,5 +64,53 @@ describe('split child spawns', () => {
 
   it('does not split a splitterling, preventing an endless chain', () => {
     expect(getSplitChildSpawns('splitterling', 240, 136, ROOM, () => 0)).toHaveLength(0);
+  });
+});
+
+describe('boss summon spawns', () => {
+  it('spawns the requested number of the requested child', () => {
+    const spawns = getBossSummonSpawns('splitterling', 3, 240, 136, ROOM, () => 0);
+
+    expect(spawns).toHaveLength(3);
+    expect(spawns.every((spawn) => spawn.enemyId === 'splitterling')).toBe(true);
+  });
+
+  it('returns nothing when the allowed count is zero or negative', () => {
+    expect(getBossSummonSpawns('splitterling', 0, 240, 136, ROOM, () => 0)).toHaveLength(0);
+    expect(getBossSummonSpawns('splitterling', -2, 240, 136, ROOM, () => 0)).toHaveLength(0);
+  });
+
+  it('keeps every summoned child inside the room bounds even at a corner', () => {
+    const spawns = getBossSummonSpawns(
+      'splitterling',
+      4,
+      ROOM.right,
+      ROOM.bottom,
+      ROOM,
+      () => 0.99,
+    );
+
+    for (const spawn of spawns) {
+      expect(spawn.x).toBeGreaterThanOrEqual(ROOM.left);
+      expect(spawn.x).toBeLessThanOrEqual(ROOM.right);
+      expect(spawn.y).toBeGreaterThanOrEqual(ROOM.top);
+      expect(spawn.y).toBeLessThanOrEqual(ROOM.bottom);
+    }
+  });
+});
+
+describe('allowed summon count', () => {
+  it('summons the full request when the room has room to spare', () => {
+    expect(getAllowedSummonCount(2, 0, 5)).toBe(2);
+  });
+
+  it('only fills up to the alive cap', () => {
+    expect(getAllowedSummonCount(4, 4, 5)).toBe(1);
+    expect(getAllowedSummonCount(4, 0, 3)).toBe(3);
+  });
+
+  it('never returns a negative count once the cap is reached or exceeded', () => {
+    expect(getAllowedSummonCount(2, 5, 5)).toBe(0);
+    expect(getAllowedSummonCount(2, 6, 5)).toBe(0);
   });
 });

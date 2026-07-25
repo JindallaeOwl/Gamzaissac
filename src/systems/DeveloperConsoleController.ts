@@ -194,10 +194,13 @@ export class DeveloperConsoleController {
       }
 
       for (const enemy of activeEnemies) {
-        enemy.takeDamage(Number.MAX_SAFE_INTEGER, this.config.player.x, this.config.player.y);
+        // forceDefeat ignores invulnerability (e.g. a burrowed Worm King, which
+        // shrugs off MAX_SAFE_INTEGER damage) and counts only enemies that
+        // actually died, so the tally stays accurate.
+        if (enemy.forceDefeat()) {
+          killed += 1;
+        }
       }
-
-      killed += activeEnemies.length;
     }
 
     return { lines: [`적 ${killed}명 처치`] };
