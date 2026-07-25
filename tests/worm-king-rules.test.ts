@@ -10,9 +10,11 @@ import {
 const BOUNDS: PointBounds = { left: 32, right: 448, top: 32, bottom: 240 };
 
 describe('burrow invulnerability rule', () => {
-  it('blocks all damage while diving or telegraphing the resurface', () => {
+  it('blocks all damage while underground: diving, telegraphing, and emerging', () => {
+    // 'emerging'까지 포함해, 완전히 솟아 히트박스가 켜지기 전에는 피해를 받지 않는다.
     expect(isBurrowInvulnerable('burrowHidden')).toBe(true);
     expect(isBurrowInvulnerable('burrowTelegraph')).toBe(true);
+    expect(isBurrowInvulnerable('emerging')).toBe(true);
   });
 
   it('takes normal damage in every other state', () => {

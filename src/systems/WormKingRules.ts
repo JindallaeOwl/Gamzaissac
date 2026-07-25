@@ -2,7 +2,13 @@
 // 보스 클래스는 이 규칙을 호출만 하고, 규칙은 여기서 단위 테스트한다.
 
 export type WormKingState =
-  'idle' | 'chargeWindup' | 'charging' | 'burrowHidden' | 'burrowTelegraph' | 'phaseTransition';
+  | 'idle'
+  | 'chargeWindup'
+  | 'charging'
+  | 'burrowHidden'
+  | 'burrowTelegraph'
+  | 'emerging'
+  | 'phaseTransition';
 
 export interface PointBounds {
   left: number;
@@ -12,11 +18,13 @@ export interface PointBounds {
 }
 
 /**
- * 잠수(잠수 중·재등장 예고) 상태에서는 어떤 피해도 받지 않는다. 탄은 물리 바디를
- * 꺼서 막지만, 위치로 판정하는 폭탄까지 막으려면 피해 진입점에서 이 규칙을 쓴다.
+ * 땅속에 있는 동안(파고들기·재등장 예고·솟아오르는 중)에는 어떤 피해도 받지 않는다.
+ * 탄·빔은 물리 바디를 꺼서 막지만, 위치로 판정하는 폭탄까지 막으려면 피해 진입점에서
+ * 이 규칙을 쓴다. 'emerging'을 포함해, 완전히 솟아 히트박스가 켜지기 전까지 무적을
+ * 유지함으로써 "보이는 프레임 = 판정" 이 어긋나지 않게 한다.
  */
 export function isBurrowInvulnerable(state: WormKingState): boolean {
-  return state === 'burrowHidden' || state === 'burrowTelegraph';
+  return state === 'burrowHidden' || state === 'burrowTelegraph' || state === 'emerging';
 }
 
 /**

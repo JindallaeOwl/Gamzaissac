@@ -6,8 +6,10 @@ import {
   buildSplitter,
   buildSplitterling,
   buildWormKing,
+  buildWormKingDigFrame,
   buildWormKingFrame,
   PixelSprite,
+  WORM_KING_DIG_FRAME_COUNT,
   type EnemySpriteBuilder,
 } from '../src/systems/enemyPixelSprites';
 
@@ -56,5 +58,26 @@ describe('worm king wriggle animation frames', () => {
     buildWormKing(staticSprite);
 
     expect(staticSprite.filledCount()).toBe(frameSprite.filledCount());
+  });
+});
+
+describe('worm king burrow (dig) frames', () => {
+  it('stays symmetric across every dig step', () => {
+    for (let step = 0; step < WORM_KING_DIG_FRAME_COUNT; step += 1) {
+      const sprite = new PixelSprite();
+      buildWormKingDigFrame(step)(sprite);
+
+      expect(sprite.isHorizontallySymmetric(), `step ${step}`).toBe(true);
+    }
+  });
+
+  it('starts as a full worm and burrows away by the last frame', () => {
+    const first = new PixelSprite();
+    buildWormKingDigFrame(0)(first);
+    const last = new PixelSprite();
+    buildWormKingDigFrame(WORM_KING_DIG_FRAME_COUNT - 1)(last);
+
+    expect(first.filledCount()).toBeGreaterThan(20);
+    expect(last.filledCount()).toBeLessThan(first.filledCount());
   });
 });

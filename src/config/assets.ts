@@ -27,6 +27,11 @@ export const TextureKeys = {
   enemyWormKing1: 'enemy-worm-king-1',
   enemyWormKing2: 'enemy-worm-king-2',
   enemyWormKing3: 'enemy-worm-king-3',
+  enemyWormKingDig0: 'enemy-worm-king-dig-0',
+  enemyWormKingDig1: 'enemy-worm-king-dig-1',
+  enemyWormKingDig2: 'enemy-worm-king-dig-2',
+  enemyWormKingDig3: 'enemy-worm-king-dig-3',
+  enemyWormKingDig4: 'enemy-worm-king-dig-4',
   doorHorizontal: 'door-horizontal',
   doorVertical: 'door-vertical',
   hudKey: 'hud-key',
@@ -193,6 +198,8 @@ export const AnimationKeys = {
   playerShadowDeathSide: 'player-shadow-death-side',
   shopNpcIdle: 'shop-npc-idle',
   enemyWormKingIdle: 'enemy-worm-king-idle',
+  enemyWormKingDig: 'enemy-worm-king-dig',
+  enemyWormKingRise: 'enemy-worm-king-rise',
 } as const;
 
 // Passive item pickups each get their own generated icon (see AssetFactory)

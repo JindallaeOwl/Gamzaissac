@@ -280,6 +280,51 @@ export function buildWormKingFrame(phase: number): EnemySpriteBuilder {
 // 정지 프레임(=phase 0). 대칭 테스트와 스폰 시 기본 텍스처에 쓴다.
 export const buildWormKing: EnemySpriteBuilder = buildWormKingFrame(0);
 
+// 파고들기 프레임의 세 마디 y좌표와 흙두둑 크기. 0=온전, 1=위로 세움("웅"),
+// 2=아래로 파고듦, 3=거의 잠김, 4=흙두둑만. 역순으로 재생하면 솟는 연출이 된다.
+const WORM_KING_DIG_FRAMES: readonly (readonly [number, number, number, number])[] = [
+  [4.8, 8.0, 11.8, 0],
+  [2.4, 6.0, 10.2, 0],
+  [7.6, 10.6, 13.8, 1],
+  [12.5, 15.0, 18.0, 3],
+  [21, 23, 25, 6],
+];
+
+export const WORM_KING_DIG_FRAME_COUNT = WORM_KING_DIG_FRAMES.length;
+
+/**
+ * 지렁이 왕이 땅으로 파고드는 한 프레임(step 0~4). 마디가 실제로 위로 섰다가
+ * 아래로 내려가며 격자 밖으로 사라지고, 바닥엔 흙두둑이 커진다. idle과 마찬가지로
+ * 좌우 대칭을 유지한다. 격자를 벗어난 픽셀은 set()이 알아서 버린다.
+ */
+export function buildWormKingDigFrame(step: number): EnemySpriteBuilder {
+  const [headY, midY, lowerY, mound] = WORM_KING_DIG_FRAMES[step] ?? WORM_KING_DIG_FRAMES[0];
+
+  return (s) => {
+    const palette = { shade: 0x8f4b3d, base: 0xba6553, light: 0xdd907d };
+
+    s.disc(7.5, lowerY, 3.9, palette);
+    s.disc(7.5, midY, 3.5, palette);
+    s.disc(7.5, headY, 3.1, palette);
+    s.outline(0x33150f);
+
+    const crownY = Math.round(headY) - 4;
+    s.set(7, crownY, 0xffd166);
+    s.set(7, crownY + 1, 0xffd166);
+    s.set(5, crownY + 1, 0xffd166);
+    s.eye(5, Math.round(headY) - 1, 0x1a0a08, 0xffe3d8);
+
+    if (mound > 0) {
+      for (let x = 7 - mound; x <= 7; x += 1) {
+        s.set(x, 14, 0x6b4a2f);
+        s.set(x, 15, 0x8a5a38);
+      }
+    }
+
+    s.mirror();
+  };
+}
+
 export function drawEnemyTexture(
   scene: Phaser.Scene,
   key: string,

@@ -7,6 +7,7 @@ import {
   buildShooter,
   buildSplitter,
   buildSplitterling,
+  buildWormKingDigFrame,
   buildWormKingFrame,
   drawEnemyTexture,
 } from './enemyPixelSprites';
@@ -103,19 +104,42 @@ export function createPlaceholderAnimations(scene: Phaser.Scene): void {
 }
 
 function createWormKingAnimation(scene: Phaser.Scene): void {
-  if (
-    scene.anims.exists(AnimationKeys.enemyWormKingIdle) ||
-    !WORM_KING_FRAME_KEYS.every((key) => scene.textures.exists(key))
-  ) {
+  const framesReady =
+    WORM_KING_FRAME_KEYS.every((key) => scene.textures.exists(key)) &&
+    WORM_KING_DIG_FRAME_KEYS.every((key) => scene.textures.exists(key));
+
+  if (!framesReady) {
     return;
   }
 
-  scene.anims.create({
-    key: AnimationKeys.enemyWormKingIdle,
-    frames: WORM_KING_FRAME_KEYS.map((key) => ({ key })),
-    frameRate: 5,
-    repeat: -1,
-  });
+  if (!scene.anims.exists(AnimationKeys.enemyWormKingIdle)) {
+    scene.anims.create({
+      key: AnimationKeys.enemyWormKingIdle,
+      frames: WORM_KING_FRAME_KEYS.map((key) => ({ key })),
+      frameRate: 5,
+      repeat: -1,
+    });
+  }
+
+  // 파고들기: 한 번만 재생하고 마지막(흙두둑) 프레임에서 멈춘다.
+  if (!scene.anims.exists(AnimationKeys.enemyWormKingDig)) {
+    scene.anims.create({
+      key: AnimationKeys.enemyWormKingDig,
+      frames: WORM_KING_DIG_FRAME_KEYS.map((key) => ({ key })),
+      frameRate: 10,
+      repeat: 0,
+    });
+  }
+
+  // 솟기: 파고들기 프레임을 역순으로 한 번 재생한다(흙두둑 → 온전한 몸).
+  if (!scene.anims.exists(AnimationKeys.enemyWormKingRise)) {
+    scene.anims.create({
+      key: AnimationKeys.enemyWormKingRise,
+      frames: [...WORM_KING_DIG_FRAME_KEYS].reverse().map((key) => ({ key })),
+      frameRate: 10,
+      repeat: 0,
+    });
+  }
 }
 
 function createShopNpcAnimation(scene: Phaser.Scene): void {
@@ -310,10 +334,24 @@ const WORM_KING_FRAME_KEYS = [
   TextureKeys.enemyWormKing3,
 ];
 
+// 파고들기 프레임(step 0~4). 역순으로 재생하면 솟아오르는 애니메이션이 된다.
+const WORM_KING_DIG_FRAME_KEYS = [
+  TextureKeys.enemyWormKingDig0,
+  TextureKeys.enemyWormKingDig1,
+  TextureKeys.enemyWormKingDig2,
+  TextureKeys.enemyWormKingDig3,
+  TextureKeys.enemyWormKingDig4,
+];
+
 function createWormKingTexture(scene: Phaser.Scene): void {
-  // 각 프레임은 위상을 균등히 나눠 몸통이 위아래로 물결치는 꿈틀 애니메이션을 만든다.
+  // idle: 위상을 균등히 나눠 몸통이 위아래로 물결치는 꿈틀 프레임.
   WORM_KING_FRAME_KEYS.forEach((key, index) => {
     drawEnemyTexture(scene, key, buildWormKingFrame(index / WORM_KING_FRAME_KEYS.length));
+  });
+
+  // dig: 땅으로 파고드는 프레임(솟기는 이 프레임들을 역순 재생).
+  WORM_KING_DIG_FRAME_KEYS.forEach((key, index) => {
+    drawEnemyTexture(scene, key, buildWormKingDigFrame(index));
   });
 }
 

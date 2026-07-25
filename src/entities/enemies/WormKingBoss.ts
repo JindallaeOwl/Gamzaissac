@@ -18,6 +18,11 @@ import { BaseEnemy } from './BaseEnemy';
 // RoomController가 방 안 적 수 제한을 적용해 생성한다(분열 처리와 같은 방식).
 // 장면에 의존하지 않는 판정 규칙(잠수 무적·재등장 좌표)은 WormKingRules로 분리했다.
 
+// rise 애니메이션 길이(5프레임×10fps=약 500ms)보다 넉넉히 잡은 안전 상한.
+// 완료 이벤트를 놓치더라도 이 시간이 지나면 finishEmerge를 강제해 보스가
+// 땅속(무적·무접촉)에 영원히 갇히는 것을 막는다.
+const EMERGE_FALLBACK_MS = 900;
+
 export class WormKingBoss extends BaseEnemy {
   private attackState: WormKingState = 'idle';
   private stateEndsAt = 0;
@@ -31,9 +36,6 @@ export class WormKingBoss extends BaseEnemy {
   private readonly emergeTarget = { x: 0, y: 0 };
   private telegraph?: Phaser.GameObjects.Graphics;
   private cleanedUp = false;
-  // BaseEnemy가 생성자에서 setScale(displayScale)로 잡아둔 기본 배율.
-  // 잠수/재등장 트윈은 이 값을 기준으로 줄였다 되돌린다.
-  private readonly baseScale = this.definition.displayScale ?? 1;
 
   constructor(
     scene: Phaser.Scene,
@@ -123,7 +125,16 @@ export class WormKingBoss extends BaseEnemy {
       case 'burrowTelegraph':
         this.updateTelegraphFlash(time);
         if (time >= this.stateEndsAt) {
-          this.emergeFromBurrow(time, enemyBullets);
+          this.emergeFromBurrow(enemyBullets);
+        }
+        return;
+
+      case 'emerging':
+        // rise 애니메이션이 끝날 때(finishEmerge)까지 이동·다음 행동을 하지 않는다.
+        // 이 동안 바디는 꺼져 있어 무적·무접촉이며, 완전히 솟은 뒤에야 판정이 켜진다.
+        // 완료 이벤트를 놓친 경우의 안전 상한(finishEmerge는 중복 호출에 안전).
+        if (time >= this.stateEndsAt) {
+          this.finishEmerge();
         }
         return;
 
@@ -148,11 +159,13 @@ export class WormKingBoss extends BaseEnemy {
   }
 
   override destroy(fromScene?: boolean): void {
+    // 텔레그래프 그래픽만 수동 정리하면 된다. 잠수/재등장은 트윈이 아니라 프레임
+    // 애니메이션이라 보스를 대상으로 한 트윈은 없고, 애니메이션 완료 리스너는
+    // GameObject.destroy가 알아서 제거한다. (흙먼지 트윈은 별도 그래픽이 대상이라
+    // 스스로 사라진다.)
     if (!this.cleanedUp) {
       this.cleanedUp = true;
       this.clearTelegraph();
-      // 파괴 후 잠수/재등장 트윈 콜백이 사라진 대상을 건드리지 않도록 정리한다.
-      this.scene.tweens.killTweensOf(this);
     }
 
     super.destroy(fromScene);
@@ -209,45 +222,18 @@ export class WormKingBoss extends BaseEnemy {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.stop();
     // 몸통(물리 바디)을 즉시 꺼 잠수 중 무적으로 만든다. active는 유지되어
-    // updateAI가 계속 돌고, 표시는 아래 파고드는 트윈이 끝날 때 감춘다.
+    // updateAI가 계속 돌고, 표시는 파고드는 애니메이션이 끝날 때 감춘다.
     body.enable = false;
-    this.playDiveAnimation();
-  }
 
-  // "웅— 띠용!" 스프링 잠수: 살짝 위로 튀며 세로로 늘어났다가(예비 동작),
-  // 반동으로 흙먼지와 함께 아래로 쑥 파고들며 쪼그라들어 사라진다.
-  private playDiveAnimation(): void {
-    const startY = this.y;
-    this.scene.tweens.killTweensOf(this);
-
-    this.scene.tweens.add({
-      targets: this,
-      y: startY - 10,
-      scaleX: this.baseScale * 0.82,
-      scaleY: this.baseScale * 1.28,
-      duration: 150,
-      ease: 'Back.easeOut',
-      onComplete: () => {
-        if (!this.active) {
-          return;
-        }
-
-        this.spawnDirtBurst(this.x, startY + 4);
-        this.scene.tweens.add({
-          targets: this,
-          y: startY + 6,
-          scale: this.baseScale * 0.1,
-          alpha: 0.2,
-          duration: 200,
-          ease: 'Quad.easeIn',
-          onComplete: () => {
-            if (this.active) {
-              this.setVisible(false);
-            }
-          },
-        });
-      },
+    // 몸을 세웠다가("웅") 흙먼지와 함께 땅으로 파고드는 전용 프레임 시퀀스.
+    // 마지막(흙두둑) 프레임까지 재생되면 표시를 끈다.
+    this.spawnDirtBurst(this.x, this.y);
+    this.once(`animationcomplete-${AnimationKeys.enemyWormKingDig}`, () => {
+      if (this.active) {
+        this.setVisible(false);
+      }
     });
+    this.play(AnimationKeys.enemyWormKingDig);
   }
 
   private beginBurrowTelegraph(time: number, player: Player): void {
@@ -259,32 +245,42 @@ export class WormKingBoss extends BaseEnemy {
     this.drawBurrowTelegraph(this.emergeTarget);
   }
 
-  private emergeFromBurrow(time: number, enemyBullets: Phaser.Physics.Arcade.Group): void {
+  private emergeFromBurrow(enemyBullets: Phaser.Physics.Arcade.Group): void {
     this.clearTelegraph();
 
-    // 착지 지점으로 옮기고 몸통을 되살린다(위치·속도 초기화 포함).
-    const body = this.body as Phaser.Physics.Arcade.Body;
+    // 착지 지점으로 옮기되 몸통(물리 바디)은 아직 꺼둔 채로 둔다. 솟는 동안
+    // (emerging)에는 무적·무접촉·정지 상태를 유지하고, 전체 히트박스·이동·다음
+    // 행동은 rise가 끝나는 finishEmerge에서 한꺼번에 켠다 → 보이는 프레임과 판정 일치.
     this.setPosition(this.emergeTarget.x, this.emergeTarget.y);
-    body.reset(this.emergeTarget.x, this.emergeTarget.y);
-    body.enable = true;
     this.setVisible(true);
+    this.attackState = 'emerging';
 
-    // 흙을 뚫고 솟아오르는 팝 연출: 작게 시작해 기본 배율로 되돌린다.
+    // 완료 이벤트를 놓치더라도 땅속에 영원히 갇히지 않도록 안전 상한을 둔다.
+    this.stateEndsAt = this.scene.time.now + EMERGE_FALLBACK_MS;
+
+    // 흙을 뚫고 솟아오르는 전용 프레임 시퀀스. 완료 이벤트에서 finishEmerge로 마무리.
     this.spawnDirtBurst(this.emergeTarget.x, this.emergeTarget.y);
-    this.setScale(this.baseScale * 0.2);
-    this.setAlpha(0.5);
-    this.scene.tweens.killTweensOf(this);
-    this.scene.tweens.add({
-      targets: this,
-      scale: this.baseScale,
-      alpha: 1,
-      duration: 220,
-      ease: 'Back.easeOut',
-    });
+    this.once(`animationcomplete-${AnimationKeys.enemyWormKingRise}`, () => this.finishEmerge());
+    this.play(AnimationKeys.enemyWormKingRise);
 
+    // 충격 링은 기존과 같이 솟아오르는 순간 발사한다(타이밍·피해 불변).
     this.fireResurfaceRing(enemyBullets);
+  }
+
+  // rise 애니메이션이 끝난 뒤에야 전체 히트박스를 켜고 정상 행동을 재개한다.
+  // 완료 이벤트에서만 호출되며, 그 사이 파괴되었거나 다른 상태로 넘어갔다면 무시한다.
+  private finishEmerge(): void {
+    if (!this.active || this.attackState !== 'emerging') {
+      return;
+    }
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.reset(this.x, this.y);
+    body.enable = true;
+
     this.attackState = 'idle';
-    this.recoveryUntil = time + WORM_KING_TUNING.actionRecoveryMs;
+    this.recoveryUntil = this.scene.time.now + WORM_KING_TUNING.actionRecoveryMs;
+    this.play(AnimationKeys.enemyWormKingIdle);
   }
 
   private fireResurfaceRing(enemyBullets: Phaser.Physics.Arcade.Group): void {
