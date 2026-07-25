@@ -33,12 +33,18 @@ export const en: TranslationTree = {
     titleScreen: 'Return to title',
   },
   bosses: {
-    faultWarden: 'Fault Warden',
-    rootKernel: 'ROOT KERNEL',
+    faultWarden: 'Compost Warden',
+    rootKernel: 'Rotten Root Core',
     rootGnarl: 'Root Gnarl',
     wriggleMass: 'Wriggle Mass',
     flyQueen: 'Fly Queen',
     thornTangle: 'Thorn Tangle',
+  },
+  stages: {
+    rottenRoots: 'Rotten Roots',
+    wormDen: 'Worm Den',
+    compostHeap: 'Compost Heap',
+    vinePassage: 'Vine Passage',
   },
   gameOver: {
     title: 'GAME OVER',
@@ -76,10 +82,11 @@ export const en: TranslationTree = {
     locked: 'locked',
   },
   messages: {
-    floor: 'Floor {floor}',
+    floor: 'Floor {floor} · {stage} {roman}',
     roomClear: 'Room clear',
     floorCleared: 'Floor cleared',
     nextFloorOpening: 'A root tunnel opened upward',
+    stageCleared: 'Stage clear! A root tunnel opened upward',
     escapeOpening: 'The way to the surface is open!',
     stageClear: 'Stage clear',
     shopRoom: 'Shop',

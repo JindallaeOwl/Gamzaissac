@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
 import { DEPTH, GAME_WIDTH } from '../config/gameConfig';
+import { getStageProgress, stageFloorRoman } from '../data/stages';
 import { getRenderScale } from '../systems/GameSettings';
 import { formatRunElapsedTime } from '../systems/MinimapExpansionController';
 import { gameFontStack, t } from '../i18n';
@@ -217,13 +218,15 @@ export class Hud {
       this.messageUntil = 0;
     }
 
-    this.updateMinimapPresentation(runState.score, runElapsedMs);
+    const stageLabel = this.formatStageFloorLabel(runState.floor);
+    this.updateMinimapPresentation(runState.score, runElapsedMs, stageLabel);
     this.drawMinimap(dungeon);
 
     if (this.debugVisible) {
       const room = dungeon.getCurrentRoom();
       this.debugText.setText(
         [
+          stageLabel,
           `${t('hud.room')} ${room.id} ${t(`roomTypes.${room.type}`)} ${
             room.cleared ? t('hud.open') : t('hud.locked')
           }`,
@@ -312,7 +315,16 @@ export class Hud {
     }
   }
 
-  private updateMinimapPresentation(score: number, runElapsedMs: number): void {
+  private formatStageFloorLabel(floor: number): string {
+    const progress = getStageProgress(floor);
+    return t('messages.floor', {
+      floor,
+      stage: t(progress.stage.nameKey),
+      roman: stageFloorRoman(progress.floorInStage),
+    });
+  }
+
+  private updateMinimapPresentation(score: number, runElapsedMs: number, stageLabel: string): void {
     const progress = this.minimapExpansionProgress;
     const panelWidth = Phaser.Math.Linear(
       MINIMAP_PANEL_WIDTH,
@@ -329,7 +341,7 @@ export class Hud {
       .setDisplaySize(panelWidth, panelHeight)
       .setAlpha(Phaser.Math.Linear(1, 0.82, progress));
 
-    const runInfo = `${t('hud.time')}: ${formatRunElapsedTime(runElapsedMs)}\n${t(
+    const runInfo = `${stageLabel}\n${t('hud.time')}: ${formatRunElapsedTime(runElapsedMs)}\n${t(
       'hud.score',
     )}: ${score}`;
 

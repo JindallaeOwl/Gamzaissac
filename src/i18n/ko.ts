@@ -33,12 +33,18 @@ export const ko: TranslationTree = {
     titleScreen: '타이틀로 돌아가기',
   },
   bosses: {
-    faultWarden: 'Fault Warden',
-    rootKernel: '루트 커널',
+    faultWarden: '퇴비 파수꾼',
+    rootKernel: '썩은 뿌리핵',
     rootGnarl: '뿌리 옹이',
     wriggleMass: '꿈틀대는 덩어리',
     flyQueen: '파리 여왕',
     thornTangle: '가시넝쿨 뭉치',
+  },
+  stages: {
+    rottenRoots: '썩은 뿌리',
+    wormDen: '지렁이 소굴',
+    compostHeap: '퇴비더미',
+    vinePassage: '넝쿨 통로',
   },
   gameOver: {
     title: 'GAME OVER',
@@ -76,10 +82,11 @@ export const ko: TranslationTree = {
     locked: '잠김',
   },
   messages: {
-    floor: '{floor}층',
+    floor: '{floor}층 · {stage} {roman}',
     roomClear: '방 클리어',
     floorCleared: '층 클리어',
     nextFloorOpening: '위로 뚫린 뿌리 굴이 열렸습니다',
+    stageCleared: '스테이지 클리어! 위로 뚫린 뿌리 굴이 열렸습니다',
     escapeOpening: '지상으로 나가는 굴이 열렸습니다!',
     stageClear: '스테이지 클리어',
     shopRoom: '상점방',

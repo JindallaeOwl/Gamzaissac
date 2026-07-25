@@ -20,6 +20,7 @@ import {
 import { PASSIVE_ITEMS } from '../data/items';
 import { ENEMY_DEFINITIONS, type EnemyId } from '../data/enemies';
 import { getRoomTemplate } from '../data/rooms';
+import { getStageProgress, resolveRoomAccentColor } from '../data/stages';
 import {
   getReinforcementCount,
   getReinforcementPool,
@@ -124,7 +125,13 @@ export class RoomController {
     this.enemyAiResumeAt = hasWaitingEnemies
       ? getRoomEntryEnemyAiResumeAt(this.scene.time.now)
       : this.scene.time.now;
-    this.drawRoom(template.accentColor);
+    this.drawRoom(
+      resolveRoomAccentColor(
+        room.type,
+        template.accentColor,
+        getStageProgress(this.runState.floor).stage.accentColor,
+      ),
+    );
     this.updateDoors(room);
 
     if ((room.type === 'combat' || room.type === 'boss') && !room.cleared) {

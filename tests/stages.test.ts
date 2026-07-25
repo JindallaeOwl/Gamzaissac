@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ENEMY_DEFINITIONS, type EnemyId } from '../src/data/enemies';
-import { FLOORS_PER_STAGE, getStageProgress, STAGES, TOTAL_FLOORS } from '../src/data/stages';
+import {
+  FLOORS_PER_STAGE,
+  getStageProgress,
+  resolveRoomAccentColor,
+  STAGES,
+  stageFloorRoman,
+  TOTAL_FLOORS,
+} from '../src/data/stages';
 
 describe('stage definitions', () => {
   it('builds four stages of two floors each (eight floors total)', () => {
@@ -66,5 +73,23 @@ describe('getStageProgress', () => {
     for (const invalid of [1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(() => getStageProgress(invalid), `floor ${invalid}`).toThrow();
     }
+  });
+});
+
+describe('stage presentation rules', () => {
+  it('formats floor-in-stage as roman numerals', () => {
+    expect(stageFloorRoman(1)).toBe('I');
+    expect(stageFloorRoman(2)).toBe('II');
+  });
+
+  it('applies the stage accent to combat and start rooms only', () => {
+    const templateAccent = 0x111111;
+    const stageAccent = 0x222222;
+
+    expect(resolveRoomAccentColor('combat', templateAccent, stageAccent)).toBe(stageAccent);
+    expect(resolveRoomAccentColor('start', templateAccent, stageAccent)).toBe(stageAccent);
+    expect(resolveRoomAccentColor('shop', templateAccent, stageAccent)).toBe(templateAccent);
+    expect(resolveRoomAccentColor('treasure', templateAccent, stageAccent)).toBe(templateAccent);
+    expect(resolveRoomAccentColor('boss', templateAccent, stageAccent)).toBe(templateAccent);
   });
 });

@@ -46,7 +46,8 @@ import {
   KONAMI_CODE,
   SecretCodeTracker,
 } from '../systems/SecretCodeSystem';
-import { canStartEscapeSequence, floorExitKindForFloor } from '../systems/FloorExitRules';
+import { getStageProgress, stageFloorRoman } from '../data/stages';
+import { canStartEscapeSequence } from '../systems/FloorExitRules';
 import { createInitialRunState, isRunEnded, type RunState } from '../systems/RunState';
 import { getEffectiveDamage } from '../systems/PlayerStatSystem';
 import { BossHud } from '../ui/BossHud';
@@ -321,7 +322,7 @@ export class GameScene extends Phaser.Scene {
     this.setupPhysics();
     this.setupPlayerEvents();
     this.setupPauseInput();
-    this.hud.showMessage(t('messages.floor', { floor: 1 }));
+    this.hud.showMessage(this.formatStageFloorLabel());
     this.cameras.main.fadeIn(220, 5, 9, 14);
   }
 
@@ -1084,11 +1085,14 @@ export class GameScene extends Phaser.Scene {
       this.music.play(getRoomMusicKey('combat'));
       this.roomController.spawnBossReward(room);
       this.roomTransitions.spawnFloorExit();
-      const exitKind = floorExitKindForFloor(this.runState.floor);
-      this.hud.showMessage(
-        t(exitKind === 'escape' ? 'messages.escapeOpening' : 'messages.nextFloorOpening'),
-        2200,
-      );
+      // 메시지 3분화: I층 보스(일반 굴) / II층 보스(스테이지 클리어) / 최종층(탈출구)
+      const progress = getStageProgress(this.runState.floor);
+      const messageKey = progress.isFinalFloor
+        ? 'messages.escapeOpening'
+        : progress.floorInStage === 2
+          ? 'messages.stageCleared'
+          : 'messages.nextFloorOpening';
+      this.hud.showMessage(t(messageKey), 2200);
     }
   }
 
@@ -1197,7 +1201,16 @@ export class GameScene extends Phaser.Scene {
     );
     this.updateBackgroundMusic(this.dungeon.getCurrentRoom());
     this.cameras.main.fadeIn(260, 5, 9, 14);
-    this.hud.showMessage(t('messages.floor', { floor: this.runState.floor }), 1800);
+    this.hud.showMessage(this.formatStageFloorLabel(), 1800);
+  }
+
+  private formatStageFloorLabel(): string {
+    const progress = getStageProgress(this.runState.floor);
+    return t('messages.floor', {
+      floor: this.runState.floor,
+      stage: t(progress.stage.nameKey),
+      roman: stageFloorRoman(progress.floorInStage),
+    });
   }
 
   private formatChestResult(result: ReturnType<RewardSystem['rollChestResult']>): string {

@@ -1,4 +1,5 @@
 import type { EnemyId } from './enemies';
+import type { RoomType } from './rooms';
 
 // 스테이지 정의: 감자의 농장 탈출기 — 땅속 깊은 곳에서 위로 파고 올라간다.
 // 각 스테이지는 2개 층으로 구성되고, 모든 층 마지막에는 보스방이 있다.
@@ -68,4 +69,18 @@ export function getStageProgress(floor: number): StageProgress {
     bossId: stage.bossIds[floorInStage - 1],
     isFinalFloor: floor === TOTAL_FLOORS,
   };
+}
+
+export function stageFloorRoman(floorInStage: 1 | 2): 'I' | 'II' {
+  return floorInStage === 1 ? 'I' : 'II';
+}
+
+// 방 색조 규칙: 전투방·시작방은 스테이지 분위기 색을 쓰고,
+// 상점·보물·보스방은 기능을 나타내는 기존 방 종류 색을 유지한다.
+export function resolveRoomAccentColor(
+  roomType: RoomType,
+  templateAccent: number,
+  stageAccent: number,
+): number {
+  return roomType === 'combat' || roomType === 'start' ? stageAccent : templateAccent;
 }
