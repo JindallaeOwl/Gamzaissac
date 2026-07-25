@@ -45,6 +45,11 @@ export const ko: TranslationTree = {
     summary: '방 {rooms}   아이템 {items}   점수 {score}',
     restart: '타이틀로 돌아가기 (Enter / Space)',
   },
+  escape: {
+    title: '탈출 성공!',
+    summary: '방 {rooms}   아이템 {items}   점수 {score}   시간 {time}',
+    returnToTitle: '타이틀로 돌아가기 (Enter / Space)',
+  },
   hud: {
     hp: '체력',
     key: '열쇠',

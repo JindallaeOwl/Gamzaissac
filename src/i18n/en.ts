@@ -45,6 +45,11 @@ export const en: TranslationTree = {
     summary: 'Rooms {rooms}   Items {items}   Score {score}',
     restart: 'Back to Title (Enter / Space)',
   },
+  escape: {
+    title: 'ESCAPED!',
+    summary: 'Rooms {rooms}   Items {items}   Score {score}   Time {time}',
+    returnToTitle: 'Back to Title (Enter / Space)',
+  },
   hud: {
     hp: 'HP',
     key: 'KEY',

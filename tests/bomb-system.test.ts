@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { BOMB_TUNING } from '../src/config/gameConfig';
-import { isWithinBombRadius, resolveBombPlantAttempt } from '../src/systems/BombRules';
+import {
+  isWithinBombRadius,
+  resolveBombPlantAttempt,
+  shouldDetonateBomb,
+} from '../src/systems/BombRules';
 import { createInitialRunState } from '../src/systems/RunState';
 
 describe('BombSystem rules', () => {
@@ -37,5 +41,10 @@ describe('BombSystem rules', () => {
   it('includes targets exactly on the blast radius boundary', () => {
     expect(isWithinBombRadius(0, 0, BOMB_TUNING.radius, 0)).toBe(true);
     expect(isWithinBombRadius(0, 0, BOMB_TUNING.radius + 0.01, 0)).toBe(false);
+  });
+
+  it('suppresses detonation once the run has ended (planted fuse timers)', () => {
+    expect(shouldDetonateBomb(false)).toBe(true);
+    expect(shouldDetonateBomb(true)).toBe(false);
   });
 });

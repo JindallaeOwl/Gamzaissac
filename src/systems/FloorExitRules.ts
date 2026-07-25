@@ -1,6 +1,7 @@
 import { TextureKeys } from '../config/assets';
 import type { RoomType } from '../data/rooms';
 import { getStageProgress } from '../data/stages';
+import type { RunOutcome } from './RunState';
 
 // 층 출구의 종류: 일반 층은 다음 층으로 오르는 굴, 최종층(8층)은 지상 탈출구.
 // 생성과 재입장 복원이 같은 규칙을 쓰도록 한 곳에 모은다.
@@ -12,6 +13,12 @@ export function floorExitKindForFloor(floor: number): FloorExitKind {
 
 export function floorExitTextureKey(kind: FloorExitKind): string {
   return kind === 'escape' ? TextureKeys.floorExitEscape : TextureKeys.floorExit;
+}
+
+// 탈출 연출 시작 조건: resolveFloorExit가 outcome을 'escaped'로 확정한 뒤에만,
+// 그리고 연출이 아직 시작되지 않았을 때만 시작한다. 패배 상태에서는 불가.
+export function canStartEscapeSequence(outcome: RunOutcome, alreadyStarted: boolean): boolean {
+  return outcome === 'escaped' && !alreadyStarted;
 }
 
 // 방 재입장 시 출구 복원 판정: 클리어된 보스방에서만 복원하며,

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, TITLE_TRANSITION_MS } from '../config/gameConfig';
 import { applyRenderScale } from '../utils/render';
+import { resetRunEndOverlayElements, RUN_END_OVERLAY_SELECTORS } from '../utils/runEndOverlays';
 import { createSafeTransitionStep, type SafeTransitionStep } from '../utils/safeTransitionStep';
 import { stopScenesSafely } from '../utils/sceneLifecycle';
 
@@ -74,7 +75,7 @@ export class TitleTransitionScene extends Phaser.Scene {
     this.coverFadeStep?.cancel();
     this.coverFadeStep = undefined;
 
-    this.hideGameOverOverlay();
+    this.hideRunEndOverlays();
     const sceneManager = this.scene.manager;
     if (!sceneManager.isActive('TitleScene')) {
       this.scene.launch('TitleScene', { inputLocked: true });
@@ -153,17 +154,14 @@ export class TitleTransitionScene extends Phaser.Scene {
     sceneManager.stop(TITLE_TRANSITION_SCENE_KEY);
   }
 
-  private hideGameOverOverlay(): void {
-    const overlay = document.querySelector<HTMLElement>('#game-over-overlay');
-    const restartButton = document.querySelector<HTMLButtonElement>('#game-over-restart');
-
-    if (overlay) {
-      overlay.hidden = true;
-      overlay.classList.remove('is-leaving');
-    }
-
-    if (restartButton) {
-      restartButton.disabled = false;
+  // 게임오버·탈출 성공 오버레이를 모두 정리한다. 어느 쪽 경로로 타이틀에
+  // 돌아오든 다른 쪽 오버레이가 화면에 남지 않도록 한다.
+  private hideRunEndOverlays(): void {
+    for (const target of RUN_END_OVERLAY_SELECTORS) {
+      resetRunEndOverlayElements(
+        document.querySelector<HTMLElement>(target.overlay),
+        document.querySelector<HTMLButtonElement>(target.button),
+      );
     }
   }
 }

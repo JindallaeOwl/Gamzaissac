@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TextureKeys } from '../src/config/assets';
 import { TOTAL_FLOORS } from '../src/data/stages';
 import {
+  canStartEscapeSequence,
   floorExitKindForFloor,
   floorExitTextureKey,
   restoredFloorExitKind,
@@ -47,5 +48,17 @@ describe('floor exit restoration on room re-entry', () => {
   it('does not restore an exit in cleared non-boss rooms', () => {
     expect(restoredFloorExitKind(TOTAL_FLOORS, 'combat', true)).toBeUndefined();
     expect(restoredFloorExitKind(TOTAL_FLOORS, 'start', true)).toBeUndefined();
+  });
+});
+
+describe('escape sequence start condition', () => {
+  it('starts only once for a confirmed escape', () => {
+    expect(canStartEscapeSequence('escaped', false)).toBe(true);
+    expect(canStartEscapeSequence('escaped', true)).toBe(false);
+  });
+
+  it('never starts while playing or after a defeat', () => {
+    expect(canStartEscapeSequence('playing', false)).toBe(false);
+    expect(canStartEscapeSequence('defeated', false)).toBe(false);
   });
 });

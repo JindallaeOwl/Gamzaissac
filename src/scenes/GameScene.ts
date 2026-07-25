@@ -1,4 +1,5 @@
 ﻿import Phaser from 'phaser';
+import { MusicKeys } from '../config/assets';
 import { BeamAttack } from '../entities/BeamAttack';
 import { Bullet } from '../entities/Bullet';
 import { Door } from '../entities/Door';
@@ -28,7 +29,10 @@ import { DeveloperConsoleController } from '../systems/DeveloperConsoleControlle
 import { DungeonManager, type RoomNode } from '../systems/DungeonManager';
 import { EffectsSystem } from '../systems/EffectsSystem';
 import { ItemSystem } from '../systems/ItemSystem';
-import { MinimapExpansionController } from '../systems/MinimapExpansionController';
+import {
+  formatRunElapsedTime,
+  MinimapExpansionController,
+} from '../systems/MinimapExpansionController';
 import { getRoomMusicKey, MusicSystem } from '../systems/MusicSystem';
 import { RewardSystem } from '../systems/RewardSystem';
 import { RoomController } from '../systems/RoomController';
@@ -36,13 +40,13 @@ import { RoomNavigationSystem } from '../systems/RoomNavigationSystem';
 import { getRoomTransitionPresentation } from '../systems/RoomTransitionRules';
 import { RoomTransitionSystem } from '../systems/RoomTransitionSystem';
 import { ShopSystem } from '../systems/ShopSystem';
-import { advanceRunToNextFloor } from '../systems/RunProgressionSystem';
+import { resolveFloorExit } from '../systems/RunProgressionSystem';
 import {
   getSecretSynergySpawnPositions,
   KONAMI_CODE,
   SecretCodeTracker,
 } from '../systems/SecretCodeSystem';
-import { floorExitKindForFloor } from '../systems/FloorExitRules';
+import { canStartEscapeSequence, floorExitKindForFloor } from '../systems/FloorExitRules';
 import { createInitialRunState, isRunEnded, type RunState } from '../systems/RunState';
 import { getEffectiveDamage } from '../systems/PlayerStatSystem';
 import { BossHud } from '../ui/BossHud';
@@ -51,7 +55,8 @@ import { ItemPickupAnnouncement } from '../ui/ItemPickupAnnouncement';
 import { isPauseCode } from '../ui/PauseMenuRules';
 import { UiCameraSystem } from '../ui/UiCameraSystem';
 import { applyRenderScale } from '../utils/render';
-import { isGameOverRestartCode } from '../utils/gameOverInput';
+import { bindCaptureKeydown, shouldConfirmRunEnd } from '../utils/runEndInput';
+import { resetRunEndOverlayElements } from '../utils/runEndOverlays';
 import { TITLE_TRANSITION_SCENE_KEY } from './TitleTransitionScene';
 
 interface GameOverData {
@@ -95,9 +100,13 @@ export class GameScene extends Phaser.Scene {
   private gameOverTransitionStarted = false;
   private readonly handleGameOverKeyDown = (event: KeyboardEvent): void => {
     if (
-      !this.gameOverStarted ||
-      this.gameOverTransitionStarted ||
-      !isGameOverRestartCode(event.code)
+      !shouldConfirmRunEnd({
+        overlayShown: this.gameOverStarted,
+        transitionStarted: this.gameOverTransitionStarted,
+        outcome: this.runState.outcome,
+        expectedOutcome: 'defeated',
+        code: event.code,
+      })
     ) {
       return;
     }
@@ -105,6 +114,29 @@ export class GameScene extends Phaser.Scene {
     event.preventDefault();
     event.stopPropagation();
     this.restartAfterGameOver();
+  };
+  private escapeStarted = false;
+  private escapeOverlay!: HTMLElement;
+  private escapeTitle!: HTMLElement;
+  private escapeSummary!: HTMLElement;
+  private escapeReturnButton!: HTMLButtonElement;
+  private escapeTransitionStarted = false;
+  private readonly handleEscapeKeyDown = (event: KeyboardEvent): void => {
+    if (
+      !shouldConfirmRunEnd({
+        overlayShown: this.escapeStarted,
+        transitionStarted: this.escapeTransitionStarted,
+        outcome: this.runState.outcome,
+        expectedOutcome: 'escaped',
+        code: event.code,
+      })
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.returnToTitleAfterEscape();
   };
   private floorTransitionStarted = false;
   private playerDamageFeedbackQueued = false;
@@ -156,6 +188,8 @@ export class GameScene extends Phaser.Scene {
     this.nextDoorAt = 0;
     this.gameOverStarted = false;
     this.gameOverTransitionStarted = false;
+    this.escapeStarted = false;
+    this.escapeTransitionStarted = false;
     this.floorTransitionStarted = false;
     this.playerDamageFeedbackQueued = false;
     this.pauseTransitionStarted = false;
@@ -264,6 +298,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.developerConsoleController.setup();
     this.prepareGameOverOverlay();
+    this.prepareEscapeOverlay();
     this.combatCollisions = new CombatCollisionSystem({
       scene: this,
       player: this.player,
@@ -596,9 +631,9 @@ export class GameScene extends Phaser.Scene {
     this.gameOverOverlay.classList.remove('is-leaving');
     this.gameOverRestartButton.disabled = false;
     this.gameOverRestartButton.onclick = () => this.restartAfterGameOver();
-    document.addEventListener('keydown', this.handleGameOverKeyDown, true);
+    const removeListener = bindCaptureKeydown(document, this.handleGameOverKeyDown);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      document.removeEventListener('keydown', this.handleGameOverKeyDown, true);
+      removeListener();
       this.resetGameOverOverlay();
     });
   }
@@ -627,10 +662,92 @@ export class GameScene extends Phaser.Scene {
   }
 
   private resetGameOverOverlay(): void {
-    this.gameOverOverlay.hidden = true;
-    this.gameOverOverlay.classList.remove('is-leaving');
-    this.gameOverRestartButton.disabled = false;
+    resetRunEndOverlayElements(this.gameOverOverlay, this.gameOverRestartButton);
     this.gameOverRestartButton.onclick = null;
+  }
+
+  private prepareEscapeOverlay(): void {
+    const overlay = document.querySelector<HTMLElement>('#escape-overlay');
+    const title = document.querySelector<HTMLElement>('#escape-title');
+    const summary = document.querySelector<HTMLElement>('#escape-summary');
+    const returnButton = document.querySelector<HTMLButtonElement>('#escape-return');
+
+    if (!overlay || !title || !summary || !returnButton) {
+      throw new Error('Escape overlay elements are missing.');
+    }
+
+    this.escapeOverlay = overlay;
+    this.escapeTitle = title;
+    this.escapeSummary = summary;
+    this.escapeReturnButton = returnButton;
+    this.escapeOverlay.hidden = true;
+    this.escapeOverlay.classList.remove('is-leaving');
+    this.escapeReturnButton.disabled = false;
+    this.escapeReturnButton.onclick = () => this.returnToTitleAfterEscape();
+    const removeListener = bindCaptureKeydown(document, this.handleEscapeKeyDown);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      removeListener();
+      this.resetEscapeOverlay();
+    });
+  }
+
+  private startEscapeSequence(): void {
+    if (!canStartEscapeSequence(this.runState.outcome, this.escapeStarted)) {
+      return;
+    }
+
+    this.escapeStarted = true;
+
+    // 게임오버와 동일하게, 물리 정리보다 먼저 브라우저 오버레이를 띄워
+    // 이후 정리 과정의 오류가 승리 화면 표시를 막지 못하게 한다.
+    this.showEscapeOverlay();
+
+    try {
+      const body = this.player.body as Phaser.Physics.Arcade.Body | undefined;
+
+      if (body) {
+        body.stop();
+        body.enable = false;
+      }
+
+      this.physics.world.pause();
+    } catch (error) {
+      console.error('Escape physics cleanup failed.', error);
+    }
+
+    // 물리 정지는 Scene 타이머(fuse)를 멈추지 않으므로 설치된 폭탄을 제거한다.
+    this.bombSystem.clear();
+    this.music.play(MusicKeys.title);
+  }
+
+  private showEscapeOverlay(): void {
+    this.escapeTitle.textContent = t('escape.title');
+    this.escapeSummary.textContent = t('escape.summary', {
+      rooms: this.runState.clearedRooms,
+      items: this.runState.collectedItemIds.length,
+      score: this.runState.score,
+      // 확장 미니맵과 동일한 HH:MM:SS 형식을 재사용한다.
+      time: formatRunElapsedTime(this.runElapsedMs),
+    });
+    this.escapeReturnButton.textContent = t('escape.returnToTitle');
+    this.escapeOverlay.hidden = false;
+    this.escapeReturnButton.focus();
+  }
+
+  private returnToTitleAfterEscape(): void {
+    if (!this.escapeStarted || this.escapeTransitionStarted) {
+      return;
+    }
+
+    this.escapeTransitionStarted = true;
+    this.escapeReturnButton.disabled = true;
+    this.escapeOverlay.classList.add('is-leaving');
+    this.scene.launch(TITLE_TRANSITION_SCENE_KEY);
+  }
+
+  private resetEscapeOverlay(): void {
+    resetRunEndOverlayElements(this.escapeOverlay, this.escapeReturnButton);
+    this.escapeReturnButton.onclick = null;
   }
 
   private setupAudioUnlock(): void {
@@ -1047,19 +1164,32 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    this.floorTransitionStarted = true;
+    // 판정은 순수 규칙이 담당한다: 다음 층 이동 / 최종층 탈출 / 무시.
+    const outcome = resolveFloorExit(this.runState);
+
+    if (outcome.kind === 'ignored') {
+      return;
+    }
+
     exit.disableBody(true, false);
+
+    if (outcome.kind === 'run-clear') {
+      this.startEscapeSequence();
+      return;
+    }
+
+    this.floorTransitionStarted = true;
     this.cameras.main.fadeOut(180, 5, 9, 14);
-    this.time.delayedCall(180, () => this.advanceFloor());
+    this.time.delayedCall(180, () => this.enterNextFloor());
   }
 
-  private advanceFloor(): void {
+  // resolveFloorExit가 층 증가·회복을 이미 확정했으므로 여기서는 화면 전환만 한다.
+  private enterNextFloor(): void {
     if (isRunEnded(this.runState)) {
       return;
     }
 
     this.floorTransitionStarted = false;
-    advanceRunToNextFloor(this.runState);
     this.player.setStats(this.runState.stats);
     this.roomTransitions.enterFloor(
       this.runState.floor,

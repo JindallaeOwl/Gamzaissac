@@ -5,7 +5,7 @@ import { Bullet } from '../entities/Bullet';
 import { Obstacle } from '../entities/Obstacle';
 import { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import type { AudioSystem } from './AudioSystem';
-import { isWithinBombRadius, resolveBombPlantAttempt } from './BombRules';
+import { isWithinBombRadius, resolveBombPlantAttempt, shouldDetonateBomb } from './BombRules';
 import type { EffectsSystem } from './EffectsSystem';
 import type { RunState } from './RunState';
 
@@ -72,6 +72,10 @@ export class BombSystem {
   }
 
   private detonate(originX: number, originY: number): void {
+    if (!shouldDetonateBomb(this.isRunEnded())) {
+      return;
+    }
+
     const enemiesInRoom = [...(this.enemies.getChildren() as BaseEnemy[])];
 
     for (const enemy of enemiesInRoom) {
