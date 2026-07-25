@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { TOTAL_FLOORS } from '../src/data/stages';
 import {
   DEVELOPER_CONSOLE_HELP,
   parseDeveloperCommand,
 } from '../src/systems/DeveloperConsoleCommands';
+import { getDeveloperConsoleSuggestions } from '../src/systems/DeveloperConsoleAutocomplete';
 import { createInitialRunState, isRunEligibleForRanking } from '../src/systems/RunState';
 
 describe('developer console commands', () => {
@@ -67,6 +69,12 @@ describe('developer console commands', () => {
     expect(parseDeveloperCommand('coin 0').ok).toBe(false);
     expect(parseDeveloperCommand('coin 100').ok).toBe(false);
     expect(parseDeveloperCommand('floor -1').ok).toBe(false);
+    // 층 이동은 스테이지 구조상 존재하는 1~TOTAL_FLOORS층만 허용한다.
+    expect(parseDeveloperCommand(`floor ${TOTAL_FLOORS}`).ok).toBe(true);
+    expect(parseDeveloperCommand('floor 0').ok).toBe(false);
+    expect(parseDeveloperCommand(`floor ${TOTAL_FLOORS + 1}`).ok).toBe(false);
+    expect(parseDeveloperCommand('floor 1.5').ok).toBe(false);
+    expect(parseDeveloperCommand('floor 99').ok).toBe(false);
     expect(parseDeveloperCommand('spawn').ok).toBe(false);
     expect(parseDeveloperCommand('god now').ok).toBe(false);
     expect(parseDeveloperCommand('unknown').ok).toBe(false);
@@ -80,5 +88,16 @@ describe('developer console commands', () => {
 
     state.adminUsed = true;
     expect(isRunEligibleForRanking(state)).toBe(false);
+  });
+
+  it('shows the floor range in the help text and autocomplete label', () => {
+    const range = `1~${TOTAL_FLOORS}`;
+
+    expect(DEVELOPER_CONSOLE_HELP.some((line) => line.includes(range))).toBe(true);
+
+    const floorSuggestion = getDeveloperConsoleSuggestions('floor').find((suggestion) =>
+      suggestion.completion.startsWith('floor'),
+    );
+    expect(floorSuggestion?.label).toContain(range);
   });
 });

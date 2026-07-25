@@ -1,4 +1,5 @@
 import { formatItemNumber, PASSIVE_ITEMS } from '../data/items';
+import { TOTAL_FLOORS } from '../data/stages';
 
 export interface DeveloperConsoleSuggestion {
   completion: string;
@@ -19,7 +20,7 @@ const COMMAND_SUGGESTIONS: readonly DeveloperConsoleSuggestion[] = [
   { completion: 'treasure', label: 'treasure — 보물방 이동' },
   { completion: 'spawn ', label: 'spawn <번호 또는 ID> — 대상 생성' },
   { completion: 'sale', label: 'sale — 상점 상품 할인' },
-  { completion: 'floor ', label: 'floor <층> — 지정한 층으로 이동' },
+  { completion: 'floor ', label: `floor <층> — 지정한 층으로 이동 (1~${TOTAL_FLOORS})` },
   { completion: 'clear', label: 'clear — 콘솔 출력 지우기' },
 ];
 

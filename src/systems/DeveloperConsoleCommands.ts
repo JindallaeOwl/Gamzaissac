@@ -1,4 +1,5 @@
 import type { ConsumableType } from '../data/rewards';
+import { TOTAL_FLOORS } from '../data/stages';
 
 export type DeveloperCommand =
   | { type: 'help' }
@@ -37,7 +38,7 @@ export const DEVELOPER_CONSOLE_HELP = [
   'spawn five-coin      회색 5코인 생성',
   'spawn heart          회복 하트 생성',
   'sale                  현재 상점 상품 하나 강제 할인',
-  'floor 2              지정한 층으로 이동',
+  `floor 2              지정한 층으로 이동 (1~${TOTAL_FLOORS})`,
   'clear                 콘솔 출력 지우기',
 ] as const;
 
@@ -102,8 +103,9 @@ export function parseDeveloperCommand(input: string): DeveloperCommandParseResul
   if (name === 'floor') {
     const floor = parsePositiveInteger(args[0]);
 
-    if (args.length !== 1 || floor === null) {
-      return usageError('floor <1~99>');
+    // 스테이지 구조상 존재하는 층(1~TOTAL_FLOORS)만 허용한다.
+    if (args.length !== 1 || floor === null || floor > TOTAL_FLOORS) {
+      return usageError(`floor <1~${TOTAL_FLOORS}>`);
     }
 
     return { ok: true, command: { type: 'floor', floor } };
