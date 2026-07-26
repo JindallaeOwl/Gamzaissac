@@ -325,6 +325,80 @@ export function buildWormKingDigFrame(step: number): EnemySpriteBuilder {
   };
 }
 
+// 최종 보스 녹슨 쇠스랑의 농부. 지렁이 왕과 같은 PixelSprite(도트) 방식이지만 32×32
+// 격자에 그린다. 몸·모자·눈은 좌우 대칭으로 그린 뒤 mirror()로 대칭을 확정하고, 그다음
+// 비대칭 요소인 쇠스랑을 오른쪽에만 얹는다. new PixelSprite(32)로 호출할 것.
+export const buildPitchforkFarmer: EnemySpriteBuilder = (s) => {
+  const straw = { shade: 0x896a34, base: 0xb4934e, light: 0xdcc079 };
+  const denim = { shade: 0x2b333c, base: 0x3e4954, light: 0x5c6b78 };
+  const beard = { shade: 0x463c2d, base: 0x685a44, light: 0x8f7c5d };
+  const soil = { shade: 0x241910, base: 0x3b2a19, light: 0x513824 };
+  const dark = { shade: 0x120c07, base: 0x1b130c, light: 0x241a10 };
+  const soilLump = { shade: 0x1d1409, base: 0x30220f, light: 0x422f18 };
+
+  // 흙·뿌리 밑동 (왼쪽 덩어리는 mirror가 오른쪽에 복제)
+  s.disc(15.5, 30, 11, soil);
+  s.disc(8, 28, 5, soilLump);
+
+  // 몸통(멜빵바지) + 어깨
+  s.disc(15.5, 23, 8, denim);
+  s.disc(9, 21, 4, denim);
+
+  // 얼굴 그늘 → 수염
+  s.disc(15.5, 12, 4.5, dark);
+  s.disc(15.5, 18, 5.5, beard);
+  s.set(12, 22, beard.base);
+  s.set(15, 23, beard.base);
+  s.set(14, 17, beard.light);
+
+  // 멜빵 + 단추 + 흙 얼룩(수염 아래 몸통)
+  for (let y = 20; y <= 27; y += 1) {
+    s.set(12, y, denim.light);
+  }
+  s.set(12, 23, 0xd8c67a);
+  s.set(11, 26, soil.base);
+
+  // 밀짚모자: 크라운 + 밴드 + 넓은 챙
+  s.disc(15.5, 8, 4, straw);
+  for (let x = 12; x <= 15; x += 1) {
+    s.set(x, 9, straw.shade);
+  }
+  for (let x = 4; x <= 15; x += 1) {
+    s.set(x, 10, straw.light);
+  }
+  for (let x = 3; x <= 15; x += 1) {
+    s.set(x, 11, straw.base);
+  }
+  for (let x = 5; x <= 15; x += 1) {
+    s.set(x, 12, straw.shade);
+  }
+
+  // 빨간 글로우 눈(왼쪽만 — mirror가 오른쪽 눈 생성)
+  s.set(11, 12, 0x8a2213);
+  s.set(10, 13, 0xc23219);
+  s.set(11, 14, 0xc23219);
+  s.set(12, 13, 0xff5636);
+  s.set(11, 13, 0xffe4d4);
+
+  s.mirror();
+
+  // 쇠스랑: 대칭 확정 이후 오른쪽에만. 자루 + 3갈퀴 머리.
+  const iron = 0x2a2a31;
+  for (let y = 5; y <= 27; y += 1) {
+    s.set(24, y, iron);
+  }
+  s.set(24, 15, 0x6f4a2c);
+  s.set(24, 21, 0x6f4a2c);
+  for (let x = 22; x <= 27; x += 1) {
+    s.set(x, 5, iron);
+  }
+  for (let y = 2; y <= 4; y += 1) {
+    s.set(22, y, iron);
+    s.set(24, y, iron);
+    s.set(27, y, iron);
+  }
+};
+
 export function drawEnemyTexture(
   scene: Phaser.Scene,
   key: string,

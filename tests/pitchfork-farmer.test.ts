@@ -15,10 +15,10 @@ function nested(tree: TranslationTree, group: string, key: string): unknown {
 describe('pitchfork farmer boss definition', () => {
   const definition = ENEMY_DEFINITIONS.pitchforkFarmer;
 
-  it('is a boss-kind enemy reusing a boss texture until it gets its own art', () => {
+  it('is a boss-kind enemy with its own placeholder farmer texture', () => {
     expect(definition).toBeDefined();
     expect(definition.kind).toBe('boss');
-    expect(definition.textureKey).toBe(TextureKeys.enemyBoss);
+    expect(definition.textureKey).toBe(TextureKeys.enemyPitchforkFarmer);
   });
 
   it('is the tankiest boss and deals standard half-heart damage', () => {

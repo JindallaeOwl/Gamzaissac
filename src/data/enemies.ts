@@ -241,13 +241,13 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     bossPhaseTwoBarColor: ROOT_KERNEL_TUNING.bossBarPhaseTwoColor,
     phaseTwoMessageKey: 'messages.rootKernelPhaseTwo',
   },
-  // 4스테이지 II층 최종 보스. 전용 도트가 없어 기존 보스 텍스처를 임시로 쓴다.
+  // 4스테이지 II층 최종 보스. 전용 임시 도트(밀짚모자·글로우 빨간 눈·쇠스랑).
   pitchforkFarmer: {
     id: 'pitchforkFarmer',
     kind: 'boss',
     displayName: 'Rusty Pitchfork Farmer',
     displayNameKey: 'bosses.pitchforkFarmer',
-    textureKey: TextureKeys.enemyBoss,
+    textureKey: TextureKeys.enemyPitchforkFarmer,
     maxHealth: PITCHFORK_FARMER_TUNING.maxHealth,
     speed: PITCHFORK_FARMER_TUNING.speed,
     contactDamage: PITCHFORK_FARMER_TUNING.contactDamage,

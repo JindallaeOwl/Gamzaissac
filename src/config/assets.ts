@@ -23,6 +23,7 @@ export const TextureKeys = {
   enemySplitterling: 'enemy-splitterling',
   enemyBoss: 'enemy-boss',
   enemyRootKernel: 'enemy-root-kernel',
+  enemyPitchforkFarmer: 'enemy-pitchfork-farmer',
   enemyWormKing: 'enemy-worm-king',
   enemyWormKing1: 'enemy-worm-king-1',
   enemyWormKing2: 'enemy-worm-king-2',

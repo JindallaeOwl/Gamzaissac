@@ -4,12 +4,14 @@ import { PASSIVE_ITEMS, type ItemCategory } from '../data/items';
 import {
   buildChaser,
   buildDasher,
+  buildPitchforkFarmer,
   buildShooter,
   buildSplitter,
   buildSplitterling,
   buildWormKingDigFrame,
   buildWormKingFrame,
   drawEnemyTexture,
+  PixelSprite,
 } from './enemyPixelSprites';
 
 export function createPlaceholderTextures(scene: Phaser.Scene): void {
@@ -31,6 +33,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createBossTexture(scene);
   createRootKernelTexture(scene);
   createWormKingTexture(scene);
+  createPitchforkFarmerTexture(scene);
   createDoorTexture(scene, TextureKeys.doorHorizontal, 48, 16);
   createDoorTexture(scene, TextureKeys.doorVertical, 16, 48);
   createPassiveItemIcons(scene);
@@ -353,6 +356,14 @@ function createWormKingTexture(scene: Phaser.Scene): void {
   WORM_KING_DIG_FRAME_KEYS.forEach((key, index) => {
     drawEnemyTexture(scene, key, buildWormKingDigFrame(index));
   });
+}
+
+// 최종 보스 녹슨 쇠스랑의 농부. 지렁이 왕과 같은 PixelSprite(도트) 방식으로 32×32
+// 격자에 그려 3배 확대한다(→ 96×96, 도트 픽셀이 또렷한 룩). 나중에 직접 그린 PNG로 교체 가능.
+function createPitchforkFarmerTexture(scene: Phaser.Scene): void {
+  const sprite = new PixelSprite(32);
+  buildPitchforkFarmer(sprite);
+  sprite.generateTexture(scene, TextureKeys.enemyPitchforkFarmer, 3);
 }
 
 function createBossTexture(scene: Phaser.Scene): void {

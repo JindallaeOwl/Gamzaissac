@@ -264,7 +264,6 @@ export const PITCHFORK_FARMER_TUNING = {
   bodyRadius: 28,
   score: 260,
   bulletDamage: PLAYER_DAMAGE_PER_HIT,
-  baseTint: 0xc98a4a,
   preferredMinDistance: 110,
   preferredMaxDistance: 150,
   attackRecoveryMs: 320,

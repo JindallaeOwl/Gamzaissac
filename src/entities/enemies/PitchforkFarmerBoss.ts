@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { DEPTH, PITCHFORK_FARMER_TUNING, ROOM_RECT } from '../../config/gameConfig';
-import type { EnemyDefinition } from '../../data/enemies';
 import type { Player } from '../Player';
 import { normalizeVector } from '../../utils/math';
 import {
@@ -76,18 +75,6 @@ export class PitchforkFarmerBoss extends BaseEnemy {
 
   private warningGraphics?: Phaser.GameObjects.Graphics;
   private cleanedUp = false;
-
-  constructor(
-    scene: Phaser.Scene,
-    x: number,
-    y: number,
-    definition: EnemyDefinition,
-    floor: number,
-  ) {
-    super(scene, x, y, definition, floor);
-    // 최종 보스임을 임시 텍스처에서도 구분되게 녹슨 색조를 입힌다(2페이즈에서 광란색으로).
-    this.setPersistentTint(F.baseTint);
-  }
 
   override takeDamage(amount: number, sourceX: number, sourceY: number): boolean {
     const defeated = super.takeDamage(amount, sourceX, sourceY);

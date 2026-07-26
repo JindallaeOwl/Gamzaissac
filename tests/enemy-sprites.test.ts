@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildChaser,
   buildDasher,
+  buildPitchforkFarmer,
   buildShooter,
   buildSplitter,
   buildSplitterling,
@@ -58,6 +59,22 @@ describe('worm king wriggle animation frames', () => {
     buildWormKing(staticSprite);
 
     expect(staticSprite.filledCount()).toBe(frameSprite.filledCount());
+  });
+});
+
+describe('pitchfork farmer sprite', () => {
+  it('draws a detailed figure on the 32x32 grid', () => {
+    const sprite = new PixelSprite(32);
+    buildPitchforkFarmer(sprite);
+
+    expect(sprite.filledCount()).toBeGreaterThan(80);
+  });
+
+  it('is intentionally asymmetric — the pitchfork sits on one side only', () => {
+    const sprite = new PixelSprite(32);
+    buildPitchforkFarmer(sprite);
+
+    expect(sprite.isHorizontallySymmetric()).toBe(false);
   });
 });
 
