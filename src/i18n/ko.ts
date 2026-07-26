@@ -40,6 +40,7 @@ export const ko: TranslationTree = {
     flyQueen: '파리 여왕',
     thornTangle: '가시넝쿨 뭉치',
     wormKing: '늙은 지렁이 왕',
+    pitchforkFarmer: '녹슨 쇠스랑의 농부',
   },
   stages: {
     rottenRoots: '썩은 뿌리',
@@ -96,6 +97,7 @@ export const ko: TranslationTree = {
     bossPhaseTwo: 'Fault Warden: 2페이즈',
     rootKernelPhaseTwo: 'ROOT KERNEL: 루트 권한 폭주',
     wormKingPhaseTwo: '늙은 지렁이 왕: 허물을 벗다',
+    pitchforkFarmerPhaseTwo: '녹슨 쇠스랑의 농부: 광란',
     treasureUnlocked: '보물방 개방',
     shopUnlocked: '상점방 개방',
     keyNeeded: '열쇠가 필요합니다',

@@ -40,6 +40,7 @@ export const en: TranslationTree = {
     flyQueen: 'Fly Queen',
     thornTangle: 'Thorn Tangle',
     wormKing: 'Old Worm King',
+    pitchforkFarmer: 'Rusty Pitchfork Farmer',
   },
   stages: {
     rottenRoots: 'Rotten Roots',
@@ -96,6 +97,7 @@ export const en: TranslationTree = {
     bossPhaseTwo: 'Fault Warden: Phase II',
     rootKernelPhaseTwo: 'ROOT KERNEL: ROOT ACCESS OVERRIDE',
     wormKingPhaseTwo: 'Old Worm King: Sheds Its Skin',
+    pitchforkFarmerPhaseTwo: 'Rusty Pitchfork Farmer: FRENZY',
     treasureUnlocked: 'Treasure room unlocked',
     shopUnlocked: 'Shop unlocked',
     keyNeeded: 'A key is needed',

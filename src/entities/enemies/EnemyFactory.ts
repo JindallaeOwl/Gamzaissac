@@ -3,6 +3,7 @@ import { ENEMY_DEFINITIONS, type EnemyId } from '../../data/enemies';
 import { ChaserEnemy } from './ChaserEnemy';
 import { DasherEnemy } from './DasherEnemy';
 import { FaultWardenBoss } from './FaultWardenBoss';
+import { PitchforkFarmerBoss } from './PitchforkFarmerBoss';
 import { RootKernelBoss } from './RootKernelBoss';
 import { ShooterEnemy } from './ShooterEnemy';
 import { WormKingBoss } from './WormKingBoss';
@@ -50,6 +51,9 @@ export function createEnemy(
       break;
     case 'rootKernel':
       enemy = new RootKernelBoss(scene, x, y, definition, floor);
+      break;
+    case 'pitchforkFarmer':
+      enemy = new PitchforkFarmerBoss(scene, x, y, definition, floor);
       break;
   }
 

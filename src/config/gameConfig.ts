@@ -253,6 +253,80 @@ export const WORM_KING_TUNING = {
   bossBarPhaseTwoColor: 0x9ce86a,
 } as const;
 
+// 4스테이지 II층 최종 보스 "녹슨 쇠스랑의 농부". 8층(최종)에 배치하며 모든 보스 중
+// 가장 단단하다. 뿌리핵처럼 "예고 → 발사" 상태머신. 1페이즈 5패턴(삼지창 찌르기·갈퀴
+// 스윕·씨앗 흩뿌리기·발 구르기·쇠스랑 근접 휘두르기), 2페이즈 "광란"에서 건초 커튼과
+// 회전 낫 부메랑이 추가되고 쿨다운·탄속이 강화된다.
+export const PITCHFORK_FARMER_TUNING = {
+  maxHealth: 34,
+  speed: 34,
+  contactDamage: PLAYER_DAMAGE_PER_HIT,
+  bodyRadius: 28,
+  score: 260,
+  bulletDamage: PLAYER_DAMAGE_PER_HIT,
+  baseTint: 0xc98a4a,
+  preferredMinDistance: 110,
+  preferredMaxDistance: 150,
+  attackRecoveryMs: 320,
+  // 삼지창 찌르기: 조준 방향으로 나란한 3발.
+  tridentTelegraphMs: 380,
+  tridentCooldownMs: 2000,
+  tridentBulletSpeed: 175,
+  tridentLaneSpacing: 12,
+  // 갈퀴 휘두르기: 예고 후 부채꼴을 훑으며 발사.
+  rakeTelegraphMs: 500,
+  rakeSweepMs: 640,
+  rakeCooldownMs: 3200,
+  rakeBulletSpeed: 135,
+  rakeArcRad: (Math.PI / 180) * 130,
+  rakeShotIntervalMs: 60,
+  // 씨앗 흩뿌리기: 안전 틈 있는 깨진 링.
+  seedTelegraphMs: 500,
+  seedCooldownMs: 2800,
+  seedBulletSpeed: 118,
+  seedRingCount: 12,
+  seedSafeGap: 2,
+  // 발 구르기: 보스 중심에서 꽉 찬 링 충격파.
+  stompTelegraphMs: 600,
+  stompCooldownMs: 3600,
+  stompBulletSpeed: 122,
+  stompRingCount: 14,
+  // 쇠스랑 휘두르기(근접): 가까이 붙은 플레이어를 벤다. 날은 보스에서 뻗은 선분이고,
+  // 그 선분에서 swingBladeHalfWidth(px) 이내면 맞는다(보이는 날 두께 = 판정). 예고는
+  // 날이 지나갈 150° 부채꼴 전체, 활성 시 현재 날 선분이 그 안을 훑는다. triggerRange
+  // 안에 있을 때만 패턴 후보로 선택된다.
+  swingTelegraphMs: 420,
+  swingActiveMs: 300,
+  swingCooldownMs: 2600,
+  swingArcRad: (Math.PI / 180) * 150,
+  swingReach: 62,
+  swingBladeHalfWidth: 7,
+  swingTriggerRange: 96,
+  swingDamage: PLAYER_DAMAGE_PER_HIT,
+  // 2페이즈 "광란".
+  phaseTwoThreshold: 0.5,
+  phaseTwoTransitionLockMs: 700,
+  phaseTwoTint: 0xff7a3d,
+  phaseTwoCooldownScale: 0.65,
+  phaseTwoBulletSpeedScale: 1.2,
+  // 회전 낫 부메랑(2페이즈 전용): 나갔다 돌아오며 두 번 위협한다. 보스가 직접 관리하는
+  // 투사체라 나가는 동안 제자리에 선다(throw 시점 위치로 돌아옴).
+  boomerangTelegraphMs: 460,
+  boomerangFlightMs: 1200,
+  boomerangCooldownMs: 3400,
+  boomerangRange: 150,
+  boomerangHitRadius: 16,
+  boomerangSpinRate: 0.02,
+  boomerangDamage: PLAYER_DAMAGE_PER_HIT,
+  // 건초 커튼(2페이즈 전용): 안전 레인 하나 있는 탄 벽.
+  curtainTelegraphMs: 700,
+  curtainCooldownMs: 3000,
+  curtainBulletSpeed: 150,
+  curtainLaneCount: 7,
+  bossBarColor: 0xb06a2c,
+  bossBarPhaseTwoColor: 0xff7a3d,
+} as const;
+
 export const BOMB_TUNING = {
   damage: 5,
   radius: 115,

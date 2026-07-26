@@ -44,7 +44,7 @@ describe('getStageProgress', () => {
       [5, 3, 1, 'flyQueen'],
       [6, 3, 2, 'faultWarden'],
       [7, 4, 1, 'thornTangle'],
-      [8, 4, 2, 'rootKernel'],
+      [8, 4, 2, 'pitchforkFarmer'],
     ];
 
     for (const [floor, stageNumber, floorInStage, bossId] of expected) {

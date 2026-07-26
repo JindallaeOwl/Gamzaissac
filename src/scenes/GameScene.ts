@@ -249,6 +249,7 @@ export class GameScene extends Phaser.Scene {
       onEnemyDefeated: (score) => this.handleEnemyDefeated(score),
       onObstacleDestroyed: (x, y) => this.handleObstacleDestroyed(x, y),
       onBossPhaseTwo: (boss) => this.handleBossPhaseTwo(boss),
+      onPlayerDamaged: () => this.queuePlayerDamagedFeedback(),
     });
     this.bombSystem = new BombSystem({
       scene: this,

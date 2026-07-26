@@ -1,6 +1,7 @@
 import { TextureKeys } from '../config/assets';
 import {
   BOSS_TUNING,
+  PITCHFORK_FARMER_TUNING,
   PLAYER_DAMAGE_PER_HIT,
   ROOT_KERNEL_TUNING,
   WORM_KING_TUNING,
@@ -18,7 +19,8 @@ export type EnemyId =
   | 'thornTangle'
   | 'wormKing'
   | 'faultWarden'
-  | 'rootKernel';
+  | 'rootKernel'
+  | 'pitchforkFarmer';
 
 export interface EnemyDefinition {
   id: EnemyId;
@@ -238,5 +240,22 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     bossBarColor: ROOT_KERNEL_TUNING.bossBarColor,
     bossPhaseTwoBarColor: ROOT_KERNEL_TUNING.bossBarPhaseTwoColor,
     phaseTwoMessageKey: 'messages.rootKernelPhaseTwo',
+  },
+  // 4스테이지 II층 최종 보스. 전용 도트가 없어 기존 보스 텍스처를 임시로 쓴다.
+  pitchforkFarmer: {
+    id: 'pitchforkFarmer',
+    kind: 'boss',
+    displayName: 'Rusty Pitchfork Farmer',
+    displayNameKey: 'bosses.pitchforkFarmer',
+    textureKey: TextureKeys.enemyBoss,
+    maxHealth: PITCHFORK_FARMER_TUNING.maxHealth,
+    speed: PITCHFORK_FARMER_TUNING.speed,
+    contactDamage: PITCHFORK_FARMER_TUNING.contactDamage,
+    bodyRadius: PITCHFORK_FARMER_TUNING.bodyRadius,
+    score: PITCHFORK_FARMER_TUNING.score,
+    bulletDamage: PITCHFORK_FARMER_TUNING.bulletDamage,
+    bossBarColor: PITCHFORK_FARMER_TUNING.bossBarColor,
+    bossPhaseTwoBarColor: PITCHFORK_FARMER_TUNING.bossBarPhaseTwoColor,
+    phaseTwoMessageKey: 'messages.pitchforkFarmerPhaseTwo',
   },
 };

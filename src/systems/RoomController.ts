@@ -65,6 +65,9 @@ interface RoomControllerConfig {
   onEnemyDefeated: (score: number) => void;
   onObstacleDestroyed?: (x: number, y: number) => void;
   onBossPhaseTwo?: (boss: BaseEnemy) => void;
+  // 보스가 탄·접촉이 아닌 직접 피해(근접 휘두르기·부메랑)로 플레이어를 맞혔을 때,
+  // 기존 공통 피격 피드백을 내기 위한 콜백.
+  onPlayerDamaged?: () => void;
   random?: RandomSource;
 }
 
@@ -87,6 +90,7 @@ export class RoomController {
   private readonly onEnemyDefeated: (score: number) => void;
   private readonly onObstacleDestroyed?: (x: number, y: number) => void;
   private readonly onBossPhaseTwo?: (boss: BaseEnemy) => void;
+  private readonly onPlayerDamaged?: () => void;
   private readonly random: RandomSource;
   private readonly doorSprites = new Map<Direction, Door>();
   private readonly floorGraphics: Phaser.GameObjects.Graphics;
@@ -106,6 +110,7 @@ export class RoomController {
     this.onEnemyDefeated = config.onEnemyDefeated;
     this.onObstacleDestroyed = config.onObstacleDestroyed;
     this.onBossPhaseTwo = config.onBossPhaseTwo;
+    this.onPlayerDamaged = config.onPlayerDamaged;
     this.random = config.random ?? Math.random;
 
     this.floorGraphics = this.scene.add.graphics();
@@ -329,6 +334,9 @@ export class RoomController {
       enemy.on('boss-summon', (payload: BossSummonRequest) =>
         this.handleBossSummon(enemy, payload),
       );
+      // Direct-damage attacks (Farmer's melee swing / boomerang) call player.damage
+      // themselves, so they route their hit feedback through here on a real hit.
+      enemy.on('player-damaged', () => this.onPlayerDamaged?.());
     }
 
     // A splitter spawns its children while it is still counted as active, so the

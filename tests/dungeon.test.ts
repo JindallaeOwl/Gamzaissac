@@ -48,7 +48,7 @@ describe('DungeonManager', () => {
       [5, 'boss-flyQueen'],
       [6, 'boss-faultWarden'],
       [7, 'boss-thornTangle'],
-      [8, 'boss-rootKernel'],
+      [8, 'boss-pitchforkFarmer'],
     ];
 
     for (const [floor, templateId] of expected) {
