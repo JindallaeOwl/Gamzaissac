@@ -13,6 +13,18 @@ import {
   drawEnemyTexture,
   PixelSprite,
 } from './enemyPixelSprites';
+import {
+  buildSoilBase,
+  buildSoilCracks,
+  buildSoilDamp,
+  buildSoilPebbles,
+  buildSoilRoots,
+  buildSoilWallCap,
+  buildSoilWallFace,
+  buildSoilWallSide,
+  FLOOR_TILE_DESIGN_SIZE,
+  FLOOR_TILE_SCALE,
+} from './floorPixelSprites';
 
 export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createPlayerFrameTexture(scene, TextureKeys.player, 0, 0, 0, false);
@@ -46,6 +58,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createFloorExitTexture(scene);
   createFloorExitEscapeTexture(scene);
   createFloorTile(scene);
+  createSoilFloorTextures(scene);
   createWallTexture(scene);
   createObstacleTexture(scene);
 }
@@ -451,23 +464,63 @@ function createRootKernelTexture(scene: Phaser.Scene): void {
   graphics.destroy();
 }
 
+// 굵은 픽셀(설계 1픽셀 = 2×2 블록)의 나무 문짝. 흙벽에 어울리는 두 짝짜리 판자 문으로,
+// 가로문은 24×8 설계 격자, 세로문은 같은 디자인을 전치해 그린다. 열림/잠김 상태 표시는
+// Door 엔티티의 tint(초록/빨강)가 이 갈색 위에 곱해져 유지된다.
 function createDoorTexture(scene: Phaser.Scene, key: string, width: number, height: number): void {
   const graphics = scene.add.graphics();
-  graphics.fillStyle(0x111820, 1);
-  graphics.fillRoundedRect(0, 0, width, height, 5);
-  graphics.lineStyle(4, 0x667988, 1);
-  graphics.strokeRoundedRect(2, 2, width - 4, height - 4, 5);
-  graphics.lineStyle(2, 0xf0c85a, 0.95);
+  const horizontal = width > height;
+  const columns = (horizontal ? width : height) / 2;
+  const rows = (horizontal ? height : width) / 2;
 
-  if (width > height) {
-    graphics.lineBetween(10, height / 2, width - 10, height / 2);
-    graphics.fillStyle(0x2b3843, 1);
-    graphics.fillRect(width / 2 - 5, 4, 10, height - 8);
-  } else {
-    graphics.lineBetween(width / 2, 10, width / 2, height - 10);
-    graphics.fillStyle(0x2b3843, 1);
-    graphics.fillRect(4, height / 2 - 5, width - 8, 10);
+  const put = (x: number, y: number, color: number): void => {
+    graphics.fillStyle(color, 1);
+
+    if (horizontal) {
+      graphics.fillRect(x * 2, y * 2, 2, 2);
+    } else {
+      graphics.fillRect(y * 2, x * 2, 2, 2);
+    }
+  };
+
+  const FRAME = 0x2a1a0e;
+  const PLANK = 0xa87848;
+  const PLANK_LIGHT = 0xc09058;
+  const PLANK_SHADE = 0x8a5f38;
+  const SEAM = 0x6a4826;
+  const KNOB = 0xf0d080;
+
+  for (let y = 0; y < rows; y += 1) {
+    for (let x = 0; x < columns; x += 1) {
+      let color = PLANK;
+
+      if (y === 0 || y === rows - 1 || x === 0 || x === columns - 1) {
+        color = FRAME;
+      } else if (y === 1) {
+        color = PLANK_LIGHT;
+      } else if (y === rows - 2) {
+        color = PLANK_SHADE;
+      }
+
+      put(x, y, color);
+    }
   }
+
+  // 세로 판자 이음선. 중앙 두 줄은 두 짝이 갈라지는 문틈이다.
+  for (const seamX of [4, 8, Math.floor(columns / 2) - 1, Math.floor(columns / 2), 15, 19]) {
+    if (seamX <= 0 || seamX >= columns - 1) {
+      continue;
+    }
+
+    for (let y = 1; y < rows - 1; y += 1) {
+      put(seamX, y, SEAM);
+    }
+  }
+
+  // 문 손잡이: 문틈 양옆에 하나씩.
+  const knobY = Math.floor(rows / 2);
+  put(Math.floor(columns / 2) - 3, knobY, KNOB);
+  put(Math.floor(columns / 2) + 2, knobY, KNOB);
 
   graphics.generateTexture(key, width, height);
   graphics.destroy();
@@ -861,6 +914,28 @@ function createFloorTile(scene: Phaser.Scene): void {
   graphics.fillRect(12, 11, 1, 1);
   graphics.generateTexture(TextureKeys.floorTile, 16, 16);
   graphics.destroy();
+}
+
+// 땅속 방 바닥·벽용 흙 타일 세트. 8×8 설계 격자를 2배로 확대해 16×16 텍스처가 되며,
+// 설계 1픽셀 = 화면 2×2 블록이라 적 스프라이트와 같은 굵은 픽셀 느낌이 난다.
+// 베이스는 TileSprite로 반복해 깔고, 장식(돌·뿌리·균열·습기)은 RoomController가 산재시킨다.
+function createSoilFloorTextures(scene: Phaser.Scene): void {
+  const builders = [
+    [TextureKeys.floorSoilBase, buildSoilBase],
+    [TextureKeys.floorSoilPebbles, buildSoilPebbles],
+    [TextureKeys.floorSoilRoots, buildSoilRoots],
+    [TextureKeys.floorSoilCracks, buildSoilCracks],
+    [TextureKeys.floorSoilDamp, buildSoilDamp],
+    [TextureKeys.wallSoilFace, buildSoilWallFace],
+    [TextureKeys.wallSoilSide, buildSoilWallSide],
+    [TextureKeys.wallSoilCap, buildSoilWallCap],
+  ] as const;
+
+  for (const [key, build] of builders) {
+    const sprite = new PixelSprite(FLOOR_TILE_DESIGN_SIZE);
+    build(sprite);
+    sprite.generateTexture(scene, key, FLOOR_TILE_SCALE);
+  }
 }
 
 function createWallTexture(scene: Phaser.Scene): void {

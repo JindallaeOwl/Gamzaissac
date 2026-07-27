@@ -1,4 +1,5 @@
 ﻿import Phaser from 'phaser';
+import { TextureKeys } from '../config/assets';
 import { Door } from '../entities/Door';
 import { ItemPickup } from '../entities/ItemPickup';
 import { Obstacle } from '../entities/Obstacle';
@@ -11,7 +12,6 @@ import {
   ROOM_CENTER_X,
   ROOM_CENTER_Y,
   OBSTACLE_TUNING,
-  PIXEL_GRID_SIZE,
   ROOM_CLEAR_DOOR_DELAY_MS,
   ROOM_RECT,
   scaleRoomTemplatePoint,
@@ -45,6 +45,20 @@ import {
   resolveEnemySpawnAwayFromEntry,
   type RoomPoint,
 } from './RoomEntrySafety';
+import {
+  FLOOR_TILE_SIZE,
+  hashSeed,
+  pickFloorDecoration,
+  type FloorDecoration,
+} from './floorPixelSprites';
+
+// 장식 종류 → 타일 텍스처 키 매핑.
+const FLOOR_DECORATION_TEXTURES: Record<FloorDecoration, string> = {
+  pebbles: TextureKeys.floorSoilPebbles,
+  roots: TextureKeys.floorSoilRoots,
+  cracks: TextureKeys.floorSoilCracks,
+  damp: TextureKeys.floorSoilDamp,
+};
 
 // 보스가 전투 중 새끼를 소환할 때 실어 보내는 요청. maxAlive로 동시 생존 수를 제한한다.
 interface BossSummonRequest {
@@ -94,6 +108,8 @@ export class RoomController {
   private readonly random: RandomSource;
   private readonly doorSprites = new Map<Direction, Door>();
   private readonly floorGraphics: Phaser.GameObjects.Graphics;
+  private readonly floorTileSprite: Phaser.GameObjects.TileSprite;
+  private readonly floorDecorations: Phaser.GameObjects.Group;
   private readonly shopDecorations: Phaser.GameObjects.Group;
   private enemyAiResumeAt = 0;
 
@@ -113,8 +129,19 @@ export class RoomController {
     this.onPlayerDamaged = config.onPlayerDamaged;
     this.random = config.random ?? Math.random;
 
+    // 바닥은 세 층으로 쌓는다: 흙 베이스 TileSprite → 장식 타일(돌·뿌리·균열·습기)
+    // → 경계·스테이지 액센트를 그리는 floorGraphics. 모두 벽(DEPTH.floor + 1) 아래.
+    this.floorTileSprite = this.scene.add.tileSprite(
+      ROOM_CENTER_X,
+      ROOM_CENTER_Y,
+      ROOM_RECT.width,
+      ROOM_RECT.height,
+      TextureKeys.floorSoilBase,
+    );
+    this.floorTileSprite.setDepth(DEPTH.floor);
+    this.floorDecorations = this.scene.add.group();
     this.floorGraphics = this.scene.add.graphics();
-    this.floorGraphics.setDepth(DEPTH.floor);
+    this.floorGraphics.setDepth(DEPTH.floor + 0.5);
     this.walls = this.scene.physics.add.staticGroup();
     this.doors = this.scene.physics.add.group({ allowGravity: false, immovable: true });
     this.obstacles = this.scene.physics.add.staticGroup();
@@ -123,7 +150,54 @@ export class RoomController {
     this.shopDecorations = this.scene.add.group();
 
     this.createWalls();
+    this.createWallVisuals();
     this.createDoors();
+  }
+
+  // 아이작류 입체감의 벽 외형. 위쪽 벽은 흙 단면(정면), 좌우는 어두운 옆면(오른쪽은
+  // flipX로 미러), 아래는 윗면 캡. 위·아래 띠는 모서리까지 덮도록 벽 두께만큼 넓힌다.
+  // 물리 충돌은 createWalls의 보이지 않는 사각형이 그대로 담당한다.
+  private createWallVisuals(): void {
+    const depth = DEPTH.floor + 0.75;
+    const bandWidth = ROOM_RECT.width + WALL_THICKNESS * 2;
+
+    this.scene.add
+      .tileSprite(
+        ROOM_CENTER_X,
+        ROOM_RECT.top - WALL_THICKNESS / 2,
+        bandWidth,
+        WALL_THICKNESS,
+        TextureKeys.wallSoilFace,
+      )
+      .setDepth(depth);
+    this.scene.add
+      .tileSprite(
+        ROOM_CENTER_X,
+        ROOM_RECT.bottom + WALL_THICKNESS / 2,
+        bandWidth,
+        WALL_THICKNESS,
+        TextureKeys.wallSoilCap,
+      )
+      .setDepth(depth);
+    this.scene.add
+      .tileSprite(
+        ROOM_RECT.left - WALL_THICKNESS / 2,
+        ROOM_CENTER_Y,
+        WALL_THICKNESS,
+        ROOM_RECT.height,
+        TextureKeys.wallSoilSide,
+      )
+      .setDepth(depth);
+    this.scene.add
+      .tileSprite(
+        ROOM_RECT.right + WALL_THICKNESS / 2,
+        ROOM_CENTER_Y,
+        WALL_THICKNESS,
+        ROOM_RECT.height,
+        TextureKeys.wallSoilSide,
+      )
+      .setFlipX(true)
+      .setDepth(depth);
   }
 
   enterCurrentRoom(entryPosition?: RoomPoint): void {
@@ -511,33 +585,23 @@ export class RoomController {
   }
 
   private drawRoom(accentColor: number): void {
+    // 바닥 본체는 흙 타일(TileSprite + 장식 산재)이, 벽 외형은 벽 TileSprite가
+    // 담당한다. 이 그래픽은 벽 밑 접촉 그림자와 스테이지 액센트 테두리만 그린다.
     this.floorGraphics.clear();
-    this.floorGraphics.fillStyle(0x090e14, 1);
-    this.floorGraphics.fillRect(
-      ROOM_RECT.left - 8,
-      ROOM_RECT.top - 8,
-      ROOM_RECT.width + 16,
-      ROOM_RECT.height + 16,
-    );
-    this.floorGraphics.fillStyle(0x121a22, 1);
-    this.floorGraphics.fillRect(ROOM_RECT.left, ROOM_RECT.top, ROOM_RECT.width, ROOM_RECT.height);
-    this.floorGraphics.lineStyle(1, 0x293640, 0.42);
 
-    for (let x = ROOM_RECT.left + PIXEL_GRID_SIZE; x < ROOM_RECT.right; x += PIXEL_GRID_SIZE) {
-      this.floorGraphics.lineBetween(x, ROOM_RECT.top, x, ROOM_RECT.bottom);
-    }
+    this.refreshFloorDecorations();
 
-    for (let y = ROOM_RECT.top + PIXEL_GRID_SIZE; y < ROOM_RECT.bottom; y += PIXEL_GRID_SIZE) {
-      this.floorGraphics.lineBetween(ROOM_RECT.left, y, ROOM_RECT.right, y);
-    }
-
-    for (let x = ROOM_RECT.left + 8; x < ROOM_RECT.right; x += 64) {
-      for (let y = ROOM_RECT.top + 8; y < ROOM_RECT.bottom; y += 64) {
-        this.floorGraphics.fillStyle(0x60717e, 0.28);
-        this.floorGraphics.fillCircle(x, y, 2);
-        this.floorGraphics.fillCircle(x + 48, y + 48, 2);
-      }
-    }
+    // 벽 밑 접촉 그림자(계단식 띠): 위에서 빛이 든다고 가정하고 위쪽 벽 아래를
+    // 가장 짙게 깐다. 아이작류 입체감의 핵심 단서로, 겹치는 모서리는 자연히 더 어둡다.
+    this.floorGraphics.fillStyle(0x000000, 0.24);
+    this.floorGraphics.fillRect(ROOM_RECT.left, ROOM_RECT.top, ROOM_RECT.width, 4);
+    this.floorGraphics.fillStyle(0x000000, 0.12);
+    this.floorGraphics.fillRect(ROOM_RECT.left, ROOM_RECT.top + 4, ROOM_RECT.width, 2);
+    this.floorGraphics.fillStyle(0x000000, 0.14);
+    this.floorGraphics.fillRect(ROOM_RECT.left, ROOM_RECT.top, 4, ROOM_RECT.height);
+    this.floorGraphics.fillRect(ROOM_RECT.right - 4, ROOM_RECT.top, 4, ROOM_RECT.height);
+    this.floorGraphics.fillStyle(0x000000, 0.1);
+    this.floorGraphics.fillRect(ROOM_RECT.left, ROOM_RECT.bottom - 2, ROOM_RECT.width, 2);
 
     this.floorGraphics.lineStyle(2, accentColor, 0.9);
     this.floorGraphics.strokeRect(
@@ -599,6 +663,35 @@ export class RoomController {
     );
   }
 
+  // 흙 바닥 위 장식 타일(돌·뿌리·균열·습기)을 칸 단위로 산재시킨다. 배치는
+  // (층:방 id) 시드 기반 결정론이라 같은 방에 다시 들어와도 무늬가 유지된다.
+  private refreshFloorDecorations(): void {
+    this.floorDecorations.clear(true, true);
+
+    const room = this.dungeon.getCurrentRoom();
+    const seed = hashSeed(`${this.runState.floor}:${room.id}`);
+    const columns = Math.floor(ROOM_RECT.width / FLOOR_TILE_SIZE);
+    const rows = Math.floor(ROOM_RECT.height / FLOOR_TILE_SIZE);
+
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const decoration = pickFloorDecoration(column, row, columns, rows, seed);
+
+        if (!decoration) {
+          continue;
+        }
+
+        const image = this.scene.add.image(
+          ROOM_RECT.left + column * FLOOR_TILE_SIZE + FLOOR_TILE_SIZE / 2,
+          ROOM_RECT.top + row * FLOOR_TILE_SIZE + FLOOR_TILE_SIZE / 2,
+          FLOOR_DECORATION_TEXTURES[decoration],
+        );
+        image.setDepth(DEPTH.floor + 0.25);
+        this.floorDecorations.add(image);
+      }
+    }
+  }
+
   private createWalls(): void {
     this.addWall(
       ROOM_CENTER_X,
@@ -627,9 +720,9 @@ export class RoomController {
   }
 
   private addWall(x: number, y: number, width: number, height: number): void {
-    const wall = this.scene.add.rectangle(x, y, width, height, 0x26323c, 1);
-    wall.setStrokeStyle(2, 0x5f707d, 0.85);
-    wall.setDepth(DEPTH.floor + 1);
+    // 외형은 createWallVisuals의 흙 벽 TileSprite가 담당하므로 물리 몸체만 남긴다.
+    const wall = this.scene.add.rectangle(x, y, width, height, 0x000000, 0);
+    wall.setVisible(false);
     this.scene.physics.add.existing(wall, true);
     this.walls.add(wall);
   }

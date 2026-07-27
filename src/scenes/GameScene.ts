@@ -198,7 +198,8 @@ export class GameScene extends Phaser.Scene {
     this.minimapExpansion = new MinimapExpansionController();
     this.secretCodeTracker = new SecretCodeTracker(KONAMI_CODE);
 
-    this.cameras.main.setBackgroundColor('#0d1117');
+    // 방 바깥 여백은 순수한 검은색 — 땅속의 어둠으로 읽히게 한다.
+    this.cameras.main.setBackgroundColor('#000000');
     applyRenderScale(this);
     this.uiCameraSystem = new UiCameraSystem(this);
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
