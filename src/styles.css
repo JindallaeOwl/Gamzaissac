@@ -194,13 +194,21 @@ canvas {
   --intro-ease-in: cubic-bezier(0.64, 0, 0.78, 0);
   --intro-band: #e8b04b;
   --intro-ink: #17120a;
+  /* 게임 캔버스는 Phaser FIT으로 480×272 비율을 지키며 창에 맞춰 확대된다
+     (#game-container가 창 전체를 채우므로 배율은 min(vw/480, vh/272)이다).
+     오프닝도 같은 식을 CSS로 복제해, 창이 커지면 게임과 같은 비율로 함께 커진다.
+     JS 리사이즈 리스너가 필요 없어 정리해야 할 상태가 늘지 않는다.
+     아래 치수는 모두 이 배율에 곱하는 "480×272 기준 논리 픽셀" 값이며,
+     기존 디자인이 상한에 걸렸을 때(창 너비 약 1033px, 배율 2.15)의 비율을 그대로
+     환산한 값이다. 즉 레이아웃 비율은 그대로 두고 상한만 없앤 것이다. */
+  --intro-scale: min(calc(100vw / 480), calc(100vh / 272));
 
   position: fixed;
   inset: 0;
   z-index: 1100;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: calc(var(--intro-scale) * 11);
   background: #000;
   /* 오프닝만 전용 폰트를 쓴다. 게임 본편 UI는 기존 픽셀 폰트를 그대로 유지 */
   font-family: 'Freesentation', 'ProjectDungGeunMo', DungGeunMo, sans-serif;
@@ -214,8 +222,9 @@ canvas {
 
 .intro-stage {
   position: relative;
-  width: min(860px, 92vw);
-  padding: 56px 0;
+  /* 게임 폭(480) 대비 약 83%. 좌우 보조선이 화면 가장자리에 붙지 않게 여백을 남긴다 */
+  width: calc(var(--intro-scale) * 400);
+  padding: calc(var(--intro-scale) * 26) 0;
   text-align: center;
 }
 
@@ -281,10 +290,12 @@ canvas {
   }
 }
 
+/* 글자 크기는 배율에 비례하되, 창이 아주 작을 때를 대비해 기존 최솟값을 바닥으로 남긴다.
+   예전에는 상한(clamp의 최댓값)도 있어서 큰 창에서 오프닝만 작아 보였다. */
 .intro-kicker {
-  margin: 0 0 18px;
+  margin: 0 0 calc(var(--intro-scale) * 8.4);
   color: #d8c9a4;
-  font-size: clamp(13px, 1.8vw, 19px);
+  font-size: max(13px, calc(var(--intro-scale) * 8.8));
   letter-spacing: 0.35em;
   /* 자간이 마지막 글자 뒤에도 붙어 가운데 정렬이 왼쪽으로 밀리는 것을 보정한다 */
   text-indent: 0.35em;
@@ -294,7 +305,7 @@ canvas {
 /* 색 띠는 자식(제목)이 찌그러지지 않도록 가상 요소를 훑어 내보낸다 */
 .intro-band {
   position: relative;
-  padding: 18px 24px;
+  padding: calc(var(--intro-scale) * 8.4) calc(var(--intro-scale) * 11);
 }
 
 .intro-band::before {
@@ -311,7 +322,7 @@ canvas {
   position: relative;
   margin: 0;
   color: var(--intro-ink);
-  font-size: clamp(30px, 6vw, 62px);
+  font-size: max(30px, calc(var(--intro-scale) * 29));
   line-height: 1.1;
   animation: intro-title-settle 720ms 900ms var(--intro-ease-out) both;
 }
@@ -336,25 +347,27 @@ canvas {
 }
 
 .intro-subtitle {
-  margin: 22px 0 0;
+  margin: calc(var(--intro-scale) * 10.2) 0 0;
   color: #b9ad8e;
-  font-size: clamp(13px, 1.9vw, 20px);
+  font-size: max(13px, calc(var(--intro-scale) * 9.3));
   animation: intro-rise 700ms 1600ms var(--intro-ease-out) both;
 }
 
 .intro-skip {
-  margin: 34px 0 0;
+  margin: calc(var(--intro-scale) * 15.8) 0 0;
   color: #6f6650;
-  font-size: clamp(11px, 1.4vw, 15px);
+  font-size: max(11px, calc(var(--intro-scale) * 7));
   animation:
     intro-rise 600ms 2200ms var(--intro-ease-out) both,
     intro-breathe 2200ms 2800ms ease-in-out infinite;
 }
 
+/* 등·퇴장 이동 거리도 배율을 따른다. 큰 화면에서 글자만 커지고 움직임은 그대로면
+   모션이 눈에 띄게 짧아 보인다. (--intro-scale은 #intro-overlay에서 상속된다) */
 @keyframes intro-rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(calc(var(--intro-scale) * 6.5));
   }
 
   to {
@@ -403,7 +416,7 @@ canvas {
 
 @keyframes intro-title-settle {
   from {
-    transform: translateY(10px);
+    transform: translateY(calc(var(--intro-scale) * 4.7));
   }
 
   to {
@@ -452,7 +465,7 @@ canvas {
 @keyframes intro-fall {
   to {
     opacity: 0;
-    transform: translateY(-12px);
+    transform: translateY(calc(var(--intro-scale) * -5.6));
   }
 }
 
