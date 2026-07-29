@@ -49,8 +49,8 @@ export const en: TranslationTree = {
     vinePassage: 'Vine Passage',
   },
   intro: {
-    kicker: '[ DEEP UNDERGROUND ]',
-    title: "The Potato's Farm Escape",
+    kicker: '[ GAMZAISSAC ]',
+    title: 'Chapter 1 : Deep Earth',
     subtitle: 'Dodge the monsters and escape to the surface',
     skip: 'Press any key to begin',
   },

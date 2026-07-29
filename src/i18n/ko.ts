@@ -49,8 +49,8 @@ export const ko: TranslationTree = {
     vinePassage: '넝쿨 통로',
   },
   intro: {
-    kicker: '[ 땅속 깊은 곳 ]',
-    title: '감자의 농장 탈출기',
+    kicker: '[ GAMZAISSAC ]',
+    title: 'Chapter 1 : 땅 속 깊은 곳',
     subtitle: '몬스터를 피해 지상으로 탈출하기',
     skip: '아무 키나 눌러 시작',
   },

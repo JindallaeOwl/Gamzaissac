@@ -290,12 +290,13 @@ canvas {
   }
 }
 
-/* 글자 크기는 배율에 비례하되, 창이 아주 작을 때를 대비해 기존 최솟값을 바닥으로 남긴다.
-   예전에는 상한(clamp의 최댓값)도 있어서 큰 창에서 오프닝만 작아 보였다. */
+/* 모든 글자 크기는 예외 없이 배율에만 비례한다. px 하한(max(...))을 두면 작은 창에서
+   글자만 멈추고 띠·무대는 계속 줄어들어 제목이 줄바꿈된다 — 하한을 두었다가 실제로
+   겪은 문제다. 게임 화면도 같은 배율로 작아지므로 오프닝만 하한을 가질 이유가 없다. */
 .intro-kicker {
   margin: 0 0 calc(var(--intro-scale) * 8.4);
   color: #d8c9a4;
-  font-size: max(13px, calc(var(--intro-scale) * 8.8));
+  font-size: calc(var(--intro-scale) * 8.8);
   letter-spacing: 0.35em;
   /* 자간이 마지막 글자 뒤에도 붙어 가운데 정렬이 왼쪽으로 밀리는 것을 보정한다 */
   text-indent: 0.35em;
@@ -322,7 +323,7 @@ canvas {
   position: relative;
   margin: 0;
   color: var(--intro-ink);
-  font-size: max(30px, calc(var(--intro-scale) * 29));
+  font-size: calc(var(--intro-scale) * 29);
   line-height: 1.1;
   animation: intro-title-settle 720ms 900ms var(--intro-ease-out) both;
 }
@@ -349,14 +350,14 @@ canvas {
 .intro-subtitle {
   margin: calc(var(--intro-scale) * 10.2) 0 0;
   color: #b9ad8e;
-  font-size: max(13px, calc(var(--intro-scale) * 9.3));
+  font-size: calc(var(--intro-scale) * 9.3);
   animation: intro-rise 700ms 1600ms var(--intro-ease-out) both;
 }
 
 .intro-skip {
   margin: calc(var(--intro-scale) * 15.8) 0 0;
   color: #6f6650;
-  font-size: max(11px, calc(var(--intro-scale) * 7));
+  font-size: calc(var(--intro-scale) * 7);
   animation:
     intro-rise 600ms 2200ms var(--intro-ease-out) both,
     intro-breathe 2200ms 2800ms ease-in-out infinite;
