@@ -63,6 +63,11 @@ import { TITLE_TRANSITION_SCENE_KEY } from './TitleTransitionScene';
 // 오프닝 퇴장 연출 길이. 오프닝 자체는 시간이 아니라 플레이어 입력으로만 넘어간다.
 const INTRO_EXIT_MS = 440;
 
+// 연출을 끝까지 보여 준 뒤에야 넘길 수 있게 하는 잠금 시간. 이 값이 지나야 스킵
+// 안내가 나타나고 입력도 받는다 — "안내가 보이면 넘길 수 있다"가 항상 성립하도록
+// startIntro가 같은 값을 CSS 변수(--intro-skip-delay)로 내려보낸다.
+const INTRO_SKIP_READY_MS = 2200;
+
 interface GameOverData {
   clearedRooms: number;
   itemCount: number;
@@ -122,6 +127,7 @@ export class GameScene extends Phaser.Scene {
   private introOverlay?: HTMLElement;
   private introActive = false;
   private introHideTimer?: number;
+  private introSkipReadyAt = 0;
   private detachIntroInput?: () => void;
   private readonly handleIntroDismiss = (event: Event): void => {
     if (!this.introActive) {
@@ -133,6 +139,13 @@ export class GameScene extends Phaser.Scene {
     // 쪽에도 introActive 가드를 둔다.
     event.preventDefault();
     event.stopImmediatePropagation();
+
+    // 연출이 끝나기 전(스킵 안내가 뜨기 전)에는 입력을 삼킨다. 첫 프레임에 키를
+    // 누르고 있던 것만으로 오프닝이 통째로 사라지는 것을 막는다.
+    if (performance.now() < this.introSkipReadyAt) {
+      return;
+    }
+
     this.dismissIntro();
   };
   private escapeStarted = false;
@@ -724,6 +737,15 @@ export class GameScene extends Phaser.Scene {
     this.clearIntroHideTimer();
     this.introOverlay = overlay;
     this.introActive = true;
+    // 동작 줄이기를 켜면 CSS가 모든 지연을 0으로 만들어 스킵 안내가 곧바로 나타난다.
+    // 그때는 입력 잠금도 함께 0이어야 "안내가 보이면 넘길 수 있다"가 유지된다.
+    const prefersReducedMotion =
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const skipReadyMs = prefersReducedMotion ? 0 : INTRO_SKIP_READY_MS;
+
+    // 안내 등장 지연(CSS)과 입력 잠금(JS)이 반드시 같은 값에서 나오게 한다.
+    overlay.style.setProperty('--intro-skip-delay', `${skipReadyMs}ms`);
+    this.introSkipReadyAt = performance.now() + skipReadyMs;
     overlay.classList.remove('is-leaving');
     overlay.hidden = false;
     this.physics.world.pause();

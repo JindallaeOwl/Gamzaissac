@@ -358,9 +358,12 @@ canvas {
   margin: calc(var(--intro-scale) * 15.8) 0 0;
   color: #6f6650;
   font-size: calc(var(--intro-scale) * 7);
+  /* 등장 시점 = 스킵이 열리는 시점. GameScene이 INTRO_SKIP_READY_MS를
+     --intro-skip-delay로 넣어 준다. 두 값이 어긋나면 "안내가 없는데 넘어가거나,
+     안내가 떠 있는데 안 넘어가는" 상태가 되므로 CSS는 이 변수만 쓴다. */
   animation:
-    intro-rise 600ms 2200ms var(--intro-ease-out) both,
-    intro-breathe 2200ms 2800ms ease-in-out infinite;
+    intro-rise 600ms var(--intro-skip-delay, 2200ms) var(--intro-ease-out) both,
+    intro-breathe 2200ms calc(var(--intro-skip-delay, 2200ms) + 600ms) ease-in-out infinite;
 }
 
 /* 등·퇴장 이동 거리도 배율을 따른다. 큰 화면에서 글자만 커지고 움직임은 그대로면

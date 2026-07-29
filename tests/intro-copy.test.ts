@@ -124,6 +124,50 @@ describe('오프닝 CSS 전제', () => {
   }
 });
 
+// 오프닝은 연출이 끝나기 전에는 입력을 받지 않는다. 그 잠금 시간과 "아무 키나 눌러
+// 시작" 안내가 나타나는 시점이 어긋나면, 안내가 없는데 넘어가거나 안내가 떠 있는데도
+// 넘어가지 않는 상태가 된다. 두 값이 한 곳에서 나오는지 확인한다.
+describe('오프닝 스킵 잠금', () => {
+  const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
+  const scene = readFileSync(new URL('../src/scenes/GameScene.ts', import.meta.url), 'utf8');
+
+  it('스킵 안내 등장 지연을 GameScene이 내려보내는 변수로 쓴다', () => {
+    const start = styles.indexOf('.intro-skip {');
+    expect(start, '.intro-skip 규칙을 찾지 못했다').toBeGreaterThanOrEqual(0);
+
+    const block = styles.slice(start, styles.indexOf('}', start));
+
+    expect(
+      block,
+      '.intro-skip의 등장 지연은 --intro-skip-delay만 쓴다(하드코딩하면 코드와 어긋난다)',
+    ).toContain('var(--intro-skip-delay');
+  });
+
+  it('CSS 대체값과 GameScene 상수가 같은 시간을 가리킨다', () => {
+    const cssFallback = /var\(--intro-skip-delay,\s*(\d+)ms\)/.exec(styles)?.[1];
+    const sceneConstant = /const INTRO_SKIP_READY_MS = (\d+);/.exec(scene)?.[1];
+
+    expect(cssFallback, 'CSS에서 --intro-skip-delay 대체값을 찾지 못했다').toBeDefined();
+    expect(sceneConstant, 'GameScene에서 INTRO_SKIP_READY_MS를 찾지 못했다').toBeDefined();
+    expect(
+      Number(cssFallback),
+      'CSS 대체값과 INTRO_SKIP_READY_MS가 다르다 — 한쪽만 고치면 안내와 잠금이 어긋난다',
+    ).toBe(Number(sceneConstant));
+  });
+
+  it('안내 등장 지연과 입력 잠금이 같은 변수에서 나온다', () => {
+    expect(scene).toMatch(/setProperty\(\s*'--intro-skip-delay',\s*`\$\{skipReadyMs\}ms`\s*\)/);
+    expect(scene).toMatch(/this\.introSkipReadyAt = performance\.now\(\) \+ skipReadyMs;/);
+  });
+
+  // 동작 줄이기 환경에서는 CSS가 지연을 0으로 강제해 안내가 즉시 뜬다.
+  // 잠금만 2.2초로 남으면 "안내는 보이는데 눌러도 안 넘어가는" 상태가 된다.
+  it('동작 줄이기에서는 잠금도 함께 0이 된다', () => {
+    expect(scene).toContain('prefers-reduced-motion: reduce');
+    expect(scene).toMatch(/const skipReadyMs = prefersReducedMotion \? 0 : INTRO_SKIP_READY_MS;/);
+  });
+});
+
 describe('estimateTitleWidthEm', () => {
   it('실제로 줄바꿈이 발생했던 제목을 예산 초과로 판정한다', () => {
     expect(estimateTitleWidthEm('Chapter 1 : Deep Underground')).toBeGreaterThan(
