@@ -326,11 +326,22 @@ export const PITCHFORK_FARMER_TUNING = {
   bossBarPhaseTwoColor: 0xff7a3d,
 } as const;
 
+// 폭탄은 "반쪽 방을 지우는 버튼"이 아니라 "쓸까 말까 고민되는 도구"로 잡는다.
+// 이전 반지름 115는 지름 230으로 방 높이(208)보다 커서, 가운데에 놓으면 세로 전체와
+// 가로 절반이 한 번에 정리됐다. 75로 줄여 방 면적의 48% → 20%가 되게 하고, 대신
+// damage를 올려 잡몹이 아니라 보스에게 의미가 생기게 한다(잡몹 체력은 1층 기준
+// 2.2~4.2라 5로도 이미 즉사였다).
+//
+// selfDamage는 플레이어도 폭발에 휘말리게 해 "리스크 없는 순수 이득"을 없앤다.
+// 일반 피격과 같은 반 칸(PLAYER_DAMAGE_PER_HIT)이며, 피격 무적·넉백·사망 판정은
+// Player.damage가 그대로 처리한다. fuse를 3초에서 2초로 줄인 것도 같은 의도로,
+// 설치 후 빠져나갈 여유를 좁혀 놓는 위치가 실제 판단이 되게 한다.
 export const BOMB_TUNING = {
-  damage: 5,
-  radius: 115,
+  damage: 7,
+  selfDamage: PLAYER_DAMAGE_PER_HIT,
+  radius: 75,
   cooldownMs: 900,
-  fuseMs: 3000,
+  fuseMs: 2000,
   knockback: 130,
 };
 

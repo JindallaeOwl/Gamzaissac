@@ -277,12 +277,14 @@ export class GameScene extends Phaser.Scene {
     this.bombSystem = new BombSystem({
       scene: this,
       runState: this.runState,
+      player: this.player,
       enemies: this.enemies,
       enemyBullets: this.enemyBullets,
       obstacles: this.roomController.obstacles,
       effects: this.effects,
       audio: this.audio,
       isRunEnded: () => isRunEnded(this.runState),
+      onPlayerDamaged: () => this.queuePlayerDamagedFeedback(),
     });
     this.roomTransitions = new RoomTransitionSystem({
       scene: this,
