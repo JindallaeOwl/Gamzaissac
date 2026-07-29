@@ -9,7 +9,11 @@ import type { DungeonManager } from '../systems/DungeonManager';
 import type { RunState } from '../systems/RunState';
 import { getHeartFillUnits } from '../utils/healthHearts';
 import { getHudStatValues, type HudStatValues } from './HudStatPresentation';
-import { calculateExpandedMinimapCellLayout } from './MinimapLayout';
+import {
+  calculateExpandedMinimapCellLayout,
+  calculateMinimapCapacity,
+  calculateMinimapViewport,
+} from './MinimapLayout';
 import type { UiObjectRegistrar } from './UiCameraSystem';
 
 // Keep a small inset around the corner HUD so it remains easy to read at
@@ -272,8 +276,6 @@ export class Hud {
     );
     const size = Phaser.Math.Linear(6, expandedLayout.size, progress);
     const gap = Phaser.Math.Linear(2, expandedLayout.gap, progress);
-    const mapWidth = (maxX - minX) * (size + gap) + size;
-    const mapHeight = (maxY - minY) * (size + gap) + size;
     const panelWidth = Phaser.Math.Linear(
       MINIMAP_PANEL_WIDTH,
       EXPANDED_MINIMAP_PANEL_WIDTH,
@@ -284,6 +286,22 @@ export class Hud {
       EXPANDED_MINIMAP_PANEL_HEIGHT,
       progress,
     );
+
+    // 작은 미니맵은 칸 크기가 고정이라 방이 많이 퍼지면 패널 밖으로 넘쳤다.
+    // 들어갈 만큼만 현재 방 중심으로 잘라 보여 주고, 다 들어가면 지도 전체를 보여 준다.
+    // 확장 미니맵은 칸을 줄여 전부 담으므로 이 창이 자연히 지도 전체가 된다.
+    const viewport = calculateMinimapViewport({
+      mapMinX: minX,
+      mapMaxX: maxX,
+      mapMinY: minY,
+      mapMaxY: maxY,
+      focusX: current.coord.x,
+      focusY: current.coord.y,
+      columnCapacity: calculateMinimapCapacity(panelWidth, size, gap),
+      rowCapacity: calculateMinimapCapacity(panelHeight, size, gap),
+    });
+    const mapWidth = (viewport.maxX - viewport.minX) * (size + gap) + size;
+    const mapHeight = (viewport.maxY - viewport.minY) * (size + gap) + size;
     const panelLeft = GAME_WIDTH - HUD_EDGE_MARGIN - panelWidth;
     const originX = panelLeft + (panelWidth - mapWidth) / 2;
     const originY = PANEL_TOP + (panelHeight - mapHeight) / 2;
@@ -291,8 +309,17 @@ export class Hud {
     this.minimap.clear();
 
     for (const room of rooms) {
-      const x = originX + (room.coord.x - minX) * (size + gap);
-      const y = originY + (room.coord.y - minY) * (size + gap);
+      if (
+        room.coord.x < viewport.minX ||
+        room.coord.x > viewport.maxX ||
+        room.coord.y < viewport.minY ||
+        room.coord.y > viewport.maxY
+      ) {
+        continue;
+      }
+
+      const x = originX + (room.coord.x - viewport.minX) * (size + gap);
+      const y = originY + (room.coord.y - viewport.minY) * (size + gap);
       const color =
         room.type === 'shop'
           ? 0xf3c766
