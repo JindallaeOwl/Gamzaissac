@@ -64,6 +64,22 @@
 - 사용 범위: 영문·숫자·기본 기호 UI와 메인 화면 `GAMZAISSAC` 제목
 - 변경 여부: 원본 폰트를 수정하지 않고 사용
 
+## Freesentation (프리젠테이션)
+
+- 저작권: Copyright (c) 2024 PT& (피티앤)
+- 디자인: 이주임 (PT&, PTKKUN)
+- 원본 글꼴: 한글 — 본고딕 Source Han Sans / Noto Sans CJK (장수영, 강주연, 산돌커뮤니케이션),
+  영문 — Roboto (Christian Robertson)
+- 출처: https://www.designptn.com
+- 라이선스: SIL Open Font License, Version 1.1 (OFL 1.1)
+- 동봉 라이선스 전문: `public/assets/fonts/freesentation/OFL.txt` (원문: https://openfontlicense.org)
+- 사용 파일: `freesentation-black-subset.woff2` (원본 `Freesentation-9Black.ttf` 기반)
+- 동봉 고지: `public/assets/fonts/freesentation/NOTICE.txt`
+- 사용 범위: 오프닝 연출 화면의 문구 (게임 본편 UI는 기존 픽셀 폰트 유지)
+- 변경 여부: **수정함** — 오프닝에 쓰이는 글자만 남기고 woff2로 변환한 서브셋
+  (약 2.6MB → 약 8KB). OFL 1.1이 수정·재배포를 허용하며 예약 글꼴 이름은 없음.
+  재생성 방법은 동봉 `NOTICE.txt` 참고
+
 ## Top-Down Prototype Character — Yellow
 
 - 제작자: Snoblin

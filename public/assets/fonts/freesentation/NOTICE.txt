@@ -1,0 +1,31 @@
+Freesentation (프리젠테이션) 9 Black — 서브셋본
+Copyright (c) 2024 PT& (피티앤)
+
+라이선스: SIL Open Font License, Version 1.1
+전문: 같은 폴더의 OFL.txt (원문: https://openfontlicense.org)
+
+디자인: 이주임 (PT&, PTKKUN)
+한글: 본고딕 Source Han Sans / Noto Sans CJK — 장수영, 강주연, 산돌커뮤니케이션
+영문: Roboto — Christian Robertson
+제작사: PT& (www.designptn.com)
+
+이 woff2 파일은 원본 Freesentation-9Black.ttf(약 2.6MB)에서 오프닝 연출에
+쓰이는 글자만 남겨 변환한 서브셋입니다(약 8KB). OFL 1.1은 수정과 재배포를
+허용하며, 원본에 예약 글꼴 이름(Reserved Font Name)은 지정되어 있지 않습니다.
+
+
+■ 재생성 방법
+
+오프닝 문구(src/i18n의 intro.*)를 바꾸면 새로 쓰는 글자가 서브셋에 없어
+표시되지 않습니다. 그때는 원본 ttf로 아래를 다시 실행하세요.
+
+  python -m pip install fonttools brotli
+
+  python -m fontTools.subset Freesentation-9Black.ttf \
+    --text="<인트로에 쓰이는 모든 글자를 여기에>" \
+    --unicodes="U+0020-007E,U+00A0,U+2014,U+2018,U+2019,U+201C,U+201D" \
+    --layout-features='*' --flavor=woff2 --no-hinting --desubroutinize \
+    --output-file=freesentation-black-subset.woff2
+
+영문·숫자·기본 문장부호(U+0020-007E)는 미리 포함해 두었으므로 영어 문구는
+자유롭게 바꿔도 됩니다. 한글을 새로 쓰는 경우에만 재생성이 필요합니다.

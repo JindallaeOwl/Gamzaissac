@@ -60,6 +60,9 @@ import { bindCaptureKeydown, shouldConfirmRunEnd } from '../utils/runEndInput';
 import { resetRunEndOverlayElements } from '../utils/runEndOverlays';
 import { TITLE_TRANSITION_SCENE_KEY } from './TitleTransitionScene';
 
+// 오프닝 퇴장 연출 길이. 오프닝 자체는 시간이 아니라 플레이어 입력으로만 넘어간다.
+const INTRO_EXIT_MS = 440;
+
 interface GameOverData {
   clearedRooms: number;
   itemCount: number;
@@ -116,6 +119,22 @@ export class GameScene extends Phaser.Scene {
     event.stopPropagation();
     this.restartAfterGameOver();
   };
+  private introOverlay?: HTMLElement;
+  private introActive = false;
+  private introHideTimer?: number;
+  private detachIntroInput?: () => void;
+  private readonly handleIntroDismiss = (event: Event): void => {
+    if (!this.introActive) {
+      return;
+    }
+
+    // 오프닝을 넘기는 입력이 그대로 게임 조작으로 새지 않게 막는다. 다만 일시정지
+    // 리스너가 먼저 등록돼 있어 전파 차단만으로는 부족하므로, handlePauseKeyDown
+    // 쪽에도 introActive 가드를 둔다.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    this.dismissIntro();
+  };
   private escapeStarted = false;
   private escapeOverlay!: HTMLElement;
   private escapeTitle!: HTMLElement;
@@ -151,6 +170,8 @@ export class GameScene extends Phaser.Scene {
       !isPauseCode(event.code) ||
       event.repeat ||
       isRunEnded(this.runState) ||
+      // 오프닝 중 Esc는 오프닝을 넘기기만 하고 일시정지를 열지 않는다.
+      this.introActive ||
       this.pauseTransitionStarted ||
       !this.scene.isActive()
     ) {
@@ -194,6 +215,7 @@ export class GameScene extends Phaser.Scene {
     this.floorTransitionStarted = false;
     this.playerDamageFeedbackQueued = false;
     this.pauseTransitionStarted = false;
+    this.introActive = false;
     this.runElapsedMs = 0;
     this.minimapExpansion = new MinimapExpansionController();
     this.secretCodeTracker = new SecretCodeTracker(KONAMI_CODE);
@@ -326,10 +348,18 @@ export class GameScene extends Phaser.Scene {
     this.setupPauseInput();
     this.hud.showMessage(this.formatStageFloorLabel());
     this.cameras.main.fadeIn(220, 5, 9, 14);
+    this.startIntro();
   }
 
   update(time: number, delta: number): void {
     if (isRunEnded(this.runState)) {
+      return;
+    }
+
+    // 오프닝이 떠 있는 동안은 게임 로직 전체를 멈춘다. physics만 정지시키면
+    // 플레이어 입력·폭탄·적 AI·방 갱신이 계속 돌아가므로 여기서 조기 반환한다.
+    // 플레이 시간(runElapsedMs)이 흐르지 않는 것도 이 반환으로 함께 보장된다.
+    if (this.introActive) {
       return;
     }
 
@@ -667,6 +697,120 @@ export class GameScene extends Phaser.Scene {
   private resetGameOverOverlay(): void {
     resetRunEndOverlayElements(this.gameOverOverlay, this.gameOverRestartButton);
     this.gameOverRestartButton.onclick = null;
+  }
+
+  // 런 시작 오프닝. 게임 화면 위에 DOM 오버레이로 재생해 픽셀 격자에 구속되지 않는
+  // 부드러운 모션을 낸다. 연출 도중에는 물리를 멈춰 뒤에서 게임이 진행되지 않게 한다.
+  private startIntro(): void {
+    const overlay = document.querySelector<HTMLElement>('#intro-overlay');
+    const kicker = document.querySelector<HTMLElement>('#intro-kicker');
+    const title = document.querySelector<HTMLElement>('#intro-title');
+    const subtitle = document.querySelector<HTMLElement>('#intro-subtitle');
+    const skip = document.querySelector<HTMLElement>('#intro-skip');
+
+    // 오프닝은 연출일 뿐이므로 마크업이 없더라도 게임 시작을 막지 않는다.
+    if (!overlay || !kicker || !title || !subtitle || !skip) {
+      return;
+    }
+
+    kicker.textContent = t('intro.kicker');
+    this.renderIntroTitleLetters(title, t('intro.title'));
+    subtitle.textContent = t('intro.subtitle');
+    skip.textContent = t('intro.skip');
+
+    // 이전 런의 숨김 타이머가 살아 있으면 방금 띄운 오버레이를 감춰 버리므로 먼저 끈다.
+    this.clearIntroHideTimer();
+    this.introOverlay = overlay;
+    this.introActive = true;
+    overlay.classList.remove('is-leaving');
+    overlay.hidden = false;
+    this.physics.world.pause();
+
+    const detachKeydown = bindCaptureKeydown(document, this.handleIntroDismiss);
+    document.addEventListener('pointerdown', this.handleIntroDismiss, true);
+    this.detachIntroInput = () => {
+      detachKeydown();
+      document.removeEventListener('pointerdown', this.handleIntroDismiss, true);
+    };
+
+    // 자동 진행은 없다. 플레이어가 키를 누르거나 클릭할 때까지 오프닝을 유지한다.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.teardownIntro());
+  }
+
+  // 제목을 글자 단위 span으로 쪼개 각 글자가 따로 점등하게 한다.
+  // 순서(--i)는 CSS가 시차를 계산하는 데 쓰고, 공백은 칸을 유지하도록 NBSP로 바꾼다.
+  private renderIntroTitleLetters(target: HTMLElement, text: string): void {
+    const letters = Array.from(text).map((character, index) => {
+      const span = document.createElement('span');
+      span.className = 'intro-letter';
+      span.textContent = character === ' ' ? '\u00a0' : character;
+      span.style.setProperty('--i', String(index));
+      // \uae00\uc790 \uc870\uac01\uc740 \uc5f0\ucd9c\uc6a9\uc774\ubbc0\ub85c \ubcf4\uc870 \uae30\uc220\uc5d0\ub294 \ub178\ucd9c\ud558\uc9c0 \uc54a\uace0, \uc81c\ubaa9 \uc804\uccb4\ub294
+      // aria-label\ub85c \ud55c \ubc88\uc5d0 \uc77d\ud788\uac8c \ud55c\ub2e4.
+      span.setAttribute('aria-hidden', 'true');
+      return span;
+    });
+
+    target.setAttribute('aria-label', text);
+    target.replaceChildren(...letters);
+  }
+
+  // 플레이어 입력으로 오프닝을 넘긴다. 퇴장 연출을 재생한 뒤 오버레이를 감춘다.
+  private dismissIntro(): void {
+    if (!this.introActive) {
+      return;
+    }
+
+    this.releaseIntroHold();
+
+    const overlay = this.introOverlay;
+
+    if (!overlay) {
+      return;
+    }
+
+    overlay.classList.add('is-leaving');
+    this.clearIntroHideTimer();
+    this.introHideTimer = window.setTimeout(() => {
+      this.introHideTimer = undefined;
+      overlay.hidden = true;
+      overlay.classList.remove('is-leaving');
+    }, INTRO_EXIT_MS);
+  }
+
+  // 씬 종료 경로. 오프닝이 진행 중이든 퇴장 연출 중이든, 남은 타이머와 오버레이
+  // 표시 상태를 무조건 되돌린다. 중복 호출에 안전하다.
+  private teardownIntro(): void {
+    this.clearIntroHideTimer();
+
+    const overlay = this.introOverlay;
+
+    if (overlay) {
+      overlay.hidden = true;
+      overlay.classList.remove('is-leaving');
+    }
+
+    this.releaseIntroHold();
+  }
+
+  // 입력 잠금과 물리 정지를 푼다. 리스너를 먼저 떼어 이후 단계가 실패해도 남지 않게 한다.
+  private releaseIntroHold(): void {
+    this.detachIntroInput?.();
+    this.detachIntroInput = undefined;
+
+    if (!this.introActive) {
+      return;
+    }
+
+    this.introActive = false;
+    this.physics.world.resume();
+  }
+
+  private clearIntroHideTimer(): void {
+    if (this.introHideTimer !== undefined) {
+      window.clearTimeout(this.introHideTimer);
+      this.introHideTimer = undefined;
+    }
   }
 
   private prepareEscapeOverlay(): void {

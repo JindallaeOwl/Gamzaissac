@@ -16,6 +16,17 @@
   unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7A3, U+D7B0-D7FF;
 }
 
+/* 오프닝 전용 폰트. 인트로 문구 글자만 남긴 서브셋(약 8KB)이라 즉시 로드된다.
+   자세한 출처·재생성 방법은 public/assets/fonts/freesentation/NOTICE.txt 참고. */
+@font-face {
+  font-family: 'Freesentation';
+  /* 서브셋을 다시 만들면 v 값을 올린다. 파일명이 같아 브라우저가 옛 캐시를 쓰는 것을 막는다 */
+  src: url('/assets/fonts/freesentation/freesentation-black-subset.woff2?v=2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: block;
+}
+
 :root {
   color: #f7f3e8;
   background: #0d1117;
@@ -172,6 +183,293 @@ canvas {
 
 #escape-return:disabled {
   cursor: default;
+}
+
+/* ── 오프닝 연출 ──────────────────────────────────────────────
+   게임 화면(480×272 nearest-neighbor) 안이 아니라 DOM 위에 얹어,
+   픽셀 격자에 구속되지 않는 부드러운 모션 그래픽으로 재생한다.
+   transform/opacity만 애니메이션해 GPU 합성 경로를 탄다. */
+#intro-overlay {
+  --intro-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --intro-ease-in: cubic-bezier(0.64, 0, 0.78, 0);
+  --intro-band: #e8b04b;
+  --intro-ink: #17120a;
+
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #000;
+  /* 오프닝만 전용 폰트를 쓴다. 게임 본편 UI는 기존 픽셀 폰트를 그대로 유지 */
+  font-family: 'Freesentation', 'ProjectDungGeunMo', DungGeunMo, sans-serif;
+  font-weight: 900;
+  transition: opacity 420ms var(--intro-ease-in);
+}
+
+#intro-overlay[hidden] {
+  display: none;
+}
+
+.intro-stage {
+  position: relative;
+  width: min(860px, 92vw);
+  padding: 56px 0;
+  text-align: center;
+}
+
+/* 얇은 보조선이 먼저 뻗어 나오며 화면의 뼈대를 잡는다 */
+.intro-guide {
+  position: absolute;
+  background: rgb(232 176 75 / 34%);
+  transform: scale(0);
+  animation: intro-guide-in 900ms var(--intro-ease-out) both;
+}
+
+.intro-guide--top,
+.intro-guide--bottom {
+  left: 0;
+  width: 100%;
+  height: 1px;
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+.intro-guide--top {
+  top: 0;
+  animation-name: intro-guide-x;
+  animation-delay: 120ms;
+}
+
+.intro-guide--bottom {
+  bottom: 0;
+  animation-name: intro-guide-x;
+  animation-delay: 220ms;
+}
+
+.intro-guide--left,
+.intro-guide--right {
+  top: 0;
+  width: 1px;
+  height: 100%;
+  transform-origin: center top;
+  transform: scaleY(0);
+}
+
+.intro-guide--left {
+  left: 8%;
+  animation-name: intro-guide-y;
+  animation-delay: 300ms;
+}
+
+.intro-guide--right {
+  right: 8%;
+  animation-name: intro-guide-y;
+  animation-delay: 380ms;
+}
+
+@keyframes intro-guide-x {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes intro-guide-y {
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.intro-kicker {
+  margin: 0 0 18px;
+  color: #d8c9a4;
+  font-size: clamp(13px, 1.8vw, 19px);
+  letter-spacing: 0.35em;
+  /* 자간이 마지막 글자 뒤에도 붙어 가운데 정렬이 왼쪽으로 밀리는 것을 보정한다 */
+  text-indent: 0.35em;
+  animation: intro-rise 640ms 520ms var(--intro-ease-out) both;
+}
+
+/* 색 띠는 자식(제목)이 찌그러지지 않도록 가상 요소를 훑어 내보낸다 */
+.intro-band {
+  position: relative;
+  padding: 18px 24px;
+}
+
+.intro-band::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: var(--intro-band);
+  animation: intro-band-wipe 820ms 700ms var(--intro-ease-out) both;
+}
+
+.intro-title {
+  position: relative;
+  margin: 0;
+  color: var(--intro-ink);
+  font-size: clamp(30px, 6vw, 62px);
+  line-height: 1.1;
+  animation: intro-title-settle 720ms 900ms var(--intro-ease-out) both;
+}
+
+/* 글자마다 따로 점등한다. 꺼진 순간에도 획(테두리)은 남겨 두어
+   완전히 사라졌다 나타나는 "버그 같은" 깜빡임이 되지 않게 한다. */
+.intro-letter {
+  display: inline-block;
+  color: transparent;
+  /* 획 색도 애니메이션이 켜 준다. 시작은 투명이라 점등 전에는 윤곽선조차 보이지 않는다 */
+  -webkit-text-stroke: 1px transparent;
+  animation: intro-letter-flicker 620ms calc(900ms + var(--i, 0) * 34ms) steps(1, end) both;
+}
+
+/* 몇 글자는 한 박자 더 머뭇거리게 해 기계적인 물결이 되지 않게 흩뜨린다 */
+.intro-letter:nth-child(3n) {
+  animation-duration: 760ms;
+}
+
+.intro-letter:nth-child(4n) {
+  animation-duration: 540ms;
+}
+
+.intro-subtitle {
+  margin: 22px 0 0;
+  color: #b9ad8e;
+  font-size: clamp(13px, 1.9vw, 20px);
+  animation: intro-rise 700ms 1600ms var(--intro-ease-out) both;
+}
+
+.intro-skip {
+  margin: 34px 0 0;
+  color: #6f6650;
+  font-size: clamp(11px, 1.4vw, 15px);
+  animation:
+    intro-rise 600ms 2200ms var(--intro-ease-out) both,
+    intro-breathe 2200ms 2800ms ease-in-out infinite;
+}
+
+@keyframes intro-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes intro-band-wipe {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* 형광등이 들어오듯 세 번 머뭇거리다 자리를 잡는다.
+   - 점등 전(0%): 속·획 모두 투명 → 글자가 아예 존재하지 않는 것처럼 보인다
+   - 첫 점등(16%) 이후: 획은 계속 남아, 꺼진 구간에도 윤곽선만 남고 사라지지는 않는다 */
+@keyframes intro-letter-flicker {
+  0% {
+    color: transparent;
+    -webkit-text-stroke-color: transparent;
+  }
+
+  16% {
+    color: var(--intro-ink);
+    -webkit-text-stroke-color: var(--intro-ink);
+  }
+
+  24% {
+    color: transparent;
+  }
+
+  44% {
+    color: var(--intro-ink);
+  }
+
+  54% {
+    color: transparent;
+  }
+
+  78%,
+  100% {
+    color: var(--intro-ink);
+  }
+}
+
+@keyframes intro-title-settle {
+  from {
+    transform: translateY(10px);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes intro-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.42;
+  }
+}
+
+/* 퇴장: 띠가 반대쪽으로 빠지고 글자는 위로 흩어지며 암전된다 */
+#intro-overlay.is-leaving {
+  opacity: 0;
+}
+
+#intro-overlay.is-leaving .intro-band::before {
+  transform-origin: right center;
+  animation: intro-band-out 380ms var(--intro-ease-in) both;
+}
+
+#intro-overlay.is-leaving .intro-kicker,
+#intro-overlay.is-leaving .intro-title,
+#intro-overlay.is-leaving .intro-subtitle,
+#intro-overlay.is-leaving .intro-skip {
+  animation: intro-fall 320ms var(--intro-ease-in) both;
+}
+
+@keyframes intro-band-out {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes intro-fall {
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+/* 모션에 민감한 사용자는 움직임 없이 즉시 표시한다.
+   자식 애니메이션뿐 아니라 오버레이 자신의 퇴장 transition도 함께 없앤다.
+   반복 횟수도 1로 묶는다 — 스킵 안내의 무한 호흡(intro-breathe)이 남으면
+   1ms 주기로 무한히 깜빡여 오히려 더 위험해진다. */
+@media (prefers-reduced-motion: reduce) {
+  #intro-overlay,
+  #intro-overlay *,
+  #intro-overlay *::before {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
 }
 
 #developer-console {

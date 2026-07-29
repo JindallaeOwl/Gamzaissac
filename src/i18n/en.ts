@@ -48,6 +48,12 @@ export const en: TranslationTree = {
     compostHeap: 'Compost Heap',
     vinePassage: 'Vine Passage',
   },
+  intro: {
+    kicker: '[ DEEP UNDERGROUND ]',
+    title: "The Potato's Farm Escape",
+    subtitle: 'Dodge the monsters and escape to the surface',
+    skip: 'Press any key to begin',
+  },
   gameOver: {
     title: 'GAME OVER',
     summary: 'Rooms {rooms}   Items {items}   Score {score}',

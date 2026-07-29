@@ -48,6 +48,12 @@ export const ko: TranslationTree = {
     compostHeap: '퇴비더미',
     vinePassage: '넝쿨 통로',
   },
+  intro: {
+    kicker: '[ 땅속 깊은 곳 ]',
+    title: '감자의 농장 탈출기',
+    subtitle: '몬스터를 피해 지상으로 탈출하기',
+    skip: '아무 키나 눌러 시작',
+  },
   gameOver: {
     title: 'GAME OVER',
     summary: '방 {rooms}   아이템 {items}   점수 {score}',
