@@ -28,7 +28,12 @@ import {
   getReinforcementPool,
   getSplitChildSpawns,
 } from './EnemyReinforcementRules';
-import { SHOP_NPC_POSITION, SHOP_OFFER_POSITIONS } from '../data/shop';
+import {
+  SHOP_NPC_DISPLAY_SIZE,
+  SHOP_NPC_POSITION,
+  SHOP_NPC_SPEECH_GAP,
+  SHOP_OFFER_POSITIONS,
+} from '../data/shop';
 import type { ItemSystem } from './ItemSystem';
 import type { DungeonManager, RoomNode } from './DungeonManager';
 import { isRunEnded, type RunState } from './RunState';
@@ -525,13 +530,15 @@ export class RoomController {
     const npcPosition = scaleRoomTemplatePoint(SHOP_NPC_POSITION.x, SHOP_NPC_POSITION.y);
     const npc = new ShopNpc(this.scene, npcPosition.x, npcPosition.y);
     this.shopNpcs.add(npc);
+    // 상인 머리 위. 크기에서 파생시켜 상인을 키워도 말풍선이 겹치지 않는다.
+    const speechY = npcPosition.y - SHOP_NPC_DISPLAY_SIZE / 2 - SHOP_NPC_SPEECH_GAP;
 
     if (showGreeting) {
       const shopRoomId = room.id;
       const greeting = createShopNpcSpeechBubble(
         this.scene,
         npcPosition.x,
-        npcPosition.y - 36,
+        speechY,
         t('shop.greeting'),
         {
           visibleMs: 3000,
@@ -543,7 +550,7 @@ export class RoomController {
             const followUp = createShopNpcSpeechBubble(
               this.scene,
               npcPosition.x,
-              npcPosition.y - 36,
+              speechY,
               t('shop.greetingFollowUp'),
               { visibleMs: 3000 },
             );

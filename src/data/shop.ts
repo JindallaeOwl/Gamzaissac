@@ -94,7 +94,10 @@ export const SHOP_OFFER_POSITIONS = [
 ] as const;
 
 export const SHOP_NPC_POSITION = { x: 240, y: 90 } as const;
-export const SHOP_NPC_DISPLAY_SIZE = 64;
+export const SHOP_NPC_DISPLAY_SIZE = 72;
+// 말풍선은 상인 머리 위에 이 간격만큼 띄운다. 상인 크기를 바꿔도 겹치지 않도록
+// 위치를 SHOP_NPC_DISPLAY_SIZE에서 파생시킨다.
+export const SHOP_NPC_SPEECH_GAP = 4;
 export const SHOP_INTERACTION_RADIUS = 44;
 export const SHOP_DISCOUNT_CHANCE = 0.3;
 export const SHOP_DISCOUNT_RATE = 0.5;
