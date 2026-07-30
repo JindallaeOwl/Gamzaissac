@@ -135,6 +135,125 @@ export class EffectsSystem {
     });
   }
 
+  /**
+   * 폭탄에 상인이 날아가는 연출. 폭발 반대 방향으로 조각과 잔해가 쏟아진다.
+   *
+   * 사방으로 흩어지는 burst와 달리 방향을 가진 부채꼴이라, 어느 쪽에서 터졌는지가
+   * 그림으로 읽힌다. 조각은 살짝 떠올랐다 떨어지고(무게감), 회전하며, 크기·속도·수명을
+   * 조금씩 흩뜨려 기계적으로 보이지 않게 한다.
+   */
+  shopNpcBlast(x: number, y: number, direction: { x: number; y: number }): void {
+    const baseAngle = Math.atan2(direction.y, direction.x);
+
+    this.expandingRing(x, y, 0xffb35a, 12, 260);
+
+    // 큰 조각: 상인 몸에서 떨어져 나간 덩어리. 회전하며 포물선을 그린다.
+    for (let i = 0; i < 9; i += 1) {
+      const angle = baseAngle + Phaser.Math.FloatBetween(-0.85, 0.85);
+      const distance = Phaser.Math.Between(26, 74);
+      const width = Phaser.Math.Between(2, 5);
+      const height = Phaser.Math.Between(2, 5);
+      const color = Phaser.Utils.Array.GetRandom([0xb5834a, 0x8a5f38, 0xd8b07a, 0x6f4a2c]);
+      const piece = this.scene.add.rectangle(x, y, width, height, color, 1);
+      piece.setDepth(DEPTH.effect);
+
+      const targetX = x + Math.cos(angle) * distance;
+      const targetY = y + Math.sin(angle) * distance;
+      const duration = Phaser.Math.Between(420, 700);
+
+      // 가로 이동은 일정하게, 세로는 떠올랐다 떨어지게 나눠 포물선을 만든다.
+      this.scene.tweens.add({
+        targets: piece,
+        x: targetX,
+        angle: Phaser.Math.Between(-540, 540),
+        duration,
+        ease: 'Quad.easeOut',
+      });
+      this.scene.tweens.add({
+        targets: piece,
+        y: targetY - Phaser.Math.Between(6, 16),
+        duration: duration * 0.4,
+        ease: 'Quad.easeOut',
+        onComplete: () => {
+          this.scene.tweens.add({
+            targets: piece,
+            y: targetY,
+            alpha: 0,
+            duration: duration * 0.6,
+            ease: 'Quad.easeIn',
+            onComplete: () => piece.destroy(),
+          });
+        },
+      });
+    }
+
+    // 작은 잔해: 더 빠르고 짧게 튀어 조각보다 먼저 사라진다.
+    for (let i = 0; i < 14; i += 1) {
+      const angle = baseAngle + Phaser.Math.FloatBetween(-0.6, 0.6);
+      const distance = Phaser.Math.Between(18, 56);
+      const particle = this.scene.add.circle(x, y, Phaser.Math.Between(1, 2), 0x7a4a2a, 0.95);
+      particle.setDepth(DEPTH.effect);
+
+      this.scene.tweens.add({
+        targets: particle,
+        x: x + Math.cos(angle) * distance,
+        y: y + Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0.3,
+        duration: Phaser.Math.Between(220, 420),
+        ease: 'Quad.easeOut',
+        onComplete: () => particle.destroy(),
+      });
+    }
+  }
+
+  /**
+   * 말풍선이 픽셀 조각으로 부서져 날아가는 연출.
+   *
+   * 말풍선이 차지하던 사각형을 격자로 잘라 각 칸을 조각으로 만든다. 가장자리 칸은
+   * 테두리 색을 써서 "말풍선이 깨졌다"는 게 읽히게 하고, 조각마다 방향·속도·회전을
+   * 흩뜨려 폭발에 휩쓸린 것처럼 보이게 한다.
+   */
+  shatterSpeechBubble(bounds: Phaser.Geom.Rectangle, direction: { x: number; y: number }): void {
+    const baseAngle = Math.atan2(direction.y, direction.x);
+    const columns = 8;
+    const rows = 3;
+    const pieceWidth = bounds.width / columns;
+    const pieceHeight = bounds.height / rows;
+
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const x = bounds.x + pieceWidth * (column + 0.5);
+        const y = bounds.y + pieceHeight * (row + 0.5);
+        const isEdge = row === 0 || row === rows - 1 || column === 0 || column === columns - 1;
+        const piece = this.scene.add.rectangle(
+          x,
+          y,
+          pieceWidth,
+          pieceHeight,
+          isEdge ? 0x3a2a20 : 0xf7f0d8,
+          1,
+        );
+        piece.setDepth(DEPTH.actor + 2);
+
+        const angle = baseAngle + Phaser.Math.FloatBetween(-0.75, 0.75);
+        const distance = Phaser.Math.Between(16, 58);
+
+        this.scene.tweens.add({
+          targets: piece,
+          x: x + Math.cos(angle) * distance,
+          y: y + Math.sin(angle) * distance,
+          angle: Phaser.Math.Between(-320, 320),
+          alpha: 0,
+          scale: Phaser.Math.FloatBetween(0.3, 0.7),
+          duration: Phaser.Math.Between(300, 560),
+          ease: 'Quad.easeOut',
+          onComplete: () => piece.destroy(),
+        });
+      }
+    }
+  }
+
   private expandingRing(
     x: number,
     y: number,

@@ -35,14 +35,14 @@ import {
   SHOP_OFFER_POSITIONS,
 } from '../data/shop';
 import type { ItemSystem } from './ItemSystem';
-import type { DungeonManager, RoomNode } from './DungeonManager';
+import type { DungeonManager, RoomNode, ShopNpcBlastState } from './DungeonManager';
 import { isRunEnded, type RunState } from './RunState';
 import { shouldExecuteDeferredSummon } from './WormKingRules';
 import { DIRECTIONS, type Direction } from '../utils/directions';
-import { randomInt, randomOf, type RandomSource } from '../utils/random';
+import { createSeededRandom, randomInt, randomOf, type RandomSource } from '../utils/random';
 import { BossRewardSystem } from './BossRewardSystem';
 import type { ShopSystem } from './ShopSystem';
-import { createShopNpcSpeechBubble } from '../ui/ShopNpcSpeechBubble';
+import { createShopNpcSpeechBubble, SHOP_SPEECH_BUBBLE_DATA_KEY } from '../ui/ShopNpcSpeechBubble';
 import { t } from '../i18n';
 import {
   canEnemiesActAfterRoomEntry,
@@ -527,6 +527,13 @@ export class RoomController {
       room.shopOffers = this.shopSystem.createOffers(this.runState.collectedItemIds);
     }
 
+    // 폭탄에 날아간 상인은 다시 나오지 않고 바닥 자국만 남는다.
+    if (room.shopNpcBlast) {
+      this.spawnShopNpcBlastStain(room.shopNpcBlast);
+      this.spawnShopOffers(room);
+      return;
+    }
+
     const npcPosition = scaleRoomTemplatePoint(SHOP_NPC_POSITION.x, SHOP_NPC_POSITION.y);
     const npc = new ShopNpc(this.scene, npcPosition.x, npcPosition.y);
     this.shopNpcs.add(npc);
@@ -543,7 +550,10 @@ export class RoomController {
         {
           visibleMs: 3000,
           onDismiss: () => {
-            if (this.dungeon.getCurrentRoom().id !== shopRoomId) {
+            const currentRoom = this.dungeon.getCurrentRoom();
+
+            // 방을 떠났거나 그 사이 상인이 폭탄에 날아갔으면 후속 대사를 띄우지 않는다.
+            if (currentRoom.id !== shopRoomId || currentRoom.shopNpcBlast) {
               return;
             }
 
@@ -561,7 +571,11 @@ export class RoomController {
       this.shopDecorations.add(greeting);
     }
 
-    for (const offer of room.shopOffers) {
+    this.spawnShopOffers(room);
+  }
+
+  private spawnShopOffers(room: RoomNode): void {
+    for (const offer of room.shopOffers ?? []) {
       if (offer.purchased) {
         continue;
       }
@@ -573,6 +587,137 @@ export class RoomController {
         this.shopOffers.add(new ShopOffer(this.scene, worldPosition.x, worldPosition.y, offer));
       }
     }
+  }
+
+  /**
+   * 폭탄에 상인이 날아간 사실을 방 상태에 남기고, 그 자리에 바닥 자국을 바로 그린다.
+   * 방 입장 때만 그리면 정작 터지는 순간에는 자국이 보이지 않는다.
+   */
+  markShopNpcDestroyed(x: number, y: number, direction: { x: number; y: number }): void {
+    const room = this.dungeon.getCurrentRoom();
+
+    if (room.type !== 'shop' || room.shopNpcBlast) {
+      return;
+    }
+
+    room.shopNpcBlast = { x, y, directionX: direction.x, directionY: direction.y };
+    this.spawnShopNpcBlastStain(room.shopNpcBlast);
+  }
+
+  /**
+   * 떠 있는 상인 말풍선을 모두 걷어내고 그 자리(경계)를 돌려준다.
+   * 호출자가 그 자리에 부서지는 연출을 그린다.
+   */
+  consumeShopSpeechBubbleBounds(): Phaser.Geom.Rectangle[] {
+    const bounds: Phaser.Geom.Rectangle[] = [];
+
+    for (const child of this.shopDecorations.getChildren()) {
+      if (
+        !(child instanceof Phaser.GameObjects.Container) ||
+        !child.active ||
+        !child.getData(SHOP_SPEECH_BUBBLE_DATA_KEY)
+      ) {
+        continue;
+      }
+
+      bounds.push(child.getBounds());
+      // 파괴만 하면 진행 중인 퇴장 트윈이 대상을 붙든 채 onComplete를 실행해
+      // 후속 대사가 되살아난다. 트윈을 먼저 끊는다.
+      this.scene.tweens.killTweensOf(child);
+      child.destroy(true);
+    }
+
+    return bounds;
+  }
+
+  /**
+   * 폭탄에 상인이 날아간 자리에 남는 바닥 자국. 방을 다시 들어와도 그대로 남는다.
+   *
+   * 둥근 얼룩이 아니라 폭발 방향으로 뻗은 날카로운 그을음 파편들이다. 각 파편은
+   * 시작이 굵고 끝이 뾰족한 사각형이라, 바깥으로 튀어 나간 궤적처럼 읽힌다.
+   * 모양은 폭발 위치를 시드로 한 재현 가능한 난수라 재입장해도 똑같이 그려진다.
+   */
+  private spawnShopNpcBlastStain(blast: ShopNpcBlastState): void {
+    const stain = this.scene.add.graphics().setDepth(DEPTH.floor + 0.4);
+    // 덮어씌우지 않고 곱해서 어둡게 한다. 아래 흙 알갱이 무늬가 그대로 비쳐 보이므로
+    // "검은 도형이 놓인" 것이 아니라 "땅이 그을린" 것으로 읽힌다. 겹친 부분이 자연히
+    // 더 짙어지는 것도 그을음이 쌓인 느낌을 준다.
+    stain.setBlendMode(Phaser.BlendModes.MULTIPLY);
+    const random = createSeededRandom(hashSeed(`${blast.x},${blast.y}`));
+    const baseAngle = Math.atan2(blast.directionY, blast.directionX);
+    const flowX = Math.cos(baseAngle);
+    const flowY = Math.sin(baseAngle);
+    const sideX = -flowY;
+    const sideY = flowX;
+    const REACH = 34;
+
+    // 넓고 아주 옅은 그을음 바탕을 먼저 깐다. 날카로운 파편만 있으면 배경에서 떠 보인다.
+    // 파편 아래 깔려 경계를 부드럽게 이어 주는 역할이다.
+    for (let i = 0; i < 6; i += 1) {
+      const along = random() * REACH * 0.7;
+      const side = (random() + random() - 1) * 9;
+
+      stain.fillStyle(0x000000, 0.09 + random() * 0.07);
+      stain.fillEllipse(
+        blast.x + flowX * along + sideX * side,
+        blast.y + flowY * along + sideY * side,
+        24 + random() * 22,
+        15 + random() * 13,
+      );
+    }
+
+    for (let i = 0; i < 30; i += 1) {
+      // 시작점을 군집 안에 흩는다. 모두 한 점에서 뻗으면 붓으로 그은 것처럼 보인다.
+      // 폭발 방향으로는 멀리, 옆으로는 좁게 퍼뜨려 흐름이 남게 한다.
+      const along = random() * random() * REACH;
+      const side = (random() + random() - 1) * 10;
+      const originX = blast.x + flowX * along + sideX * side;
+      const originY = blast.y + flowY * along + sideY * side;
+
+      // 각도는 폭발 방향을 따르되 넉넉히 흔들어 규칙적인 부채꼴을 깬다.
+      const angle = baseAngle + (random() + random() - 1) * 1.25;
+      const length = 5 + random() * 20;
+      const halfNear = 0.7 + random() * 1.3;
+      const halfFar = halfNear * (0.1 + random() * 0.3);
+
+      // 멀리 흩어진 조각일수록 옅게 — 전체적으로 가운데가 짙은 그라데이션이 된다.
+      const fade = along / REACH;
+      const alpha = Math.max(0.12, 0.9 - fade * 0.62 - random() * 0.14);
+
+      const dirX = Math.cos(angle);
+      const dirY = Math.sin(angle);
+      const perpX = -dirY;
+      const perpY = dirX;
+      const farX = originX + dirX * length;
+      const farY = originY + dirY * length;
+
+      stain.fillStyle(0x000000, alpha);
+      stain.fillPoints(
+        [
+          new Phaser.Geom.Point(originX + perpX * halfNear, originY + perpY * halfNear),
+          new Phaser.Geom.Point(farX + perpX * halfFar, farY + perpY * halfFar),
+          new Phaser.Geom.Point(farX - perpX * halfFar, farY - perpY * halfFar),
+          new Phaser.Geom.Point(originX - perpX * halfNear, originY - perpY * halfNear),
+        ],
+        true,
+      );
+    }
+
+    // 가장자리에 흩뿌려진 그을음 알갱이. 자국이 배경과 만나는 경계를 흐린다.
+    for (let i = 0; i < 16; i += 1) {
+      const along = random() * REACH * 1.25;
+      const side = (random() + random() - 1) * 13;
+      const fade = along / (REACH * 1.25);
+
+      stain.fillStyle(0x000000, Math.max(0.08, 0.5 - fade * 0.38));
+      stain.fillCircle(
+        blast.x + flowX * along + sideX * side,
+        blast.y + flowY * along + sideY * side,
+        0.5 + random() * 1.2,
+      );
+    }
+
+    this.shopDecorations.add(stain);
   }
 
   private spawnTreasure(room: RoomNode): void {

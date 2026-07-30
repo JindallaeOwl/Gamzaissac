@@ -4,7 +4,9 @@ import { Bomb } from '../entities/Bomb';
 import { Bullet } from '../entities/Bullet';
 import { Obstacle } from '../entities/Obstacle';
 import type { Player } from '../entities/Player';
+import { ShopNpc } from '../entities/ShopNpc';
 import { BaseEnemy } from '../entities/enemies/BaseEnemy';
+import { normalizeVector } from '../utils/math';
 import type { AudioSystem } from './AudioSystem';
 import { isWithinBombRadius, resolveBombPlantAttempt, shouldDetonateBomb } from './BombRules';
 import type { EffectsSystem } from './EffectsSystem';
@@ -17,11 +19,14 @@ interface BombSystemConfig {
   enemies: Phaser.Physics.Arcade.Group;
   enemyBullets: Phaser.Physics.Arcade.Group;
   obstacles: Phaser.Physics.Arcade.StaticGroup;
+  shopNpcs: Phaser.GameObjects.Group;
   effects: EffectsSystem;
   audio: AudioSystem;
   isRunEnded: () => boolean;
   // 자기 폭발에 맞았을 때 공통 피격 피드백(점멸·화면 흔들림·효과음)으로 연결한다.
   onPlayerDamaged?: () => void;
+  // 상인이 날아갔을 때. 방 상태에 기록해 다시 들어와도 상인이 없고 자국만 남게 한다.
+  onShopNpcDestroyed?: (x: number, y: number, direction: { x: number; y: number }) => void;
 }
 
 export type BombPlantResult = 'planted' | 'no-bombs' | 'cooldown' | 'blocked';
@@ -33,10 +38,16 @@ export class BombSystem {
   private readonly enemies: Phaser.Physics.Arcade.Group;
   private readonly enemyBullets: Phaser.Physics.Arcade.Group;
   private readonly obstacles: Phaser.Physics.Arcade.StaticGroup;
+  private readonly shopNpcs: Phaser.GameObjects.Group;
   private readonly effects: EffectsSystem;
   private readonly audio: AudioSystem;
   private readonly isRunEnded: () => boolean;
   private readonly onPlayerDamaged?: () => void;
+  private readonly onShopNpcDestroyed?: (
+    x: number,
+    y: number,
+    direction: { x: number; y: number },
+  ) => void;
   private readonly plantedBombs: Phaser.GameObjects.Group;
   private nextBombAt = 0;
 
@@ -47,10 +58,12 @@ export class BombSystem {
     this.enemies = config.enemies;
     this.enemyBullets = config.enemyBullets;
     this.obstacles = config.obstacles;
+    this.shopNpcs = config.shopNpcs;
     this.effects = config.effects;
     this.audio = config.audio;
     this.isRunEnded = config.isRunEnded;
     this.onPlayerDamaged = config.onPlayerDamaged;
+    this.onShopNpcDestroyed = config.onShopNpcDestroyed;
     this.plantedBombs = this.scene.add.group();
     this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.clear());
   }
@@ -121,6 +134,24 @@ export class BombSystem {
       }
 
       obstacle.destroyByBomb();
+    }
+
+    // 상점 상인은 전투 대상이 아니라 폭발에 날아가는 연출 전용이다. 물건을 사는 판정은
+    // 상품과의 거리로 하므로, 상인이 사라져도 상점은 그대로 이용할 수 있다.
+    const shopNpcsInRoom = [...(this.shopNpcs.getChildren() as ShopNpc[])];
+
+    for (const npc of shopNpcsInRoom) {
+      if (!npc.active || !isWithinBombRadius(originX, originY, npc.x, npc.y)) {
+        continue;
+      }
+
+      // 폭발에서 상인 쪽으로 향하는 방향. 정확히 겹쳐 있으면 위로 날린다.
+      const away = normalizeVector(npc.x - originX, npc.y - originY);
+      const direction = away.x === 0 && away.y === 0 ? { x: 0, y: -1 } : away;
+
+      this.effects.shopNpcBlast(npc.x, npc.y, direction);
+      this.onShopNpcDestroyed?.(npc.x, npc.y, direction);
+      npc.destroy();
     }
 
     // 플레이어 피해는 적·장애물 처리를 모두 끝낸 뒤 마지막에 판정한다. 자기 폭탄에

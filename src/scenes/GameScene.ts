@@ -294,10 +294,20 @@ export class GameScene extends Phaser.Scene {
       enemies: this.enemies,
       enemyBullets: this.enemyBullets,
       obstacles: this.roomController.obstacles,
+      shopNpcs: this.roomController.shopNpcs,
       effects: this.effects,
       audio: this.audio,
       isRunEnded: () => isRunEnded(this.runState),
       onPlayerDamaged: () => this.queuePlayerDamagedFeedback(),
+      onShopNpcDestroyed: (x, y, direction) => {
+        // 방 상태에 남기고 바닥 자국을 그 자리에 바로 그린다.
+        this.roomController.markShopNpcDestroyed(x, y, direction);
+
+        // 대사 중이었다면 말풍선도 함께 픽셀 조각으로 부서뜨린다.
+        for (const bounds of this.roomController.consumeShopSpeechBubbleBounds()) {
+          this.effects.shatterSpeechBubble(bounds, direction);
+        }
+      },
     });
     this.roomTransitions = new RoomTransitionSystem({
       scene: this,

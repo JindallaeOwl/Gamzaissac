@@ -46,8 +46,18 @@ export interface RoomNode {
   combatItemRewardRolled: boolean;
   combatItemRewardId?: string;
   obstacleHealth?: number[];
+  // 폭탄에 상인이 날아간 흔적. 값이 있으면 상인은 다시 나오지 않고 바닥 자국만 남는다.
+  // 자국을 폭발 반대쪽으로 눕히기 위해 위치와 밀려난 방향을 함께 보관한다.
+  shopNpcBlast?: ShopNpcBlastState;
   pendingReward?: PendingRoomReward;
   droppedRewards: PendingDroppedReward[];
+}
+
+export interface ShopNpcBlastState {
+  x: number;
+  y: number;
+  directionX: number;
+  directionY: number;
 }
 
 export class DungeonManager {
