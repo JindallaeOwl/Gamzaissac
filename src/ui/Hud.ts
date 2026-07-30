@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
 import { DEPTH, GAME_WIDTH } from '../config/gameConfig';
+import { UI_GOLD, UI_THEME } from '../config/uiTheme';
 import { getStageProgress, stageFloorRoman } from '../data/stages';
 import { getRenderScale } from '../systems/GameSettings';
 import { formatRunElapsedTime } from '../systems/MinimapExpansionController';
@@ -320,6 +321,8 @@ export class Hud {
 
       const x = originX + (room.coord.x - viewport.minX) * (size + gap);
       const y = originY + (room.coord.y - viewport.minY) * (size + gap);
+      // 방 종류 색은 정보를 전달하므로 구분은 유지하되, 차갑던 색조만 흙 테마에
+      // 맞춰 눌렀다(시작방 하늘색 → 옅은 금색, 미클리어 회색 → 따뜻한 흙색).
       const color =
         room.type === 'shop'
           ? 0xf3c766
@@ -328,15 +331,15 @@ export class Hud {
             : room.type === 'boss'
               ? 0xd84f66
               : room.type === 'start'
-                ? 0x6ff5ff
-                : 0xff7a90;
+                ? 0xdcc079
+                : 0xc9785b;
       const alpha = room.discovered || room.id === current.id ? 1 : 0.28;
 
-      this.minimap.fillStyle(room.cleared ? color : 0x58606b, alpha);
+      this.minimap.fillStyle(room.cleared ? color : 0x4a3a28, alpha);
       this.minimap.fillRect(x, y, size, size);
 
       if (room.id === current.id) {
-        this.minimap.lineStyle(1, 0xffffff, 1);
+        this.minimap.lineStyle(1, UI_GOLD, 1);
         this.minimap.strokeRect(x - 1, y - 1, size + 2, size + 2);
       }
     }
@@ -472,8 +475,10 @@ export class Hud {
     height: number,
     alpha = 0.78,
   ): Phaser.GameObjects.Rectangle {
-    return this.registerUiObject(this.scene.add.rectangle(x, y, width, height, 0x070c12, alpha))
-      .setStrokeStyle(1, 0x40525f, 0.82)
+    return this.registerUiObject(
+      this.scene.add.rectangle(x, y, width, height, UI_THEME.panelFill, alpha),
+    )
+      .setStrokeStyle(1, UI_THEME.panelStroke, UI_THEME.panelStrokeAlpha)
       .setDepth(DEPTH.ui - 1);
   }
 }

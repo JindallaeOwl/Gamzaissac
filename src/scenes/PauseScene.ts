@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH } from '../config/gameConfig';
+import { UI_TEXT, UI_THEME } from '../config/uiTheme';
 import { gameFontStack, t } from '../i18n';
 import { MusicSystem } from '../systems/MusicSystem';
 import { getRenderScale } from '../systems/GameSettings';
@@ -61,19 +62,33 @@ export class PauseScene extends Phaser.Scene {
     applyRenderScale(this);
     this.music = new MusicSystem(this);
     this.add
-      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x04070b, 0.32)
+      .rectangle(
+        GAME_WIDTH / 2,
+        GAME_HEIGHT / 2,
+        GAME_WIDTH,
+        GAME_HEIGHT,
+        UI_THEME.backdropFill,
+        UI_THEME.backdropAlpha,
+      )
       .setDepth(DEPTH.ui + 20);
     this.add
-      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 456, 250, 0x0a1119, 0.18)
-      .setStrokeStyle(2, 0x56dce5, 0.75)
+      .rectangle(
+        GAME_WIDTH / 2,
+        GAME_HEIGHT / 2,
+        456,
+        250,
+        UI_THEME.dialogFill,
+        UI_THEME.dialogFillAlpha,
+      )
+      .setStrokeStyle(2, UI_THEME.dialogStroke, UI_THEME.dialogStrokeAlpha)
       .setDepth(DEPTH.ui + 21);
     this.add
       .text(GAME_WIDTH / 2, 44, t('pause.title'), {
         fontFamily: gameFontStack(),
         fontSize: '23px',
         fontStyle: 'bold',
-        color: '#dfffff',
-        stroke: '#071116',
+        color: UI_TEXT.heading,
+        stroke: UI_TEXT.outline,
         strokeThickness: 4,
         resolution: getRenderScale(),
       })
@@ -84,8 +99,8 @@ export class PauseScene extends Phaser.Scene {
       .text(GAME_WIDTH / 2, 252, '', {
         fontFamily: gameFontStack(),
         fontSize: '7px',
-        color: '#ffd783',
-        stroke: '#071116',
+        color: UI_TEXT.muted,
+        stroke: UI_TEXT.outline,
         strokeThickness: 2,
         resolution: getRenderScale(),
       })
@@ -157,8 +172,8 @@ export class PauseScene extends Phaser.Scene {
           fontFamily: gameFontStack(),
           fontSize: mode === 'main' ? '13px' : '10px',
           fontStyle: 'bold',
-          color: '#f5fbff',
-          stroke: '#071116',
+          color: UI_TEXT.body,
+          stroke: UI_TEXT.outline,
           strokeThickness: 3,
           resolution: getRenderScale(),
         })
@@ -247,8 +262,14 @@ export class PauseScene extends Phaser.Scene {
     this.itemTexts.forEach((text, index) => {
       const selected = index === this.selectedIndex;
       text.setText(this.items[index]?.label ?? '');
-      text.setColor(selected ? '#ffe099' : '#f5fbff');
-      text.setBackgroundColor(selected ? '#173743' : '#00000000');
+      // 선택된 항목은 오프닝 띠와 같은 문법 — 금색 바탕에 어두운 글자.
+      // 이때 외곽선은 없애야 한다. 어두운 글자에 어두운 외곽선이 겹치면 획이
+      // 뭉개져 금색 위에서 읽히지 않는다(외곽선은 어두운 배경용 장치다).
+      text.setColor(selected ? UI_TEXT.selected : UI_TEXT.body);
+      text.setStroke(selected ? UI_TEXT.selectedBackground : UI_TEXT.outline, selected ? 0 : 3);
+      text.setBackgroundColor(
+        selected ? UI_TEXT.selectedBackground : UI_TEXT.transparentBackground,
+      );
       text.setScale(selected ? 1.05 : 1);
       text.setAlpha(selected ? 1 : 0.72);
     });
