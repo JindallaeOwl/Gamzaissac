@@ -58,15 +58,37 @@
 }
 
 html,
-body,
-#game-container {
+body {
   width: 100%;
   height: 100%;
   margin: 0;
 }
 
 body {
+  position: fixed;
+  inset: 0;
+  min-height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#game-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* iOS Safari의 주소창과 홈 화면 실행 모드는 layout viewport와 실제 보이는 높이가
+   달라질 수 있다. dvh를 지원하면 Phaser의 FIT 중앙 정렬 기준을 현재 가시 영역으로
+   고정해 캔버스가 아래로 밀리는 현상을 막는다. */
+@supports (height: 100dvh) {
+  body,
+  #game-container {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
 }
 
 canvas {
@@ -80,6 +102,8 @@ canvas {
    손가락 크기를 유지하고, 실제 조작 요소만 pointer-events를 받는다. */
 #touch-controls {
   --touch-game-scale: min(calc(100vw / 480), calc(100vh / 272));
+  --touch-center-y: 50vh;
+  --touch-bottom-offset: max(34px, calc(env(safe-area-inset-bottom) + 16px));
   --touch-stick-size: clamp(76px, 21vh, 112px);
   --touch-button-size: clamp(42px, 11vh, 60px);
   position: fixed;
@@ -125,7 +149,7 @@ canvas {
 }
 
 .touch-stick--movement {
-  bottom: max(12px, env(safe-area-inset-bottom));
+  bottom: var(--touch-bottom-offset);
   left: max(14px, env(safe-area-inset-left));
 }
 
@@ -169,7 +193,11 @@ canvas {
 .touch-top-actions {
   position: absolute;
   /* 접힌/펼친 미니맵의 왼쪽 바깥에 두어 실제 미니맵 터치를 가리지 않는다. */
-  top: max(10px, env(safe-area-inset-top), calc(50vh - var(--touch-game-scale) * 132));
+  top: max(
+    10px,
+    env(safe-area-inset-top),
+    calc(var(--touch-center-y) - var(--touch-game-scale) * 132)
+  );
   right: max(12px, env(safe-area-inset-right), calc(50vw - var(--touch-game-scale) * 118 + 8px));
   display: flex;
   gap: clamp(7px, 1.5vw, 12px);
@@ -178,7 +206,7 @@ canvas {
 .touch-fire-cluster {
   position: absolute;
   right: max(14px, env(safe-area-inset-right));
-  bottom: max(12px, env(safe-area-inset-bottom));
+  bottom: var(--touch-bottom-offset);
   width: var(--touch-stick-size);
   height: var(--touch-stick-size);
 }
@@ -321,6 +349,15 @@ canvas {
   .touch-stick,
   .touch-action {
     transition: none;
+  }
+}
+
+@supports (height: 100dvh) {
+  #touch-controls {
+    --touch-game-scale: min(calc(100vw / 480), calc(100dvh / 272));
+    --touch-center-y: 50dvh;
+    --touch-stick-size: clamp(76px, 21dvh, 112px);
+    height: 100dvh;
   }
 }
 

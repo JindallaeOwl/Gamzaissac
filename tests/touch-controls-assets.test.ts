@@ -43,4 +43,20 @@ describe('mobile touch control assets', () => {
     expect(styles).toContain('@media (orientation: portrait)');
     expect(styles).toContain('.touch-orientation-hint');
   });
+
+  it('uses the visible iOS viewport and keeps sticks above the home indicator', () => {
+    expect(index).toContain('viewport-fit=cover');
+    expect(index).toContain('apple-mobile-web-app-capable');
+    expect(styles).toContain('@supports (height: 100dvh)');
+    expect(styles).toContain('height: 100dvh');
+    expect(styles).toMatch(
+      /--touch-bottom-offset:\s*max\(34px,\s*calc\(env\(safe-area-inset-bottom\) \+ 16px\)\)/,
+    );
+    expect(styles).toMatch(
+      /\.touch-stick--movement\s*\{[\s\S]*?bottom:\s*var\(--touch-bottom-offset\)/,
+    );
+    expect(styles).toMatch(
+      /\.touch-fire-cluster\s*\{[\s\S]*?bottom:\s*var\(--touch-bottom-offset\)/,
+    );
+  });
 });
