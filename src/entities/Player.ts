@@ -20,17 +20,10 @@ import {
   getEffectiveFireRate,
   getEffectiveProjectileSpeed,
 } from '../systems/PlayerStatSystem';
+import { movementAxes, selectFireDirection, type PlayerControls } from '../systems/InputRules';
 
-export interface PlayerControls {
-  up: Phaser.Input.Keyboard.Key;
-  down: Phaser.Input.Keyboard.Key;
-  left: Phaser.Input.Keyboard.Key;
-  right: Phaser.Input.Keyboard.Key;
-  fireUp: Phaser.Input.Keyboard.Key;
-  fireDown: Phaser.Input.Keyboard.Key;
-  fireLeft: Phaser.Input.Keyboard.Key;
-  fireRight: Phaser.Input.Keyboard.Key;
-}
+// 입력 스냅샷 타입은 InputRules로 옮겼다. 기존 import 경로를 깨지 않도록 재수출한다.
+export type { PlayerControls };
 
 export interface BeamFiredEvent {
   directions: AttackDirection[];
@@ -223,8 +216,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private updateMovement(time: number, controls: PlayerControls): void {
-    const inputX = Number(controls.right.isDown) - Number(controls.left.isDown);
-    const inputY = Number(controls.down.isDown) - Number(controls.up.isDown);
+    const { x: inputX, y: inputY } = movementAxes(controls);
     const direction = normalizeVector(inputX, inputY);
     const body = this.body as Phaser.Physics.Arcade.Body;
 
@@ -371,23 +363,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private getFireDirection(controls: PlayerControls): AttackDirection | null {
-    if (controls.fireUp.isDown) {
-      return { x: 0, y: -1 };
-    }
-
-    if (controls.fireDown.isDown) {
-      return { x: 0, y: 1 };
-    }
-
-    if (controls.fireLeft.isDown) {
-      return { x: -1, y: 0 };
-    }
-
-    if (controls.fireRight.isDown) {
-      return { x: 1, y: 0 };
-    }
-
-    return null;
+    // 우선순위(위→아래→왼쪽→오른쪽) 규칙은 InputRules에 있고 단위 테스트로 고정된다.
+    return selectFireDirection(controls);
   }
 
   private constrainToRoom(): void {

@@ -5,7 +5,9 @@ import { Bullet } from '../entities/Bullet';
 import { Door } from '../entities/Door';
 import { FloorExit } from '../entities/FloorExit';
 import { ItemPickup } from '../entities/ItemPickup';
-import { Player, type BeamFiredEvent, type PlayerControls } from '../entities/Player';
+import { Player, type BeamFiredEvent } from '../entities/Player';
+import { movementAxes } from '../systems/InputRules';
+import { InputSystem } from '../systems/InputSystem';
 import { ShopNpc } from '../entities/ShopNpc';
 import { RewardPickup } from '../entities/RewardPickup';
 import { ShopOffer } from '../entities/ShopOffer';
@@ -89,7 +91,7 @@ export class GameScene extends Phaser.Scene {
   private combatCollisions!: CombatCollisionSystem;
   private roomController!: RoomController;
   private player!: Player;
-  private controls!: PlayerControls;
+  private inputSystem!: InputSystem;
   private debugKey?: Phaser.Input.Keyboard.Key;
   private localeKey?: Phaser.Input.Keyboard.Key;
   private bombKey?: Phaser.Input.Keyboard.Key;
@@ -266,7 +268,7 @@ export class GameScene extends Phaser.Scene {
       this.runState.stats,
       this.runState.attackProfile,
     );
-    this.controls = this.createControls();
+    this.inputSystem = this.createControls();
 
     // 방이 화면보다 크면 카메라가 플레이어를 따라간다. ROOM_SIZE_SCALE이 1이면
     // 카메라 경계가 화면과 같아져 기존처럼 고정 화면으로 동작한다.
@@ -411,7 +413,8 @@ export class GameScene extends Phaser.Scene {
       this.tryPurchaseNearestShopOffer();
     }
 
-    this.player.update(time, this.controls, this.playerBullets);
+    // 스냅샷은 사용 직전에 새로 읽는다(InputSystem 주석 참고 — 캐시 금지).
+    this.player.update(time, this.inputSystem.getControls(), this.playerBullets);
 
     const enemiesCanAct = this.roomController.canEnemiesAct(time);
 
@@ -457,13 +460,20 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
-  private createControls(): PlayerControls {
+  // 이동·사격 8키는 InputSystem이 담당하고, 기능키(디버그·언어·폭탄·구매·미니맵)와
+  // 비밀 코드 리스너는 기존대로 이 씬이 직접 초기화·해제한다.
+  private createControls(): InputSystem {
     const keyboard = this.input.keyboard;
 
     if (!keyboard) {
       throw new Error('Keyboard input is unavailable.');
     }
 
+    this.setupActionKeys(keyboard);
+    return new InputSystem(keyboard);
+  }
+
+  private setupActionKeys(keyboard: Phaser.Input.Keyboard.KeyboardPlugin): void {
     this.debugKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F3);
     this.localeKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L);
     this.bombKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
@@ -473,17 +483,6 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       keyboard.off('keydown', this.handleSecretCodeKey, this);
     });
-
-    return {
-      up: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
-      down: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
-      left: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
-      right: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
-      fireUp: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
-      fireDown: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
-      fireLeft: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
-      fireRight: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
-    };
   }
 
   private updateMinimapExpansionInput(time: number): void {
@@ -1236,8 +1235,9 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const inputX = Number(this.controls.right.isDown) - Number(this.controls.left.isDown);
-    const inputY = Number(this.controls.down.isDown) - Number(this.controls.up.isDown);
+    // 이 충돌 콜백은 물리 단계에서 실행되어 GameScene.update보다 먼저 온다.
+    // 캐시된 스냅샷 대신 지금 시점의 입력을 새로 읽어야 기존 isDown 판정과 같다.
+    const { x: inputX, y: inputY } = movementAxes(this.inputSystem.getControls());
     const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     const hasMovementInput = inputX !== 0 || inputY !== 0;
     const pushX = hasMovementInput ? inputX : playerBody.velocity.x;
