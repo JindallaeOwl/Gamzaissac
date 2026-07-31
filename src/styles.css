@@ -75,6 +75,254 @@ canvas {
   image-rendering: crisp-edges;
 }
 
+/* ── 모바일 터치 조작 ───────────────────────────────────────────
+   Phaser의 480×272 픽셀 격자와 분리된 DOM 레이어다. 기기 해상도에서 그려져
+   손가락 크기를 유지하고, 실제 조작 요소만 pointer-events를 받는다. */
+#touch-controls {
+  --touch-stick-size: clamp(76px, 21vh, 112px);
+  --touch-button-size: clamp(42px, 11vh, 60px);
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  pointer-events: none;
+  color: #f7f3e8;
+  font-family: 'BoldPixels', 'ProjectDungGeunMo', Galmuri11, DungGeunMo, DOSGothic, sans-serif;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+}
+
+#touch-controls[hidden] {
+  display: none;
+}
+
+.touch-interface {
+  position: absolute;
+  inset: 0;
+}
+
+.touch-stick {
+  --stick-x: 0px;
+  --stick-y: 0px;
+  position: absolute;
+  width: var(--touch-stick-size);
+  height: var(--touch-stick-size);
+  border: max(2px, 0.45vh) solid rgb(232 176 75 / 42%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, rgb(22 29 40 / 26%) 0 30%, transparent 31%), rgb(5 9 14 / 30%);
+  box-shadow:
+    inset 0 0 0 max(2px, 0.5vh) rgb(9 15 22 / 28%),
+    0 3px 0 rgb(0 0 0 / 22%);
+  opacity: 0.46;
+  pointer-events: auto;
+  touch-action: none;
+  transition:
+    opacity 90ms linear,
+    border-color 90ms linear,
+    background-color 90ms linear;
+}
+
+.touch-stick--movement {
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: max(14px, env(safe-area-inset-left));
+}
+
+.touch-stick-guide,
+.touch-stick-guide::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 58%;
+  height: 2px;
+  background: rgb(247 243 232 / 18%);
+  content: '';
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.touch-stick-guide::after {
+  width: 2px;
+  height: 100%;
+}
+
+.touch-stick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 46%;
+  height: 46%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+  transform: translate(calc(-50% + var(--stick-x)), calc(-50% + var(--stick-y)));
+  filter: drop-shadow(0 3px 0 rgb(0 0 0 / 26%));
+}
+
+.touch-stick.is-active {
+  border-color: rgb(255 211 112 / 82%);
+  background-color: rgb(13 20 29 / 44%);
+  opacity: 0.94;
+}
+
+.touch-top-actions {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  display: flex;
+  gap: clamp(7px, 1.5vw, 12px);
+}
+
+.touch-fire-cluster {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  width: var(--touch-stick-size);
+  height: var(--touch-stick-size);
+}
+
+.touch-stick--fire {
+  right: 0;
+  bottom: 0;
+}
+
+.touch-action {
+  display: grid;
+  place-items: center;
+  width: var(--touch-button-size);
+  height: var(--touch-button-size);
+  margin: 0;
+  border: max(2px, 0.4vh) solid rgb(232 176 75 / 48%);
+  border-radius: 24%;
+  padding: 0;
+  color: #fff1bd;
+  background: rgb(8 13 20 / 52%);
+  box-shadow:
+    inset 0 0 0 2px rgb(255 255 255 / 6%),
+    0 3px 0 rgb(0 0 0 / 24%);
+  font: inherit;
+  font-size: clamp(8px, 2.2vh, 13px);
+  line-height: 1;
+  opacity: 0.56;
+  pointer-events: auto;
+  touch-action: none;
+  transition:
+    opacity 80ms linear,
+    transform 80ms linear,
+    background-color 80ms linear;
+}
+
+.touch-action:active,
+.touch-action.is-selected {
+  border-color: #ffd370;
+  background: rgb(52 42 19 / 78%);
+  opacity: 0.96;
+  transform: translateY(2px);
+}
+
+.touch-action:focus-visible {
+  outline: 2px solid #fff3c4;
+  outline-offset: 2px;
+}
+
+.touch-action[hidden] {
+  display: none;
+}
+
+.touch-action--pause {
+  font-size: clamp(16px, 4.5vh, 28px);
+  letter-spacing: -0.18em;
+}
+
+.touch-action--bomb {
+  position: absolute;
+  right: calc(100% + clamp(10px, 2vw, 18px));
+  bottom: 18%;
+}
+
+.touch-action--bomb img {
+  width: 58%;
+  height: 58%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.touch-action--bomb.is-empty {
+  filter: grayscale(0.75);
+  opacity: 0.38;
+}
+
+#touch-bomb-count {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  min-width: 20px;
+  border: 2px solid #15100a;
+  padding: 2px 3px 1px;
+  color: #fff3c4;
+  background: #6e321f;
+  font-size: clamp(8px, 2.1vh, 12px);
+  line-height: 1;
+  text-align: center;
+  text-shadow: 1px 1px #15100a;
+}
+
+.touch-action--purchase {
+  position: absolute;
+  right: 8%;
+  bottom: calc(100% + clamp(9px, 2vh, 15px));
+  width: max(var(--touch-button-size), 64px);
+  padding: 0 6px;
+  border-radius: 10px;
+  color: #17120a;
+  background: rgb(232 176 75 / 90%);
+  font-size: clamp(9px, 2.3vh, 14px);
+  opacity: 0.9;
+}
+
+.touch-action--purchase:active {
+  color: #17120a;
+  background: #ffe39b;
+}
+
+.touch-orientation-hint {
+  display: none;
+}
+
+@media (orientation: portrait) {
+  #touch-controls:not([hidden]) .touch-orientation-hint {
+    position: absolute;
+    top: max(72px, calc(env(safe-area-inset-top) + 64px));
+    left: 50%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    max-width: calc(100vw - 28px);
+    border: 2px solid rgb(232 176 75 / 68%);
+    padding: 7px 10px;
+    color: #ffe39b;
+    background: rgb(5 9 14 / 82%);
+    font-size: clamp(11px, 3.4vw, 17px);
+    line-height: 1.25;
+    text-align: center;
+    text-shadow: 2px 2px #0d1117;
+    transform: translateX(-50%);
+  }
+
+  .touch-rotate-icon {
+    flex: 0 0 auto;
+    font-size: clamp(20px, 7vw, 32px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .touch-stick,
+  .touch-action {
+    transition: none;
+  }
+}
+
 #game-over-overlay {
   position: fixed;
   inset: 0;

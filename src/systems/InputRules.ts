@@ -50,6 +50,27 @@ export function snapshotFromKeys(
 }
 
 /**
+ * 여러 입력원을 하나로 합친다. 같은 필드는 OR로 묶으므로 키보드와 터치를
+ * 동시에 사용해도 어느 한쪽의 입력이 다른 쪽을 지우지 않는다.
+ */
+export function mergeControls(...sources: readonly PlayerControls[]): PlayerControls {
+  const merged = emptyControls();
+
+  for (const source of sources) {
+    merged.up ||= source.up;
+    merged.down ||= source.down;
+    merged.left ||= source.left;
+    merged.right ||= source.right;
+    merged.fireUp ||= source.fireUp;
+    merged.fireDown ||= source.fireDown;
+    merged.fireLeft ||= source.fireLeft;
+    merged.fireRight ||= source.fireRight;
+  }
+
+  return merged;
+}
+
+/**
  * 이동 입력을 축 값(-1·0·1)으로 계산한다. 기존 Player·GameScene에 있던
  * `Number(right.isDown) - Number(left.isDown)` 식과 결과가 동일하다
  * (반대 방향 동시 입력 = 0, 대각선 = 두 축 모두 ±1).

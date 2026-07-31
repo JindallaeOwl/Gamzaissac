@@ -88,3 +88,16 @@
 - 제한 사항: 원본 또는 수정한 에셋 파일의 재판매·재배포 금지
 - 사용 파일: Yellow 캐릭터의 `idle.png`, `walk.png`, `hurt.png`, `death.png`와 그림자 PNG
 - 사용 범위: 플레이어 대기·이동·피격·사망 애니메이션
+
+## Controller & Keyboard Icons
+
+- 제작자: Vryell
+- 출처: https://vryell.itch.io/controller-keyboard-icons
+- 사용 조건: 개인·상업 프로젝트 사용 가능, 제작자 표기는 선택이지만 감사의 뜻으로 기록
+- 제한 사항: 원본 에셋의 재판매·에셋 형태 재배포 금지
+- 원본 규격: 16×16 격자의 `sticks.png`
+- 사용 파일: `public/assets/ui/vryell/touch-stick.png`
+- 변경 여부: 원본 시트의 첫 번째 아날로그 스틱 타일 한 칸만 16×16 투명 PNG로 잘라 사용
+- 사용 범위: 모바일 이동·사격 스틱의 손잡이
+- 동봉 고지: `public/assets/ui/vryell/NOTICE.txt`
+- 팔레트 표기: 원본 배포 페이지가 Rosy-42 팔레트 제작자로 PineTreePizza를 표시

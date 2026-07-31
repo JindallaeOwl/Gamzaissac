@@ -34,6 +34,11 @@ export class MinimapExpansionController {
   cancelHold(): void {
     this.pressedAt = null;
   }
+
+  /** 모바일 버튼처럼 길게 누르기 의미가 없는 입력은 고정 상태만 바로 전환한다. */
+  togglePinned(): void {
+    this.pinned = !this.pinned;
+  }
 }
 
 export function formatRunElapsedTime(elapsedMs: number): string {

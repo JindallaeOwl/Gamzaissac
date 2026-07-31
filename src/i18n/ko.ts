@@ -54,6 +54,15 @@ export const ko: TranslationTree = {
     subtitle: '몬스터를 피해 지상으로 탈출하기',
     skip: '아무 키나 눌러 시작',
   },
+  touch: {
+    movement: '이동 스틱',
+    fire: '사격 스틱',
+    bomb: '폭탄 사용',
+    purchase: '구매',
+    minimap: '미니맵 확대 전환',
+    pause: '일시정지',
+    rotate: '기기를 가로로 돌려 주세요',
+  },
   gameOver: {
     title: 'GAME OVER',
     summary: '방 {rooms}   아이템 {items}   점수 {score}',

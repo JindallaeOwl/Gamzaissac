@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   emptyControls,
+  mergeControls,
   movementAxes,
   selectFireDirection,
   snapshotFromKeys,
@@ -67,6 +68,21 @@ describe('movementAxes', () => {
   it('keeps both axes for diagonals', () => {
     expect(movementAxes(controls({ up: true, right: true }))).toEqual({ x: 1, y: -1 });
     expect(movementAxes(controls({ down: true, left: true }))).toEqual({ x: -1, y: 1 });
+  });
+});
+
+describe('mergeControls', () => {
+  it('ORs keyboard and touch fields without either source erasing the other', () => {
+    expect(
+      mergeControls(
+        controls({ up: true, fireLeft: true }),
+        controls({ right: true, fireDown: true }),
+      ),
+    ).toEqual(controls({ up: true, right: true, fireLeft: true, fireDown: true }));
+  });
+
+  it('returns an empty snapshot when no sources are provided', () => {
+    expect(mergeControls()).toEqual(emptyControls());
   });
 });
 

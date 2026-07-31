@@ -1,0 +1,12 @@
+Controller & Keyboard Icons
+Creator: Vryell
+Source: https://vryell.itch.io/controller-keyboard-icons
+
+The creator permits use in personal and commercial projects. Credit is not
+required but is appreciated. The original or extracted assets must not be
+resold or redistributed as an asset pack.
+
+This project includes only one 16x16 analogue-stick tile cropped from
+sticks.png. The full source sheet and ZIP are not included.
+
+The source page credits the Rosy-42 palette to PineTreePizza.

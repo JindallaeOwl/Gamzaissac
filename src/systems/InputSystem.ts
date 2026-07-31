@@ -1,5 +1,9 @@
 import Phaser from 'phaser';
-import { snapshotFromKeys, type PlayerControls } from './InputRules';
+import { emptyControls, mergeControls, snapshotFromKeys, type PlayerControls } from './InputRules';
+
+export interface PlayerControlSource {
+  getControls(): PlayerControls;
+}
 
 /**
  * 이동·사격 8키를 보유하고 프레임 스냅샷을 만드는 입력원.
@@ -14,22 +18,31 @@ import { snapshotFromKeys, type PlayerControls } from './InputRules';
  * `key.isDown` 직접 판정과 시점이 정확히 같다.
  */
 export class InputSystem {
-  private readonly keys: Record<keyof PlayerControls, Phaser.Input.Keyboard.Key>;
+  private readonly keys?: Record<keyof PlayerControls, Phaser.Input.Keyboard.Key>;
+  private touchSource?: PlayerControlSource;
 
-  constructor(keyboard: Phaser.Input.Keyboard.KeyboardPlugin) {
-    this.keys = {
-      up: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
-      down: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
-      left: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
-      right: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
-      fireUp: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
-      fireDown: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
-      fireLeft: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
-      fireRight: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
-    };
+  constructor(keyboard?: Phaser.Input.Keyboard.KeyboardPlugin) {
+    if (keyboard) {
+      this.keys = {
+        up: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+        down: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+        left: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+        right: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+        fireUp: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
+        fireDown: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
+        fireLeft: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
+        fireRight: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
+      };
+    }
+  }
+
+  setTouchSource(source?: PlayerControlSource): void {
+    this.touchSource = source;
   }
 
   getControls(): PlayerControls {
-    return snapshotFromKeys(this.keys);
+    const keyboardControls = this.keys ? snapshotFromKeys(this.keys) : emptyControls();
+    const touchControls = this.touchSource?.getControls() ?? emptyControls();
+    return mergeControls(keyboardControls, touchControls);
   }
 }

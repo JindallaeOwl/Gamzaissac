@@ -54,6 +54,15 @@ export const en: TranslationTree = {
     subtitle: 'Dodge the monsters and escape to the surface',
     skip: 'Press any key to begin',
   },
+  touch: {
+    movement: 'Movement stick',
+    fire: 'Fire stick',
+    bomb: 'Use bomb',
+    purchase: 'BUY',
+    minimap: 'Toggle minimap',
+    pause: 'Pause',
+    rotate: 'Rotate your device to landscape',
+  },
   gameOver: {
     title: 'GAME OVER',
     summary: 'Rooms {rooms}   Items {items}   Score {score}',

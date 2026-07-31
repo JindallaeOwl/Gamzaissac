@@ -56,6 +56,7 @@ import { BossHud } from '../ui/BossHud';
 import { Hud } from '../ui/Hud';
 import { ItemPickupAnnouncement } from '../ui/ItemPickupAnnouncement';
 import { isPauseCode } from '../ui/PauseMenuRules';
+import { TouchControls } from '../ui/TouchControls';
 import { UiCameraSystem } from '../ui/UiCameraSystem';
 import { applyRenderScale } from '../utils/render';
 import { bindCaptureKeydown, shouldConfirmRunEnd } from '../utils/runEndInput';
@@ -92,6 +93,7 @@ export class GameScene extends Phaser.Scene {
   private roomController!: RoomController;
   private player!: Player;
   private inputSystem!: InputSystem;
+  private touchControls?: TouchControls;
   private debugKey?: Phaser.Input.Keyboard.Key;
   private localeKey?: Phaser.Input.Keyboard.Key;
   private bombKey?: Phaser.Input.Keyboard.Key;
@@ -181,27 +183,20 @@ export class GameScene extends Phaser.Scene {
   private uiCameraSystem!: UiCameraSystem;
   private itemPickupAnnouncement!: ItemPickupAnnouncement;
   private readonly handlePauseKeyDown = (event: KeyboardEvent): void => {
-    if (
-      !isPauseCode(event.code) ||
-      event.repeat ||
-      isRunEnded(this.runState) ||
-      // 오프닝 중 Esc는 오프닝을 넘기기만 하고 일시정지를 열지 않는다.
-      this.introActive ||
-      this.pauseTransitionStarted ||
-      !this.scene.isActive()
-    ) {
+    if (!isPauseCode(event.code) || event.repeat) {
       return;
     }
 
-    event.preventDefault();
-    this.pauseTransitionStarted = true;
-    this.scene.pause();
-    this.scene.run('PauseScene');
+    if (this.requestPause()) {
+      event.preventDefault();
+    }
   };
   private readonly handleGameSceneResume = (): void => {
     this.pauseTransitionStarted = false;
     this.minimapExpansion.cancelHold();
     this.hud.setMapExpanded(this.minimapExpansion.expanded);
+    this.refreshTouchControlsEnabled();
+    this.updateTouchControlPresentation();
   };
 
   private enemies!: Phaser.Physics.Arcade.Group;
@@ -231,6 +226,8 @@ export class GameScene extends Phaser.Scene {
     this.playerDamageFeedbackQueued = false;
     this.pauseTransitionStarted = false;
     this.introActive = false;
+    this.touchControls?.destroy();
+    this.touchControls = undefined;
     this.runElapsedMs = 0;
     this.minimapExpansion = new MinimapExpansionController();
     this.secretCodeTracker = new SecretCodeTracker(KONAMI_CODE);
@@ -373,9 +370,11 @@ export class GameScene extends Phaser.Scene {
     this.setupPhysics();
     this.setupPlayerEvents();
     this.setupPauseInput();
+    this.setupTouchControls();
     this.hud.showMessage(this.formatStageFloorLabel());
     this.cameras.main.fadeIn(220, 5, 9, 14);
     this.startIntro();
+    this.refreshTouchControlsEnabled();
   }
 
   update(time: number, delta: number): void {
@@ -403,6 +402,7 @@ export class GameScene extends Phaser.Scene {
     if (this.localeKey && Phaser.Input.Keyboard.JustDown(this.localeKey)) {
       const locale = toggleLocale();
       this.hud.showMessage(t(locale === 'ko' ? 'messages.localeKo' : 'messages.localeEn'), 1100);
+      this.updateTouchControlLabels();
     }
 
     if (this.bombKey && Phaser.Input.Keyboard.JustDown(this.bombKey)) {
@@ -446,6 +446,7 @@ export class GameScene extends Phaser.Scene {
     this.roomController.update();
     this.bossHud.update();
     this.updateItemHint();
+    this.updateTouchControlPresentation();
     this.hud.update(
       this.runState,
       this.dungeon,
@@ -465,12 +466,11 @@ export class GameScene extends Phaser.Scene {
   private createControls(): InputSystem {
     const keyboard = this.input.keyboard;
 
-    if (!keyboard) {
-      throw new Error('Keyboard input is unavailable.');
+    if (keyboard) {
+      this.setupActionKeys(keyboard);
     }
 
-    this.setupActionKeys(keyboard);
-    return new InputSystem(keyboard);
+    return new InputSystem(keyboard ?? undefined);
   }
 
   private setupActionKeys(keyboard: Phaser.Input.Keyboard.KeyboardPlugin): void {
@@ -613,6 +613,7 @@ export class GameScene extends Phaser.Scene {
       };
       this.runState.outcome = 'defeated';
       this.gameOverStarted = true;
+      this.touchControls?.setGameplayEnabled(false);
 
       // Display the browser overlay before touching the physics world. It is
       // independent of Phaser's render loop, so later cleanup cannot prevent
@@ -837,6 +838,7 @@ export class GameScene extends Phaser.Scene {
 
     this.introActive = false;
     this.physics.world.resume();
+    this.refreshTouchControlsEnabled();
   }
 
   private clearIntroHideTimer(): void {
@@ -877,6 +879,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.escapeStarted = true;
+    this.touchControls?.setGameplayEnabled(false);
 
     // 게임오버와 동일하게, 물리 정리보다 먼저 브라우저 오버레이를 띄워
     // 이후 정리 과정의 오류가 승리 화면 표시를 막지 못하게 한다.
@@ -933,6 +936,108 @@ export class GameScene extends Phaser.Scene {
   private setupAudioUnlock(): void {
     this.input.once('pointerdown', () => this.audio.unlock());
     this.input.keyboard?.once('keydown', () => this.audio.unlock());
+  }
+
+  private setupTouchControls(): void {
+    const touchControls = TouchControls.createIfSupported({
+      onInteraction: () => this.audio.unlock(),
+      onBomb: () => {
+        if (!this.canAcceptTouchGameplayInput()) {
+          return;
+        }
+
+        this.tryUseBomb();
+        this.updateTouchControlPresentation();
+      },
+      onPurchase: () => {
+        if (!this.canAcceptTouchGameplayInput()) {
+          return;
+        }
+
+        this.tryPurchaseNearestShopOffer();
+        this.updateTouchControlPresentation();
+      },
+      onMinimap: () => {
+        if (!this.canAcceptTouchGameplayInput()) {
+          return;
+        }
+
+        this.minimapExpansion.togglePinned();
+        this.hud.setMapExpanded(this.minimapExpansion.expanded);
+        this.updateTouchControlPresentation();
+      },
+      onPause: () => this.requestPause(),
+    });
+
+    if (!touchControls) {
+      return;
+    }
+
+    this.touchControls = touchControls;
+    this.inputSystem.setTouchSource(touchControls);
+    this.updateTouchControlLabels();
+    this.updateTouchControlPresentation();
+    touchControls.setGameplayEnabled(false);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.inputSystem.setTouchSource(undefined);
+      touchControls.destroy();
+
+      if (this.touchControls === touchControls) {
+        this.touchControls = undefined;
+      }
+    });
+  }
+
+  private canAcceptTouchGameplayInput(): boolean {
+    return (
+      !isRunEnded(this.runState) &&
+      !this.introActive &&
+      !this.pauseTransitionStarted &&
+      this.scene.isActive()
+    );
+  }
+
+  private refreshTouchControlsEnabled(): void {
+    this.touchControls?.setGameplayEnabled(this.canAcceptTouchGameplayInput());
+  }
+
+  private updateTouchControlLabels(): void {
+    this.touchControls?.setLabels({
+      movement: t('touch.movement'),
+      fire: t('touch.fire'),
+      bomb: t('touch.bomb'),
+      purchase: t('touch.purchase'),
+      minimap: t('touch.minimap'),
+      pause: t('touch.pause'),
+      rotate: t('touch.rotate'),
+    });
+  }
+
+  private updateTouchControlPresentation(): void {
+    this.touchControls?.updatePresentation({
+      bombCount: this.runState.inventory.bombs,
+      canPurchase: this.findNearestShopOffer() !== null,
+      minimapExpanded: this.minimapExpansion.expanded,
+    });
+  }
+
+  private requestPause(): boolean {
+    if (
+      isRunEnded(this.runState) ||
+      // 오프닝 중 Esc는 오프닝을 넘기기만 하고 일시정지를 열지 않는다.
+      this.introActive ||
+      this.pauseTransitionStarted ||
+      !this.scene.isActive()
+    ) {
+      return false;
+    }
+
+    this.pauseTransitionStarted = true;
+    this.touchControls?.setGameplayEnabled(false);
+    this.scene.pause();
+    this.scene.run('PauseScene');
+    return true;
   }
 
   private setupPauseInput(): void {

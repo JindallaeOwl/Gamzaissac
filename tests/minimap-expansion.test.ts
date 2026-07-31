@@ -43,6 +43,20 @@ describe('minimap expansion input', () => {
     expect(controller.expanded).toBe(true);
   });
 
+  it('toggles the pinned state directly for a touch button without changing hold state', () => {
+    const controller = new MinimapExpansionController();
+
+    controller.press(100);
+    controller.togglePinned();
+    expect(controller.pinnedExpanded).toBe(true);
+    expect(controller.expanded).toBe(true);
+
+    controller.cancelHold();
+    controller.togglePinned();
+    expect(controller.pinnedExpanded).toBe(false);
+    expect(controller.expanded).toBe(false);
+  });
+
   it('formats elapsed run time as hours, minutes, and seconds', () => {
     expect(formatRunElapsedTime(0)).toBe('00:00:00');
     expect(formatRunElapsedTime(3_723_000)).toBe('01:02:03');

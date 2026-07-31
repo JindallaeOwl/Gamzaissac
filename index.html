@@ -7,6 +7,59 @@
   </head>
   <body>
     <div id="game-container"></div>
+    <div id="touch-controls" hidden aria-hidden="true">
+      <div class="touch-orientation-hint" role="status">
+        <span class="touch-rotate-icon" aria-hidden="true">↻</span>
+        <span id="touch-rotate-label"></span>
+      </div>
+
+      <div class="touch-interface">
+        <div id="touch-movement-stick" class="touch-stick touch-stick--movement" role="group">
+          <span class="touch-stick-guide" aria-hidden="true"></span>
+          <img
+            id="touch-movement-knob"
+            class="touch-stick-knob"
+            src="/assets/ui/vryell/touch-stick.png"
+            alt=""
+            draggable="false"
+          />
+        </div>
+
+        <div class="touch-top-actions">
+          <button id="touch-minimap" class="touch-action touch-action--map" type="button">
+            <span aria-hidden="true">MAP</span>
+          </button>
+          <button id="touch-pause" class="touch-action touch-action--pause" type="button">
+            <span aria-hidden="true">Ⅱ</span>
+          </button>
+        </div>
+
+        <div class="touch-fire-cluster">
+          <button id="touch-bomb" class="touch-action touch-action--bomb" type="button">
+            <img src="/assets/icons/nikoichu/hud-bomb.png" alt="" draggable="false" />
+            <span id="touch-bomb-count">0</span>
+          </button>
+          <button
+            id="touch-purchase"
+            class="touch-action touch-action--purchase"
+            type="button"
+            hidden
+          >
+            <span id="touch-purchase-label"></span>
+          </button>
+          <div id="touch-fire-stick" class="touch-stick touch-stick--fire" role="group">
+            <span class="touch-stick-guide" aria-hidden="true"></span>
+            <img
+              id="touch-fire-knob"
+              class="touch-stick-knob"
+              src="/assets/ui/vryell/touch-stick.png"
+              alt=""
+              draggable="false"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="intro-overlay" hidden>
       <div class="intro-stage">
         <span class="intro-guide intro-guide--top" aria-hidden="true"></span>
