@@ -198,6 +198,19 @@ export class GameScene extends Phaser.Scene {
     this.refreshTouchControlsEnabled();
     this.updateTouchControlPresentation();
   };
+  private readonly handleMinimapPointerDown = (pointer: Phaser.Input.Pointer): void => {
+    if (
+      !this.touchControls ||
+      !this.canAcceptTouchGameplayInput() ||
+      !this.hud.containsMinimapScreenPoint(pointer.x, pointer.y)
+    ) {
+      return;
+    }
+
+    this.audio.unlock();
+    this.minimapExpansion.togglePinned();
+    this.hud.setMapExpanded(this.minimapExpansion.expanded);
+  };
 
   private enemies!: Phaser.Physics.Arcade.Group;
   private playerBullets!: Phaser.Physics.Arcade.Group;
@@ -957,15 +970,6 @@ export class GameScene extends Phaser.Scene {
         this.tryPurchaseNearestShopOffer();
         this.updateTouchControlPresentation();
       },
-      onMinimap: () => {
-        if (!this.canAcceptTouchGameplayInput()) {
-          return;
-        }
-
-        this.minimapExpansion.togglePinned();
-        this.hud.setMapExpanded(this.minimapExpansion.expanded);
-        this.updateTouchControlPresentation();
-      },
       onPause: () => this.requestPause(),
     });
 
@@ -975,11 +979,13 @@ export class GameScene extends Phaser.Scene {
 
     this.touchControls = touchControls;
     this.inputSystem.setTouchSource(touchControls);
+    this.input.on('pointerdown', this.handleMinimapPointerDown);
     this.updateTouchControlLabels();
     this.updateTouchControlPresentation();
     touchControls.setGameplayEnabled(false);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.off('pointerdown', this.handleMinimapPointerDown);
       this.inputSystem.setTouchSource(undefined);
       touchControls.destroy();
 
@@ -1008,7 +1014,6 @@ export class GameScene extends Phaser.Scene {
       fire: t('touch.fire'),
       bomb: t('touch.bomb'),
       purchase: t('touch.purchase'),
-      minimap: t('touch.minimap'),
       pause: t('touch.pause'),
       rotate: t('touch.rotate'),
     });
@@ -1018,7 +1023,6 @@ export class GameScene extends Phaser.Scene {
     this.touchControls?.updatePresentation({
       bombCount: this.runState.inventory.bombs,
       canPurchase: this.findNearestShopOffer() !== null,
-      minimapExpanded: this.minimapExpansion.expanded,
     });
   }
 

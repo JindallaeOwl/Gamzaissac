@@ -79,6 +79,7 @@ canvas {
    Phaser의 480×272 픽셀 격자와 분리된 DOM 레이어다. 기기 해상도에서 그려져
    손가락 크기를 유지하고, 실제 조작 요소만 pointer-events를 받는다. */
 #touch-controls {
+  --touch-game-scale: min(calc(100vw / 480), calc(100vh / 272));
   --touch-stick-size: clamp(76px, 21vh, 112px);
   --touch-button-size: clamp(42px, 11vh, 60px);
   position: fixed;
@@ -167,8 +168,9 @@ canvas {
 
 .touch-top-actions {
   position: absolute;
-  top: max(10px, env(safe-area-inset-top));
-  right: max(12px, env(safe-area-inset-right));
+  /* 접힌/펼친 미니맵의 왼쪽 바깥에 두어 실제 미니맵 터치를 가리지 않는다. */
+  top: max(10px, env(safe-area-inset-top), calc(50vh - var(--touch-game-scale) * 132));
+  right: max(12px, env(safe-area-inset-right), calc(50vw - var(--touch-game-scale) * 118 + 8px));
   display: flex;
   gap: clamp(7px, 1.5vw, 12px);
 }
@@ -212,8 +214,7 @@ canvas {
     background-color 80ms linear;
 }
 
-.touch-action:active,
-.touch-action.is-selected {
+.touch-action:active {
   border-color: #ffd370;
   background: rgb(52 42 19 / 78%);
   opacity: 0.96;

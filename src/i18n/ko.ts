@@ -59,7 +59,6 @@ export const ko: TranslationTree = {
     fire: '사격 스틱',
     bomb: '폭탄 사용',
     purchase: '구매',
-    minimap: '미니맵 확대 전환',
     pause: '일시정지',
     rotate: '기기를 가로로 돌려 주세요',
   },

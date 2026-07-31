@@ -59,7 +59,6 @@ export const en: TranslationTree = {
     fire: 'Fire stick',
     bomb: 'Use bomb',
     purchase: 'BUY',
-    minimap: 'Toggle minimap',
     pause: 'Pause',
     rotate: 'Rotate your device to landscape',
   },

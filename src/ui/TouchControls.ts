@@ -11,7 +11,6 @@ export interface TouchControlLabels {
   fire: string;
   bomb: string;
   purchase: string;
-  minimap: string;
   pause: string;
   rotate: string;
 }
@@ -20,14 +19,12 @@ export interface TouchControlCallbacks {
   onInteraction(): void;
   onBomb(): void;
   onPurchase(): void;
-  onMinimap(): void;
   onPause(): void;
 }
 
 export interface TouchControlPresentation {
   bombCount: number;
   canPurchase: boolean;
-  minimapExpanded: boolean;
 }
 
 interface StickState {
@@ -47,7 +44,6 @@ interface TouchControlElements {
   bombCount: HTMLElement;
   purchaseButton: HTMLButtonElement;
   purchaseLabel: HTMLElement;
-  minimapButton: HTMLButtonElement;
   pauseButton: HTMLButtonElement;
   rotateLabel: HTMLElement;
 }
@@ -107,7 +103,6 @@ export class TouchControls {
     this.bindStick(this.fire);
     this.bindAction(elements.bombButton, () => callbacks.onBomb());
     this.bindAction(elements.purchaseButton, () => callbacks.onPurchase());
-    this.bindAction(elements.minimapButton, () => callbacks.onMinimap());
     this.bindAction(elements.pauseButton, () => {
       // 일시정지 직전 모든 방향을 놓아 해제 후 이동이 남지 않게 한다.
       this.resetSticks();
@@ -163,7 +158,6 @@ export class TouchControls {
     this.elements.fireStick.setAttribute('aria-label', labels.fire);
     this.elements.bombButton.setAttribute('aria-label', labels.bomb);
     this.elements.purchaseButton.setAttribute('aria-label', labels.purchase);
-    this.elements.minimapButton.setAttribute('aria-label', labels.minimap);
     this.elements.pauseButton.setAttribute('aria-label', labels.pause);
     this.elements.purchaseLabel.textContent = labels.purchase;
     this.elements.rotateLabel.textContent = labels.rotate;
@@ -173,7 +167,6 @@ export class TouchControls {
     this.elements.bombCount.textContent = String(Math.max(0, presentation.bombCount));
     this.elements.bombButton.classList.toggle('is-empty', presentation.bombCount <= 0);
     this.elements.purchaseButton.hidden = !presentation.canPurchase;
-    this.elements.minimapButton.classList.toggle('is-selected', presentation.minimapExpanded);
   }
 
   destroy(): void {
@@ -320,7 +313,6 @@ function findTouchControlElements(): TouchControlElements | null {
   const bombCount = document.querySelector<HTMLElement>('#touch-bomb-count');
   const purchaseButton = document.querySelector<HTMLButtonElement>('#touch-purchase');
   const purchaseLabel = document.querySelector<HTMLElement>('#touch-purchase-label');
-  const minimapButton = document.querySelector<HTMLButtonElement>('#touch-minimap');
   const pauseButton = document.querySelector<HTMLButtonElement>('#touch-pause');
   const rotateLabel = document.querySelector<HTMLElement>('#touch-rotate-label');
 
@@ -334,7 +326,6 @@ function findTouchControlElements(): TouchControlElements | null {
     !bombCount ||
     !purchaseButton ||
     !purchaseLabel ||
-    !minimapButton ||
     !pauseButton ||
     !rotateLabel
   ) {
@@ -351,7 +342,6 @@ function findTouchControlElements(): TouchControlElements | null {
     bombCount,
     purchaseButton,
     purchaseLabel,
-    minimapButton,
     pauseButton,
     rotateLabel,
   };

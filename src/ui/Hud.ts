@@ -179,6 +179,18 @@ export class Hud {
     });
   }
 
+  /** 캔버스 포인터가 현재 크기의 미니맵 패널 안에 있는지 확인한다. */
+  containsMinimapScreenPoint(screenX: number, screenY: number): boolean {
+    const uiCamera = this.scene.cameras.getCamera('UiCamera');
+
+    if (!uiCamera) {
+      return false;
+    }
+
+    const logicalPoint = uiCamera.getWorldPoint(screenX, screenY);
+    return this.minimapPanel.getBounds().contains(logicalPoint.x, logicalPoint.y);
+  }
+
   showMessage(message: string, durationMs = 2200): void {
     this.messageText.setText(message);
     this.messageUntil = this.scene.time.now + durationMs;

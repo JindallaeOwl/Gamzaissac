@@ -26,7 +26,6 @@ describe('mobile touch control assets', () => {
       'touch-bomb-count',
       'touch-purchase',
       'touch-purchase-label',
-      'touch-minimap',
       'touch-pause',
       'touch-rotate-label',
     ]) {
@@ -35,6 +34,8 @@ describe('mobile touch control assets', () => {
         `${id} must exist exactly once`,
       ).toHaveLength(1);
     }
+
+    expect(index).not.toContain('id="touch-minimap"');
   });
 
   it('disables browser gestures on sticks and supplies a portrait rotation notice', () => {
