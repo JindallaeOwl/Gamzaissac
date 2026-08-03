@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- black-translucent은 홈 화면 앱에서 세로 모드 상단 여백을 가로로 돌린 뒤에도
+         계속 잡아둬 게임 화면이 통째로 아래로 밀리는 문제가 있다. default는 iOS가
+         안전 영역을 그때그때 다시 계산하고, 가로 모드에서는 상태 표시줄을 숨기므로
+         실제 플레이 화면은 그대로 전체 화면이다. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="GAMZAISSAC" />
     <meta name="theme-color" content="#0d1117" />
     <title>GAMZAISSAC</title>

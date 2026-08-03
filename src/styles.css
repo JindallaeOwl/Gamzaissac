@@ -72,20 +72,19 @@ body {
   overscroll-behavior: none;
 }
 
+/* 크기를 vw/vh로 따로 지정하지 않는다. iOS 홈 화면 앱에서는 vh가 실제로 보이는
+   높이와 어긋날 때가 있어, inset만으로 브라우저가 계산한 화면 영역에 정확히
+   맞추는 편이 안전하다. Phaser는 이 요소를 기준으로 캔버스를 중앙 정렬한다. */
 #game-container {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
   overflow: hidden;
 }
 
-/* iOS Safari의 주소창과 홈 화면 실행 모드는 layout viewport와 실제 보이는 높이가
-   달라질 수 있다. dvh를 지원하면 Phaser의 FIT 중앙 정렬 기준을 현재 가시 영역으로
-   고정해 캔버스가 아래로 밀리는 현상을 막는다. */
+/* iOS Safari의 주소창은 스크롤에 따라 보이는 높이를 바꾼다. dvh를 지원하면
+   body 높이를 현재 가시 영역에 고정해 페이지가 밀리는 것을 막는다. */
 @supports (height: 100dvh) {
-  body,
-  #game-container {
+  body {
     height: 100dvh;
     min-height: 100dvh;
   }

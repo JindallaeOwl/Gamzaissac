@@ -48,4 +48,19 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [BootScene, TitleScene, GameScene, PauseScene, TitleTransitionScene],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+/* iOS는 기기를 돌린 직후 잠깐 회전 전 화면 크기를 보고한다. 그 순간 Phaser가
+   캔버스를 맞추면 회전 뒤에도 옛 비율이 남아 화면이 어긋난다. 회전과 가시 영역
+   변화가 끝난 뒤 한 번 더 재계산해 실제 보이는 영역에 다시 맞춘다. */
+function refreshScaleAfterViewportChange(): void {
+  window.requestAnimationFrame(() => {
+    game.scale.refresh();
+  });
+  window.setTimeout(() => {
+    game.scale.refresh();
+  }, 250);
+}
+
+window.addEventListener('orientationchange', refreshScaleAfterViewportChange);
+window.visualViewport?.addEventListener('resize', refreshScaleAfterViewportChange);
