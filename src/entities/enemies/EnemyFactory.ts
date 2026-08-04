@@ -3,6 +3,7 @@ import { ENEMY_DEFINITIONS, type EnemyId } from '../../data/enemies';
 import { ChaserEnemy } from './ChaserEnemy';
 import { DasherEnemy } from './DasherEnemy';
 import { FaultWardenBoss } from './FaultWardenBoss';
+import { FlankerEnemy } from './FlankerEnemy';
 import { PitchforkFarmerBoss } from './PitchforkFarmerBoss';
 import { RootKernelBoss } from './RootKernelBoss';
 import { ShooterEnemy } from './ShooterEnemy';
@@ -29,6 +30,9 @@ export function createEnemy(
       break;
     case 'dasher':
       enemy = new DasherEnemy(scene, x, y, definition, floor);
+      break;
+    case 'flanker':
+      enemy = new FlankerEnemy(scene, x, y, definition, floor);
       break;
     case 'splitter':
     case 'splitterling':

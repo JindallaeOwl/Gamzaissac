@@ -32,6 +32,9 @@ export const en: TranslationTree = {
     fullscreen: 'Fullscreen',
     titleScreen: 'Return to title',
   },
+  enemies: {
+    flanker: 'Sidle Hook',
+  },
   bosses: {
     faultWarden: 'Compost Warden',
     rootKernel: 'Rotten Root Core',

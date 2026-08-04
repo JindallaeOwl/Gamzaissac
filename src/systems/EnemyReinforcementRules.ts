@@ -1,8 +1,7 @@
 import { ENEMY_DEFINITIONS, type EnemyId } from '../data/enemies';
 import type { RoomType } from '../data/rooms';
-import type { RandomSource } from '../utils/random';
+import { randomOf, type RandomSource } from '../utils/random';
 
-const BASE_REINFORCEMENT_POOL: readonly EnemyId[] = ['chaser', 'shooter', 'dasher'];
 const MAX_REINFORCEMENTS = 4;
 
 /**
@@ -19,9 +18,57 @@ export function getReinforcementCount(floor: number, roomType: RoomType): number
   return Math.max(1, Math.min(MAX_REINFORCEMENTS, Math.floor((floor - 1) * 0.8)));
 }
 
-/** Enemy types eligible as reinforcements. The splitter joins from floor 2. */
+/**
+ * Floor a reinforcement type first appears on, and how many of it one room may
+ * hold. Behaviour-heavy enemies are capped so a single room cannot turn into a
+ * pack of them; the basic three stay uncapped.
+ */
+const REINFORCEMENT_ENTRIES: readonly {
+  id: EnemyId;
+  fromFloor: number;
+  maxPerRoom?: number;
+}[] = [
+  { id: 'chaser', fromFloor: 1 },
+  { id: 'shooter', fromFloor: 1 },
+  { id: 'dasher', fromFloor: 1 },
+  { id: 'splitter', fromFloor: 2 },
+  { id: 'flanker', fromFloor: 3, maxPerRoom: 2 },
+];
+
+/** Enemy types eligible as reinforcements on a floor, ignoring per-room caps. */
 export function getReinforcementPool(floor: number): EnemyId[] {
-  return floor >= 2 ? [...BASE_REINFORCEMENT_POOL, 'splitter'] : [...BASE_REINFORCEMENT_POOL];
+  return REINFORCEMENT_ENTRIES.filter((entry) => floor >= entry.fromFloor).map((entry) => entry.id);
+}
+
+/**
+ * The actual reinforcement line-up for one room.
+ *
+ * Picking `count` times from {@link getReinforcementPool} would let the same
+ * type come up repeatedly, so a capped type is dropped from this room's
+ * candidates once it hits its limit. The basic three have no cap and keep the
+ * pool from ever emptying.
+ */
+export function getReinforcementIds(floor: number, count: number, random: RandomSource): EnemyId[] {
+  const candidates = REINFORCEMENT_ENTRIES.filter((entry) => floor >= entry.fromFloor);
+  const remaining = new Map<EnemyId, number>(
+    candidates.map((entry) => [entry.id, entry.maxPerRoom ?? Number.POSITIVE_INFINITY]),
+  );
+  const picked: EnemyId[] = [];
+
+  for (let i = 0; i < count; i += 1) {
+    const available = candidates.filter((entry) => (remaining.get(entry.id) ?? 0) > 0);
+
+    if (available.length === 0) {
+      break;
+    }
+
+    const chosen = randomOf(available, random);
+
+    picked.push(chosen.id);
+    remaining.set(chosen.id, (remaining.get(chosen.id) ?? 0) - 1);
+  }
+
+  return picked;
 }
 
 export interface SplitBounds {

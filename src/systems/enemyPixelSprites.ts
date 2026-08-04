@@ -208,6 +208,28 @@ export const buildShooter: EnemySpriteBuilder = (s) => {
   s.mirror();
 };
 
+/** 좌우로 뻗은 갈고리가 실루엣을 지배한다 — 옆으로 파고드는 적임을 알린다. */
+export const buildFlanker: EnemySpriteBuilder = (s) => {
+  s.disc(7.5, 8, 4.2, { shade: 0x1f6b52, base: 0x38a87a, light: 0x8ff0c4 });
+
+  // 왼쪽 갈고리만 그리면 mirror가 오른쪽을 만들어 좌우 대칭을 보장한다.
+  for (const [x, y] of [
+    [2, 5],
+    [1, 6],
+    [1, 7],
+    [1, 8],
+    [2, 9],
+    [3, 10],
+  ]) {
+    s.set(x, y, 0x38a87a);
+  }
+
+  s.set(2, 6, 0x8ff0c4);
+  s.outline(0x0d2b22);
+  s.eye(5, 7, 0x08201a, 0xd8fff0);
+  s.mirror();
+};
+
 export const buildDasher: EnemySpriteBuilder = (s) => {
   s.wedge(7.5, 2, 15, 6, { shade: 0x7c54d6, base: 0xa97cff, light: 0xe6d8ff });
   s.outline(0x241640);

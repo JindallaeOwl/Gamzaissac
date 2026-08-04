@@ -3,6 +3,7 @@ import {
   getAllowedSummonCount,
   getBossSummonSpawns,
   getReinforcementCount,
+  getReinforcementIds,
   getReinforcementPool,
   getSplitChildSpawns,
   type SplitBounds,
@@ -40,6 +41,36 @@ describe('reinforcement pool', () => {
 
   it('includes the splitter from floor 2', () => {
     expect(getReinforcementPool(2)).toContain('splitter');
+  });
+});
+
+describe('reinforcement line-up', () => {
+  // Always picks the last candidate, which is where the capped types sit.
+  const alwaysLast = () => 0.999999;
+
+  it('keeps the Flanker out of the first two floors', () => {
+    expect(getReinforcementPool(2)).not.toContain('flanker');
+    expect(getReinforcementIds(2, 4, alwaysLast)).not.toContain('flanker');
+    expect(getReinforcementPool(3)).toContain('flanker');
+  });
+
+  it('allows at most two Flankers in one room', () => {
+    const picked = getReinforcementIds(3, 4, alwaysLast);
+
+    expect(picked).toHaveLength(4);
+    expect(picked.filter((id) => id === 'flanker')).toHaveLength(2);
+  });
+
+  it('fills the rest of the room from the uncapped types', () => {
+    const picked = getReinforcementIds(6, 4, alwaysLast);
+
+    // The cap must not shorten the line-up: every slot is still filled.
+    expect(picked).toHaveLength(4);
+    expect(picked.filter((id) => id !== 'flanker').length).toBeGreaterThan(0);
+  });
+
+  it('returns nothing when no reinforcements were requested', () => {
+    expect(getReinforcementIds(6, 0, alwaysLast)).toEqual([]);
   });
 });
 

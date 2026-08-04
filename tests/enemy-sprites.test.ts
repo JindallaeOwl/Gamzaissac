@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildChaser,
   buildDasher,
+  buildFlanker,
   buildPitchforkFarmer,
   buildShooter,
   buildSplitter,
@@ -18,6 +19,7 @@ const BUILDERS: Record<string, EnemySpriteBuilder> = {
   chaser: buildChaser,
   shooter: buildShooter,
   dasher: buildDasher,
+  flanker: buildFlanker,
   splitter: buildSplitter,
   splitterling: buildSplitterling,
   wormKing: buildWormKing,

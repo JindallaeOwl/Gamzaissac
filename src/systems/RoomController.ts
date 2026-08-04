@@ -25,7 +25,7 @@ import {
   getAllowedSummonCount,
   getBossSummonSpawns,
   getReinforcementCount,
-  getReinforcementPool,
+  getReinforcementIds,
   getSplitChildSpawns,
 } from './EnemyReinforcementRules';
 import {
@@ -365,11 +365,12 @@ export class RoomController {
       ...scaleRoomTemplatePoint(spawn.x, spawn.y),
     }));
     const extraEnemies = getReinforcementCount(this.runState.floor, room.type);
-    const extraPool = getReinforcementPool(this.runState.floor);
 
-    for (let i = 0; i < extraEnemies; i += 1) {
+    // The rule function applies the per-room caps, so a room can never fill up
+    // with the same behaviour-heavy reinforcement.
+    for (const enemyId of getReinforcementIds(this.runState.floor, extraEnemies, this.random)) {
       spawnSet.push({
-        enemyId: randomOf(extraPool, this.random),
+        enemyId,
         x: randomInt(ROOM_RECT.left + 64, ROOM_RECT.right - 64, this.random),
         y: randomInt(ROOM_RECT.top + 32, ROOM_RECT.bottom - 32, this.random),
       });

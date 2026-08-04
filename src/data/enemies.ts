@@ -11,6 +11,7 @@ export type EnemyId =
   | 'chaser'
   | 'shooter'
   | 'dasher'
+  | 'flanker'
   | 'splitter'
   | 'splitterling'
   | 'rootGnarl'
@@ -43,6 +44,18 @@ export interface EnemyDefinition {
   wanderSpeed?: number;
   splitChildId?: EnemyId;
   splitChildCount?: number;
+  // 측면 포위(Flanker) 전용. 링 위 목표점 선정과 돌진 개시 조건을 조정한다.
+  flankRingRadius?: number;
+  flankArcDegrees?: number;
+  flankArrivalTolerance?: number;
+  flankRetargetMs?: number;
+  lungeRange?: number;
+  lungeAngleToleranceDegrees?: number;
+  lungeWindupMs?: number;
+  lungeSpeed?: number;
+  lungeDurationMs?: number;
+  lungeRecoveryMs?: number;
+  lungeCooldownMs?: number;
   // 표시·히트박스 확대 배율. 중간보스가 일반 적 텍스처를 임시 재사용할 때 사용하며,
   // Arcade body는 스프라이트 배율을 따라가므로 bodyRadius는 원본 기준으로 적는다.
   displayScale?: number;
@@ -92,6 +105,29 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     dashDurationMs: 280,
     dashSpeed: 170,
     wanderSpeed: 54,
+  },
+  flanker: {
+    id: 'flanker',
+    kind: 'normal',
+    displayName: 'Sidle Hook',
+    displayNameKey: 'enemies.flanker',
+    textureKey: TextureKeys.enemyFlanker,
+    maxHealth: 3.0,
+    speed: 80,
+    contactDamage: PLAYER_DAMAGE_PER_HIT,
+    bodyRadius: 11,
+    score: 26,
+    flankRingRadius: 86,
+    flankArcDegrees: 68,
+    flankArrivalTolerance: 16,
+    flankRetargetMs: 1400,
+    lungeRange: 110,
+    lungeAngleToleranceDegrees: 18,
+    lungeWindupMs: 300,
+    lungeSpeed: 190,
+    lungeDurationMs: 280,
+    lungeRecoveryMs: 560,
+    lungeCooldownMs: 900,
   },
   splitter: {
     id: 'splitter',

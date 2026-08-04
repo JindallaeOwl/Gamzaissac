@@ -4,6 +4,7 @@ import { PASSIVE_ITEMS, type ItemCategory } from '../data/items';
 import {
   buildChaser,
   buildDasher,
+  buildFlanker,
   buildPitchforkFarmer,
   buildShooter,
   buildSplitter,
@@ -41,6 +42,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createChaserTexture(scene);
   createShooterTexture(scene);
   createDasherTexture(scene);
+  createFlankerTexture(scene);
   createSplitterTexture(scene);
   createSplitterlingTexture(scene);
   createBossTexture(scene);
@@ -334,6 +336,10 @@ function createShooterTexture(scene: Phaser.Scene): void {
 
 function createDasherTexture(scene: Phaser.Scene): void {
   drawEnemyTexture(scene, TextureKeys.enemyDasher, buildDasher);
+}
+
+function createFlankerTexture(scene: Phaser.Scene): void {
+  drawEnemyTexture(scene, TextureKeys.enemyFlanker, buildFlanker);
 }
 
 function createSplitterTexture(scene: Phaser.Scene): void {

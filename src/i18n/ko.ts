@@ -32,6 +32,9 @@ export const ko: TranslationTree = {
     fullscreen: '전체화면',
     titleScreen: '타이틀로 돌아가기',
   },
+  enemies: {
+    flanker: '옆파고드는 갈고리',
+  },
   bosses: {
     faultWarden: '퇴비 파수꾼',
     rootKernel: '썩은 뿌리핵',
