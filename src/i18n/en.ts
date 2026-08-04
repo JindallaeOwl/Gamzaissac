@@ -270,6 +270,39 @@ export const en: TranslationTree = {
       name: 'Star Fertilizer',
       description: 'Raises the damage multiplier and range. Stacks up to 2 times.',
     },
+    twinSeed: {
+      name: 'Twin Seed',
+      description: 'Splits off one extra seed, at the cost of a little damage per shot.',
+    },
+    soilGlove: {
+      name: 'Soil Glove',
+      description: 'Raises damage and luck together. Stacks up to 3 times.',
+    },
+    heavyGravel: {
+      name: 'Heavy Gravel',
+      description: 'Seeds grow larger and hit harder, but travel more slowly.',
+    },
+    thinRind: {
+      name: 'Thin Rind',
+      description: 'Costs one maximum heart for a large boost to move speed and fire rate.',
+    },
+    silverDew: {
+      name: 'Silver Dew',
+      description: 'Greatly raises luck and restores one heart.',
+    },
+    spikeRind: {
+      name: 'Spike Rind',
+      description: 'Raises damage and adds half a maximum heart, but weighs you down.',
+    },
+    deepRoot: {
+      name: 'Deep Root',
+      description: 'Greatly raises maximum hearts and range at the cost of move speed.',
+    },
+    boreAwl: {
+      name: 'Bore Awl',
+      description:
+        'Seeds carry excess killing damage on to the enemy behind, but fire slightly more slowly.',
+    },
   },
   rarities: {
     common: 'Common',

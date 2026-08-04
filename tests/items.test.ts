@@ -1,7 +1,100 @@
 import { describe, expect, it } from 'vitest';
-import { findItemByReference, formatItemNumber, PASSIVE_ITEMS } from '../src/data/items';
-import { ItemSystem } from '../src/systems/ItemSystem';
+import { PLAYER_HEALTH_UNITS_PER_HEART } from '../src/config/gameConfig';
+import { BOSS_REWARD_ITEM_IDS } from '../src/data/bossRewards';
+import {
+  findItemByReference,
+  formatItemNumber,
+  ITEM_DROP_TABLES,
+  PASSIVE_ITEMS,
+  type ItemDropSource,
+  type ItemRarity,
+  type PassiveItemDefinition,
+} from '../src/data/items';
+import { isItemAtStackLimit, isStatOnlyBossReward, ItemSystem } from '../src/systems/ItemSystem';
+import { getEffectiveDamage, getEffectiveFireRate } from '../src/systems/PlayerStatSystem';
 import { createInitialRunState } from '../src/systems/RunState';
+
+const RARITY_ORDER: readonly ItemRarity[] = ['common', 'uncommon', 'rare', 'legendary'];
+
+function itemById(id: string) {
+  const item = PASSIVE_ITEMS.find((candidate) => candidate.id === id);
+
+  if (!item) {
+    throw new Error(`Unknown item: ${id}`);
+  }
+
+  return item;
+}
+
+function expectedPoolForSource(
+  source: ItemDropSource,
+  collectedItemIds: readonly string[] = [],
+): PassiveItemDefinition[] {
+  const bossRewardIds = new Set(BOSS_REWARD_ITEM_IDS);
+
+  return PASSIVE_ITEMS.filter(
+    (item) =>
+      item.dropSources.includes(source) &&
+      !isItemAtStackLimit(item, collectedItemIds) &&
+      (source !== 'boss' || (bossRewardIds.has(item.id) && isStatOnlyBossReward(item))),
+  );
+}
+
+function pickForSource(
+  system: ItemSystem,
+  source: ItemDropSource,
+  collectedItemIds: readonly string[],
+): PassiveItemDefinition | null {
+  return source === 'boss'
+    ? system.pickBossRewardItem(collectedItemIds)
+    : system.pickItemForSource(source, collectedItemIds);
+}
+
+/**
+ * Targets every eligible item with the midpoint of its rarity band and its
+ * index slot. Unlike a fixed random sweep, this still covers a 1% rarity or a
+ * pool with more than 40 entries.
+ */
+function reachableItemIds(
+  source: ItemDropSource,
+  collectedItemIds: readonly string[] = [],
+): Set<string> {
+  const pool = expectedPoolForSource(source, collectedItemIds);
+  const weights = ITEM_DROP_TABLES[source].rarityWeights;
+  const availableRarities = RARITY_ORDER.filter(
+    (rarity) => weights[rarity] > 0 && pool.some((item) => item.rarity === rarity),
+  );
+  const totalWeight = availableRarities.reduce((sum, rarity) => sum + weights[rarity], 0);
+  const targets =
+    totalWeight > 0 ? pool.filter((item) => availableRarities.includes(item.rarity)) : pool;
+  const ids = new Set<string>();
+
+  for (const target of targets) {
+    const sameRarity = pool.filter((item) => item.rarity === target.rarity);
+    const targetIndex = sameRarity.findIndex((item) => item.id === target.id);
+    const indexRoll = (targetIndex + 0.5) / sameRarity.length;
+    const rarityIndex = availableRarities.indexOf(target.rarity);
+    const weightBeforeTarget = availableRarities
+      .slice(0, rarityIndex)
+      .reduce((sum, rarity) => sum + weights[rarity], 0);
+    const rolls =
+      totalWeight > 0
+        ? [(weightBeforeTarget + weights[target.rarity] / 2) / totalWeight, indexRoll]
+        : [(pool.indexOf(target) + 0.5) / pool.length];
+    let call = 0;
+    const system = new ItemSystem(() => rolls[Math.min(call++, rolls.length - 1)]);
+    const picked = pickForSource(system, source, collectedItemIds);
+
+    if (!picked) {
+      throw new Error(`${source} did not return the targeted item ${target.id}`);
+    }
+
+    expect(picked.id, `${source} should reach ${target.id}`).toBe(target.id);
+    ids.add(picked.id);
+  }
+
+  return ids;
+}
 
 describe('ItemSystem', () => {
   it('assigns unique shared catalog numbers with three-digit display labels', () => {
@@ -34,18 +127,36 @@ describe('ItemSystem', () => {
     expect(state.stats.fireRateMultiplier).toBe(1);
   });
 
-  it('selects an unseen item from the regular reward pool', () => {
-    const system = new ItemSystem(() => 0);
+  it('only offers items whose drop sources include the pool being rolled', () => {
+    for (const id of reachableItemIds('combat')) {
+      expect(itemById(id).dropSources, id).toContain('combat');
+    }
 
-    expect(system.pickRewardItem(['quad-shot'])?.id).toBe('pulse-relay');
+    for (const id of reachableItemIds('treasure')) {
+      expect(itemById(id).dropSources, id).toContain('treasure');
+    }
+
+    for (const id of reachableItemIds('shop')) {
+      expect(itemById(id).dropSources, id).toContain('shop');
+    }
+  });
+
+  it('drops an item out of the pool once it reaches its stack limit', () => {
+    const stackable = PASSIVE_ITEMS.find(
+      (item) => item.maxStacks > 1 && item.dropSources.includes('combat'),
+    )!;
+    const maxedOut = Array.from({ length: stackable.maxStacks }, () => stackable.id);
+
+    expect(reachableItemIds('combat')).toContain(stackable.id);
+    expect(reachableItemIds('combat', maxedOut)).not.toContain(stackable.id);
   });
 
   it('can select the Prism Lance only from the treasure pool', () => {
-    const pickLast = () => 0.999999;
-    const system = new ItemSystem(pickLast);
-
-    expect(system.pickRewardItem([])?.id).not.toBe('prism-lance');
-    expect(system.pickTreasureItem([])?.id).toBe('prism-lance');
+    // Asserted against the definition rather than a pool ordering, so adding
+    // items never silently changes what this test is checking.
+    expect(itemById('prism-lance').dropSources).toEqual(['treasure']);
+    expect(reachableItemIds('treasure')).toContain('prism-lance');
+    expect(reachableItemIds('combat')).not.toContain('prism-lance');
   });
 
   it('updates the run state when an item is acquired', () => {
@@ -104,8 +215,8 @@ describe('ItemSystem', () => {
     expect(state.unlockedAbilityIds).toContain('charge-beam');
   });
 
-  it('defines rarity, category, source pools, and stack limits for all 25 passives', () => {
-    expect(PASSIVE_ITEMS).toHaveLength(25);
+  it('defines rarity, category, source pools, and stack limits for all 33 passives', () => {
+    expect(PASSIVE_ITEMS).toHaveLength(33);
     expect(
       PASSIVE_ITEMS.every(
         (item) =>
@@ -160,5 +271,116 @@ describe('ItemSystem', () => {
     expect(alwaysHigh.pickItemForSource('treasure', [])?.rarity).toBe('legendary');
     expect(alwaysLow.rollCombatRewardItem([], 0)).not.toBeNull();
     expect(alwaysHigh.rollCombatRewardItem([], 10)).toBeNull();
+  });
+});
+
+describe('hand-pixeled item batch', () => {
+  it('spends a whole heart on the Thin Rind and never drops max health below half', () => {
+    const system = new ItemSystem(() => 0);
+    const state = createInitialRunState();
+    const thinRind = itemById('thin-rind');
+
+    // Two health units are one heart, matching what the description promises.
+    const afterOne = system.applyItem(state.stats, thinRind);
+
+    expect(state.stats.maxHealth - afterOne.maxHealth).toBe(PLAYER_HEALTH_UNITS_PER_HEART);
+    expect(afterOne.moveSpeed).toBeGreaterThan(state.stats.moveSpeed);
+    expect(afterOne.fireRate).toBeGreaterThan(state.stats.fireRate);
+
+    // Applying it far past the starting hearts must floor rather than kill.
+    let stats = state.stats;
+
+    for (let round = 0; round < 6; round += 1) {
+      stats = system.applyItem(stats, thinRind);
+      expect(stats.maxHealth).toBeGreaterThanOrEqual(1);
+      expect(stats.health).toBeGreaterThan(0);
+      expect(stats.health).toBeLessThanOrEqual(stats.maxHealth);
+    }
+
+    expect(stats.maxHealth).toBe(1);
+  });
+
+  it('restores a full heart with the Silver Dew without passing the cap', () => {
+    const system = new ItemSystem(() => 0);
+    const state = createInitialRunState();
+    const silverDew = itemById('silver-dew');
+
+    state.stats = { ...state.stats, health: 1 };
+    const healed = system.applyItem(state.stats, silverDew);
+
+    expect(healed.health - 1).toBe(PLAYER_HEALTH_UNITS_PER_HEART);
+    expect(healed.luck).toBeCloseTo(state.stats.luck + 1.5);
+
+    const alreadyFull = system.applyItem(
+      { ...state.stats, health: state.stats.maxHealth },
+      silverDew,
+    );
+
+    expect(alreadyFull.health).toBe(alreadyFull.maxHealth);
+  });
+
+  it('splits one extra Twin Seed projectile and stays unique', () => {
+    const system = new ItemSystem(() => 0);
+    const state = createInitialRunState();
+    const twinSeed = itemById('twin-seed');
+    const baseDamage = state.stats.damage;
+
+    expect(system.acquireItem(state, twinSeed).acquired).toBe(true);
+    expect(state.attackProfile.seedCount).toBe(2);
+    expect(state.stats.damage).toBeCloseTo(baseDamage - 0.15);
+
+    // A second copy must be refused: stacking would push this common item past
+    // the rare Quad Shot on single-target damage.
+    expect(system.acquireItem(state, twinSeed).acquired).toBe(false);
+    expect(state.attackProfile.seedCount).toBe(2);
+    expect(state.stats.damage).toBeCloseTo(baseDamage - 0.15);
+  });
+
+  it('keeps the common Twin Seed within 5% of the rare Quad Shot on sustained damage', () => {
+    const system = new ItemSystem(() => 0);
+    const twinSeedRun = createInitialRunState();
+    const quadShotRun = createInitialRunState();
+    const maxTwinToQuadDamageRatio = 1.05;
+
+    system.acquireItem(twinSeedRun, itemById('twin-seed'));
+    system.acquireItem(quadShotRun, itemById('quad-shot'));
+
+    const sustained = (run: ReturnType<typeof createInitialRunState>): number =>
+      run.attackProfile.seedCount * getEffectiveDamage(run.stats) * getEffectiveFireRate(run.stats);
+
+    expect(sustained(twinSeedRun)).toBeLessThanOrEqual(
+      sustained(quadShotRun) * maxTwinToQuadDamageRatio,
+    );
+  });
+
+  it('grants overflow carry-through on the Bore Awl at the cost of fire rate', () => {
+    const system = new ItemSystem(() => 0);
+    const state = createInitialRunState();
+    const boreAwl = itemById('bore-awl');
+
+    expect(state.attackProfile.overflowPenetration).toBe(false);
+
+    const profile = system.applyAttackProfile(state.attackProfile, boreAwl);
+    const stats = system.applyItem(state.stats, boreAwl);
+
+    expect(profile.overflowPenetration).toBe(true);
+    expect(stats.fireRate).toBeCloseTo(state.stats.fireRate - 0.15);
+    expect(stats.projectileSpeed).toBe(state.stats.projectileSpeed + 25);
+  });
+
+  it('lists the two new stat-only items as reachable boss rewards', () => {
+    for (const id of ['spike-rind', 'deep-root']) {
+      const item = itemById(id);
+
+      expect(item.dropSources, id).toContain('boss');
+      expect(BOSS_REWARD_ITEM_IDS, id).toContain(id);
+      // Boss rooms reject attack-changing passives, so these must stay stat-only.
+      expect(isStatOnlyBossReward(item), id).toBe(true);
+    }
+
+    const reachable = reachableItemIds('boss');
+
+    expect(reachable).toContain('spike-rind');
+    expect(reachable).toContain('deep-root');
   });
 });

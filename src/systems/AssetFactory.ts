@@ -13,6 +13,7 @@ import {
   drawEnemyTexture,
   PixelSprite,
 } from './enemyPixelSprites';
+import { createItemPixelIcon } from './itemPixelIcons';
 import {
   buildSoilBase,
   buildSoilCracks,
@@ -532,9 +533,19 @@ function createDoorTexture(scene: Phaser.Scene, key: string, width: number, heig
 // tell apart at a glance).
 function createPassiveItemIcons(scene: Phaser.Scene): void {
   for (const item of PASSIVE_ITEMS) {
-    if (!scene.textures.exists(itemIconKey(item.id))) {
-      createItemIcon(scene, item.id, item.tint, item.category);
+    const key = itemIconKey(item.id);
+
+    if (scene.textures.exists(key)) {
+      continue;
     }
+
+    // Items with hand-pixeled art use it; the rest keep the older badge icon
+    // until their art is drawn.
+    if (createItemPixelIcon(scene, item.id, key)) {
+      continue;
+    }
+
+    createItemIcon(scene, item.id, item.tint, item.category);
   }
 }
 

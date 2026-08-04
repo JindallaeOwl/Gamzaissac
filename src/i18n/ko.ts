@@ -270,6 +270,38 @@ export const ko: TranslationTree = {
       name: '별빛 비료',
       description: '공격력 배율과 사거리가 오릅니다. 최대 2회 중첩됩니다.',
     },
+    twinSeed: {
+      name: '쌍둥이 씨앗',
+      description: '씨앗이 하나 더 갈라져 나갑니다. 대신 한 발의 위력은 조금 약해집니다.',
+    },
+    soilGlove: {
+      name: '흙 묻은 장갑',
+      description: '공격력과 행운이 함께 오릅니다. 최대 3회 중첩됩니다.',
+    },
+    heavyGravel: {
+      name: '무거운 자갈',
+      description: '씨앗이 크고 아파지지만 느리게 날아갑니다.',
+    },
+    thinRind: {
+      name: '얇은 껍질',
+      description: '최대 하트 1개를 잃는 대신 이동 속도와 연사가 크게 빨라집니다.',
+    },
+    silverDew: {
+      name: '은빛 이슬',
+      description: '행운이 크게 오르고 하트 1개를 회복합니다.',
+    },
+    spikeRind: {
+      name: '가시 껍질',
+      description: '공격력이 오르고 최대 체력이 반 칸 늘지만 몸이 무거워집니다.',
+    },
+    deepRoot: {
+      name: '깊은 뿌리',
+      description: '최대 하트와 사거리가 크게 오릅니다. 대신 발이 느려집니다.',
+    },
+    boreAwl: {
+      name: '관통 송곳',
+      description: '적을 처치하고 남은 피해가 뒤의 적에게 이어집니다. 대신 연사가 조금 느려집니다.',
+    },
   },
   rarities: {
     common: '일반',
