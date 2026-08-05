@@ -1,3 +1,4 @@
+import { ENEMY_DEFINITIONS } from '../data/enemies';
 import { formatItemNumber, PASSIVE_ITEMS } from '../data/items';
 import { TOTAL_FLOORS } from '../data/stages';
 
@@ -19,6 +20,7 @@ const COMMAND_SUGGESTIONS: readonly DeveloperConsoleSuggestion[] = [
   { completion: 'shop', label: 'shop — 상점방 이동' },
   { completion: 'treasure', label: 'treasure — 보물방 이동' },
   { completion: 'spawn ', label: 'spawn <번호 또는 ID> — 대상 생성' },
+  { completion: 'enemy ', label: 'enemy <적 ID> — 현재 방에 적 생성' },
   { completion: 'sale', label: 'sale — 상점 상품 할인' },
   { completion: 'floor ', label: `floor <층> — 지정한 층으로 이동 (1~${TOTAL_FLOORS})` },
   { completion: 'clear', label: 'clear — 콘솔 출력 지우기' },
@@ -50,6 +52,18 @@ export function getDeveloperConsoleSuggestions(
   }
 
   const [command, ...argumentParts] = input.split(/\s+/);
+
+  if (command === 'enemy') {
+    const argument = argumentParts.join(' ');
+
+    return Object.values(ENEMY_DEFINITIONS)
+      .filter((definition) => !argument || definition.id.toLowerCase().startsWith(argument))
+      .map((definition) => ({
+        completion: `enemy ${definition.id}`,
+        label: `enemy ${definition.id} — ${definition.displayName}`,
+      }))
+      .slice(0, limit);
+  }
 
   if (command !== 'spawn') {
     return [];

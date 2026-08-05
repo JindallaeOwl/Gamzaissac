@@ -8,6 +8,28 @@ import { getDeveloperConsoleSuggestions } from '../src/systems/DeveloperConsoleA
 import { createInitialRunState, isRunEligibleForRanking } from '../src/systems/RunState';
 
 describe('developer console commands', () => {
+  it('parses the enemy spawn command and lists ids when none is given', () => {
+    expect(parseDeveloperCommand('enemy flanker')).toEqual({
+      ok: true,
+      command: { type: 'enemy', enemyId: 'flanker' },
+    });
+    // Ids are matched case-insensitively so wormKing does not need exact typing.
+    expect(parseDeveloperCommand('enemy WormKing')).toEqual({
+      ok: true,
+      command: { type: 'enemy', enemyId: 'wormking' },
+    });
+    // Bare `enemy` is a request for the list, not an error.
+    expect(parseDeveloperCommand('enemy')).toEqual({
+      ok: true,
+      command: { type: 'enemy', enemyId: '' },
+    });
+    expect(parseDeveloperCommand('enemy a b')).toMatchObject({ ok: false });
+  });
+
+  it('documents the enemy command in the help text', () => {
+    expect(DEVELOPER_CONSOLE_HELP.some((line) => line.startsWith('enemy '))).toBe(true);
+  });
+
   it('parses the supported commands', () => {
     expect(parseDeveloperCommand('help')).toEqual({ ok: true, command: { type: 'help' } });
     expect(parseDeveloperCommand('god')).toEqual({ ok: true, command: { type: 'god' } });
@@ -62,7 +84,7 @@ describe('developer console commands', () => {
       command: { type: 'floor', floor: 2 },
     });
     expect(parseDeveloperCommand('clear')).toEqual({ ok: true, command: { type: 'clear' } });
-    expect(DEVELOPER_CONSOLE_HELP).toHaveLength(20);
+    expect(DEVELOPER_CONSOLE_HELP).toHaveLength(22);
   });
 
   it('rejects unsafe amounts, malformed arguments, and unknown commands', () => {

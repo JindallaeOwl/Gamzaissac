@@ -4,6 +4,7 @@ import { GAME_CENTER_X, ROOM_RECT } from '../config/gameConfig';
 import { ItemPickup } from '../entities/ItemPickup';
 import type { Player } from '../entities/Player';
 import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
+import { ENEMY_DEFINITIONS, type EnemyId } from '../data/enemies';
 import { findItemByReference, formatItemNumber, PASSIVE_ITEMS } from '../data/items';
 import { ROOM_CLEAR_REWARDS } from '../data/rewards';
 import { getShopProduct, type ShopProductDefinition } from '../data/shop';
@@ -167,6 +168,10 @@ export class DeveloperConsoleController {
       return this.spawnItem(command.itemId);
     }
 
+    if (command.type === 'enemy') {
+      return this.spawnEnemy(command.enemyId);
+    }
+
     if (command.type === 'sale') {
       return this.forceShopSale();
     }
@@ -176,6 +181,41 @@ export class DeveloperConsoleController {
     }
 
     return { lines: ['실행할 수 없는 명령어입니다.'] };
+  }
+
+  /**
+   * Places one enemy of the requested type near the player.
+   *
+   * Some enemies only appear from a certain floor, and then only as a random
+   * reinforcement, so waiting for one to turn up makes testing a new behaviour
+   * impractical. An empty id lists what can be spawned.
+   */
+  private spawnEnemy(enemyId: string): DeveloperConsoleCommandResult {
+    const ids = Object.keys(ENEMY_DEFINITIONS) as EnemyId[];
+
+    if (!enemyId) {
+      return { lines: ['생성 가능한 적:', ...ids.map((id) => `  ${id}`)] };
+    }
+
+    const match = ids.find((id) => id.toLowerCase() === enemyId);
+
+    if (!match) {
+      return {
+        lines: [`알 수 없는 적: ${enemyId}`, '이름 없이 enemy를 입력하면 목록이 나옵니다.'],
+      };
+    }
+
+    if (this.config.isRunEnded()) {
+      return { lines: ['런이 끝난 뒤에는 적을 생성할 수 없습니다.'] };
+    }
+
+    const enemy = this.config.roomController.spawnDeveloperEnemy(
+      match,
+      this.config.player.x,
+      this.config.player.y,
+    );
+
+    return { lines: [`${enemy.getDisplayName()} 생성 (${match})`] };
   }
 
   private killActiveEnemies(): DeveloperConsoleCommandResult {

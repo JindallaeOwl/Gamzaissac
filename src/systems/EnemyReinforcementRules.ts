@@ -71,6 +71,29 @@ export function getReinforcementIds(floor: number, count: number, random: Random
   return picked;
 }
 
+/**
+ * Where a developer-console spawn lands: out at roughly flanking distance from
+ * the player, on whichever side has room, and always inside the walls. Placing
+ * it on top of the player would skip the approach that is usually the thing
+ * being tested.
+ */
+export function getDeveloperSpawnPoint(
+  playerX: number,
+  playerY: number,
+  bodyRadius: number,
+  bounds: SplitBounds,
+  offset = 90,
+): { x: number; y: number } {
+  const margin = bodyRadius + 2;
+  const right = playerX + offset;
+  const preferred = right <= bounds.right - margin ? right : playerX - offset;
+
+  return {
+    x: clamp(preferred, bounds.left + margin, bounds.right - margin),
+    y: clamp(playerY, bounds.top + margin, bounds.bottom - margin),
+  };
+}
+
 export interface SplitBounds {
   left: number;
   right: number;

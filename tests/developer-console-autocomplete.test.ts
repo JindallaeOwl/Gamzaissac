@@ -2,6 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { getDeveloperConsoleSuggestions } from '../src/systems/DeveloperConsoleAutocomplete';
 
 describe('developer console autocomplete', () => {
+  it('completes enemy ids after the enemy command', () => {
+    expect(getDeveloperConsoleSuggestions('enemy fl')[0]).toMatchObject({
+      completion: 'enemy flanker',
+    });
+
+    const all = getDeveloperConsoleSuggestions('enemy ', 40);
+
+    expect(all.length).toBeGreaterThan(5);
+    expect(all.every((suggestion) => suggestion.completion.startsWith('enemy '))).toBe(true);
+    expect(getDeveloperConsoleSuggestions('enemy zzz')).toEqual([]);
+  });
+
   it('suggests command names from a partial prefix', () => {
     expect(getDeveloperConsoleSuggestions('sp')[0]).toMatchObject({
       completion: 'spawn ',

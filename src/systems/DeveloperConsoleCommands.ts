@@ -13,6 +13,7 @@ export type DeveloperCommand =
   | { type: 'shop' }
   | { type: 'treasure' }
   | { type: 'spawn'; itemId: string }
+  | { type: 'enemy'; enemyId: string }
   | { type: 'sale' }
   | { type: 'floor'; floor: number };
 
@@ -37,6 +38,8 @@ export const DEVELOPER_CONSOLE_HELP = [
   'spawn coin           노란색 1코인 생성',
   'spawn five-coin      회색 5코인 생성',
   'spawn heart          회복 하트 생성',
+  'enemy flanker        현재 방에 적 생성',
+  'enemy               이름 없이 입력하면 사용 가능한 적 목록',
   'sale                  현재 상점 상품 하나 강제 할인',
   `floor 2              지정한 층으로 이동 (1~${TOTAL_FLOORS})`,
   'clear                 콘솔 출력 지우기',
@@ -98,6 +101,15 @@ export function parseDeveloperCommand(input: string): DeveloperCommandParseResul
     }
 
     return { ok: true, command: { type: 'spawn', itemId: args[0].toLowerCase() } };
+  }
+
+  // 적 이름을 빼고 부르면 목록을 보여준다. 적 ID를 외우고 있을 이유가 없다.
+  if (name === 'enemy') {
+    if (args.length > 1) {
+      return usageError('enemy <enemy-id>');
+    }
+
+    return { ok: true, command: { type: 'enemy', enemyId: args[0]?.toLowerCase() ?? '' } };
   }
 
   if (name === 'floor') {

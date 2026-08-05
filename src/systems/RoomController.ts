@@ -24,6 +24,7 @@ import { getStageProgress, resolveRoomAccentColor } from '../data/stages';
 import {
   getAllowedSummonCount,
   getBossSummonSpawns,
+  getDeveloperSpawnPoint,
   getReinforcementCount,
   getReinforcementIds,
   getSplitChildSpawns,
@@ -473,6 +474,34 @@ export class RoomController {
         this.registerSpawnedEnemy(child, spawn.enemyId);
       }
     });
+  }
+
+  /**
+   * Drops one enemy into the current room for the developer console.
+   *
+   * Routed through registerSpawnedEnemy like every other spawn so the split and
+   * defeat wiring is identical to a naturally placed enemy — a console spawn
+   * that behaved differently would be useless for testing.
+   */
+  spawnDeveloperEnemy(enemyId: EnemyId, playerX: number, playerY: number): BaseEnemy {
+    const position = getDeveloperSpawnPoint(
+      playerX,
+      playerY,
+      ENEMY_DEFINITIONS[enemyId].bodyRadius,
+      ROOM_RECT,
+    );
+    const enemy = createEnemy(
+      this.scene,
+      this.enemies,
+      enemyId,
+      position.x,
+      position.y,
+      this.runState.floor,
+    );
+
+    this.registerSpawnedEnemy(enemy, enemyId);
+
+    return enemy;
   }
 
   private spawnSplitChildren(parent: BaseEnemy, parentId: EnemyId): void {
