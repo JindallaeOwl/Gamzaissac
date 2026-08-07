@@ -199,6 +199,7 @@ describe('summon target validation', () => {
   it('rejects targets that would multiply without bound', () => {
     // Splitters turn one kill into more enemies, so summoning them compounds.
     expect(validateSummonTarget('splitter')).toBe('splitParent');
+    expect(validateSummonTarget('summoner')).toBe('summoner');
     expect(validateSummonTarget('wriggleMass')).toBe('splitParent');
     expect(validateSummonTarget('splitterling')).toBeNull();
     expect(validateSummonTarget('chaser')).toBeNull();

@@ -230,6 +230,28 @@ export const buildFlanker: EnemySpriteBuilder = (s) => {
   s.mirror();
 };
 
+/** 위로 치켜든 팔이 실루엣을 만든다 — 부르는 동작. */
+export const buildSummoner: EnemySpriteBuilder = (s) => {
+  s.disc(7.5, 10, 4.6, { shade: 0x6b4a12, base: 0xb8862a, light: 0xffd77a });
+
+  // 왼팔만 그리면 mirror가 오른팔을 만들어 좌우 대칭을 보장한다.
+  for (const [x, y] of [
+    [3, 3],
+    [3, 4],
+    [2, 5],
+    [2, 6],
+    [3, 7],
+    [4, 8],
+  ]) {
+    s.set(x, y, 0xb8862a);
+  }
+
+  s.set(3, 3, 0xffd77a);
+  s.outline(0x2a1c06);
+  s.eye(5, 9, 0x1a1104, 0xffeec2);
+  s.mirror();
+};
+
 export const buildDasher: EnemySpriteBuilder = (s) => {
   s.wedge(7.5, 2, 15, 6, { shade: 0x7c54d6, base: 0xa97cff, light: 0xe6d8ff });
   s.outline(0x241640);

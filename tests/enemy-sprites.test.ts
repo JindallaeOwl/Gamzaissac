@@ -7,6 +7,7 @@ import {
   buildShooter,
   buildSplitter,
   buildSplitterling,
+  buildSummoner,
   buildWormKing,
   buildWormKingDigFrame,
   buildWormKingFrame,
@@ -22,6 +23,7 @@ const BUILDERS: Record<string, EnemySpriteBuilder> = {
   flanker: buildFlanker,
   splitter: buildSplitter,
   splitterling: buildSplitterling,
+  summoner: buildSummoner,
   wormKing: buildWormKing,
 };
 

@@ -7,6 +7,7 @@ import { FlankerEnemy } from './FlankerEnemy';
 import { PitchforkFarmerBoss } from './PitchforkFarmerBoss';
 import { RootKernelBoss } from './RootKernelBoss';
 import { ShooterEnemy } from './ShooterEnemy';
+import { SummonerEnemy } from './SummonerEnemy';
 import { WormKingBoss } from './WormKingBoss';
 import type { BaseEnemy } from './BaseEnemy';
 
@@ -33,6 +34,9 @@ export function createEnemy(
       break;
     case 'flanker':
       enemy = new FlankerEnemy(scene, x, y, definition, floor);
+      break;
+    case 'summoner':
+      enemy = new SummonerEnemy(scene, x, y, definition, floor);
       break;
     case 'splitter':
     case 'splitterling':

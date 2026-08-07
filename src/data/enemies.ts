@@ -12,6 +12,7 @@ export type EnemyId =
   | 'shooter'
   | 'dasher'
   | 'flanker'
+  | 'summoner'
   | 'splitter'
   | 'splitterling'
   | 'rootGnarl'
@@ -46,6 +47,11 @@ export interface EnemyDefinition {
   splitChildCount?: number;
   // 전투 중 하수인을 부르는 적이 쓰는 대상. EnemySummonRules가 유효성을 검사한다.
   summonChildId?: EnemyId;
+  summonCount?: number;
+  summonMaxAlive?: number;
+  summonCooldownMs?: number;
+  summonTelegraphMs?: number;
+  summonRecoveryMs?: number;
   // 측면 포위(Flanker) 전용. 링 위 목표점 선정과 돌진 개시 조건을 조정한다.
   flankRingRadius?: number;
   flankArcDegrees?: number;
@@ -130,6 +136,26 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     lungeDurationMs: 280,
     lungeRecoveryMs: 560,
     lungeCooldownMs: 900,
+  },
+  summoner: {
+    id: 'summoner',
+    kind: 'normal',
+    displayName: 'Brood Caller',
+    displayNameKey: 'enemies.summoner',
+    textureKey: TextureKeys.enemySummoner,
+    maxHealth: 3.6,
+    speed: 46,
+    contactDamage: PLAYER_DAMAGE_PER_HIT,
+    bodyRadius: 11,
+    score: 30,
+    // 사수(132)보다 멀리 선다. 전선에 끼지 않는 후방 지원형.
+    keepAwayDistance: 150,
+    summonChildId: 'splitterling',
+    summonCount: 2,
+    summonMaxAlive: 2,
+    summonCooldownMs: 4200,
+    summonTelegraphMs: 420,
+    summonRecoveryMs: 320,
   },
   splitter: {
     id: 'splitter',

@@ -33,6 +33,7 @@ const REINFORCEMENT_ENTRIES: readonly {
   { id: 'dasher', fromFloor: 1 },
   { id: 'splitter', fromFloor: 2 },
   { id: 'flanker', fromFloor: 3, maxPerRoom: 2 },
+  { id: 'summoner', fromFloor: 5, maxPerRoom: 1 },
 ];
 
 /** Enemy types eligible as reinforcements on a floor, ignoring per-room caps. */

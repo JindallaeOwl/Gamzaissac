@@ -33,6 +33,7 @@ export const en: TranslationTree = {
     titleScreen: 'Return to title',
   },
   enemies: {
+    summoner: 'Brood Caller',
     flanker: 'Sidle Hook',
   },
   bosses: {

@@ -9,6 +9,7 @@ import {
   buildShooter,
   buildSplitter,
   buildSplitterling,
+  buildSummoner,
   buildWormKingDigFrame,
   buildWormKingFrame,
   drawEnemyTexture,
@@ -43,6 +44,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createShooterTexture(scene);
   createDasherTexture(scene);
   createFlankerTexture(scene);
+  createSummonerTexture(scene);
   createSplitterTexture(scene);
   createSplitterlingTexture(scene);
   createBossTexture(scene);
@@ -340,6 +342,10 @@ function createDasherTexture(scene: Phaser.Scene): void {
 
 function createFlankerTexture(scene: Phaser.Scene): void {
   drawEnemyTexture(scene, TextureKeys.enemyFlanker, buildFlanker);
+}
+
+function createSummonerTexture(scene: Phaser.Scene): void {
+  drawEnemyTexture(scene, TextureKeys.enemySummoner, buildSummoner);
 }
 
 function createSplitterTexture(scene: Phaser.Scene): void {

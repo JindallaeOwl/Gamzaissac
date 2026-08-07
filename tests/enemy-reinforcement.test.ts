@@ -67,6 +67,20 @@ describe('reinforcement line-up', () => {
     expect(picked.filter((id) => id !== 'flanker').length).toBeGreaterThan(0);
   });
 
+  it('keeps the Summoner out until floor 5 and to one per room', () => {
+    const alwaysLast = () => 0.999999;
+
+    expect(getReinforcementPool(4)).not.toContain('summoner');
+    expect(getReinforcementIds(4, 4, alwaysLast)).not.toContain('summoner');
+
+    expect(getReinforcementPool(5)).toContain('summoner');
+
+    const picked = getReinforcementIds(5, 4, alwaysLast);
+
+    expect(picked).toHaveLength(4);
+    expect(picked.filter((id) => id === 'summoner')).toHaveLength(1);
+  });
+
   it('returns nothing when no reinforcements were requested', () => {
     expect(getReinforcementIds(6, 0, alwaysLast)).toEqual([]);
   });

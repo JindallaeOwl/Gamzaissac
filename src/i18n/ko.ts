@@ -33,6 +33,7 @@ export const ko: TranslationTree = {
     titleScreen: '타이틀로 돌아가기',
   },
   enemies: {
+    summoner: '부르는 자',
     flanker: '옆파고드는 갈고리',
   },
   bosses: {
