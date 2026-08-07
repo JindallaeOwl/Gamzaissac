@@ -28,18 +28,6 @@ export function isBurrowInvulnerable(state: WormKingState): boolean {
 }
 
 /**
- * 지연 실행되는 소환 콜백의 실행 조건. 보스가 살아 있고, 소환을 요청한 방에서
- * 아직 벗어나지 않았으며, 런이 끝나지 않았을(게임오버·탈출) 때만 소환한다.
- */
-export function shouldExecuteDeferredSummon(context: {
-  bossActive: boolean;
-  sameRoom: boolean;
-  runEnded: boolean;
-}): boolean {
-  return context.bossActive && context.sameRoom && !context.runEnded;
-}
-
-/**
  * 땅굴에서 재등장할 지점을 방 경계 안(여백 margin)으로 clamp한다. 플레이어가
  * 벽에 붙어 있어도 보스가 벽 밖으로 솟지 않게 한다.
  */

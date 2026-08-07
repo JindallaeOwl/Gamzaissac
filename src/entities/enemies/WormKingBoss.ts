@@ -14,7 +14,7 @@ import { BaseEnemy } from './BaseEnemy';
 // 2스테이지 II층 보스 "늙은 지렁이 왕".
 // 패턴: (1) 꿈틀 돌진 (2) 땅굴 잠수 → 재등장 충격 링 (3) 새끼 지렁이 소환.
 // 체력 절반에서 "허물 벗기"로 새끼를 한꺼번에 뿜고 이후 더 빨라지는 2페이즈에 들어간다.
-// 소환은 이 클래스가 직접 적을 만들지 않고 'boss-summon' 이벤트를 쏘면
+// 소환은 이 클래스가 직접 적을 만들지 않고 'summon-request' 이벤트를 쏘면
 // RoomController가 방 안 적 수 제한을 적용해 생성한다(분열 처리와 같은 방식).
 // 장면에 의존하지 않는 판정 규칙(잠수 무적·재등장 좌표)은 WormKingRules로 분리했다.
 
@@ -331,7 +331,7 @@ export class WormKingBoss extends BaseEnemy {
   }
 
   private summonBroodlings(time: number): void {
-    this.emit('boss-summon', {
+    this.emit('summon-request', {
       childId: WORM_KING_TUNING.summonChildId as EnemyId,
       count: WORM_KING_TUNING.summonCount,
       maxAlive: WORM_KING_TUNING.maxSummonedAlive,
@@ -357,7 +357,7 @@ export class WormKingBoss extends BaseEnemy {
     this.setPersistentTint(WORM_KING_TUNING.phaseTwoTint);
     (this.body as Phaser.Physics.Arcade.Body).stop();
     // 허물 벗기: 새끼를 한꺼번에 뿜는다(방 안 적 수 제한은 RoomController가 적용).
-    this.emit('boss-summon', {
+    this.emit('summon-request', {
       childId: WORM_KING_TUNING.summonChildId as EnemyId,
       count: WORM_KING_TUNING.phaseTwoShedCount,
       maxAlive: WORM_KING_TUNING.maxSummonedAlive,

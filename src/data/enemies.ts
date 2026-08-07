@@ -44,6 +44,8 @@ export interface EnemyDefinition {
   wanderSpeed?: number;
   splitChildId?: EnemyId;
   splitChildCount?: number;
+  // 전투 중 하수인을 부르는 적이 쓰는 대상. EnemySummonRules가 유효성을 검사한다.
+  summonChildId?: EnemyId;
   // 측면 포위(Flanker) 전용. 링 위 목표점 선정과 돌진 개시 조건을 조정한다.
   flankRingRadius?: number;
   flankArcDegrees?: number;

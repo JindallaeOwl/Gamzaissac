@@ -150,60 +150,6 @@ export function getSplitChildSpawns(
   return spawns;
 }
 
-/**
- * Positions for enemies a boss summons mid-fight (e.g. the Worm King's
- * broodlings). Like {@link getSplitChildSpawns} the children are spread in a
- * jittered ring around the boss and clamped inside the room. `count` is the
- * number actually requested after any alive-cap has been applied by the caller,
- * so a non-positive count yields no spawns.
- */
-export function getBossSummonSpawns(
-  childId: EnemyId,
-  count: number,
-  originX: number,
-  originY: number,
-  bounds: SplitBounds,
-  random: RandomSource,
-): SplitChildSpawn[] {
-  if (count <= 0) {
-    return [];
-  }
-
-  const childRadius = ENEMY_DEFINITIONS[childId].bodyRadius;
-  const spread = childRadius * 2 + 6;
-  const spawns: SplitChildSpawn[] = [];
-
-  for (let i = 0; i < count; i += 1) {
-    const angle = (Math.PI * 2 * i) / count + random() * Math.PI * 0.5;
-    const x = clamp(
-      originX + Math.cos(angle) * spread,
-      bounds.left + childRadius + 2,
-      bounds.right - childRadius - 2,
-    );
-    const y = clamp(
-      originY + Math.sin(angle) * spread,
-      bounds.top + childRadius + 2,
-      bounds.bottom - childRadius - 2,
-    );
-    spawns.push({ enemyId: childId, x, y });
-  }
-
-  return spawns;
-}
-
-/**
- * How many summons may actually spawn given a per-boss cap and the number of
- * adds already alive. Never negative, never more than requested. Keeping this a
- * pure function lets the alive-cap be unit tested without a live scene.
- */
-export function getAllowedSummonCount(
-  requested: number,
-  aliveAdds: number,
-  maxAlive: number,
-): number {
-  return Math.max(0, Math.min(requested, maxAlive - aliveAdds));
-}
-
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }

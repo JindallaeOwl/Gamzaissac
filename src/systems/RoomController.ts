@@ -22,13 +22,17 @@ import { ENEMY_DEFINITIONS, type EnemyId } from '../data/enemies';
 import { getRoomTemplate } from '../data/rooms';
 import { getStageProgress, resolveRoomAccentColor } from '../data/stages';
 import {
-  getAllowedSummonCount,
-  getBossSummonSpawns,
   getDeveloperSpawnPoint,
   getReinforcementCount,
   getReinforcementIds,
   getSplitChildSpawns,
 } from './EnemyReinforcementRules';
+import {
+  getSummonSpawns,
+  resolveSummonCount,
+  shouldExecuteDeferredSummon,
+  SummonOwnershipIndex,
+} from './EnemySummonRules';
 import {
   SHOP_NPC_DISPLAY_SIZE,
   SHOP_NPC_POSITION,
@@ -38,7 +42,6 @@ import {
 import type { ItemSystem } from './ItemSystem';
 import type { DungeonManager, RoomNode, ShopNpcBlastState } from './DungeonManager';
 import { isRunEnded, type RunState } from './RunState';
-import { shouldExecuteDeferredSummon } from './WormKingRules';
 import { DIRECTIONS, type Direction } from '../utils/directions';
 import { createSeededRandom, randomInt, randomOf, type RandomSource } from '../utils/random';
 import { BossRewardSystem } from './BossRewardSystem';
@@ -66,8 +69,9 @@ const FLOOR_DECORATION_TEXTURES: Record<FloorDecoration, string> = {
   damp: TextureKeys.floorSoilDamp,
 };
 
-// 보스가 전투 중 새끼를 소환할 때 실어 보내는 요청. maxAlive로 동시 생존 수를 제한한다.
-interface BossSummonRequest {
+// 적이 전투 중 하수인을 부를 때 실어 보내는 요청. maxAlive는 그 적 한 마리가
+// 동시에 유지할 수 있는 하수인 수다(방 전체 상한과는 별개).
+interface EnemySummonRequest {
   childId: EnemyId;
   count: number;
   maxAlive: number;
@@ -117,6 +121,8 @@ export class RoomController {
   private readonly floorTileSprite: Phaser.GameObjects.TileSprite;
   private readonly floorDecorations: Phaser.GameObjects.Group;
   private readonly shopDecorations: Phaser.GameObjects.Group;
+  // 소환사별 하수인 소유권. 개인 상한과 방 전체 상한을 따로 세기 위해 필요하다.
+  private readonly summonOwnership = new SummonOwnershipIndex<BaseEnemy>();
   private enemyAiResumeAt = 0;
 
   constructor(config: RoomControllerConfig) {
@@ -208,6 +214,8 @@ export class RoomController {
 
   enterCurrentRoom(entryPosition?: RoomPoint): void {
     this.enemies.clear(true, true);
+    // clear가 자식을 destroy하며 아래 정리 리스너를 깨우므로, 그 뒤에 비운다.
+    this.summonOwnership.clear();
     this.items.clear(true, true);
     this.obstacles.clear(true, true);
     this.shopOffers.clear(true, true);
@@ -405,20 +413,28 @@ export class RoomController {
   private registerSpawnedEnemy(enemy: BaseEnemy, enemyId: EnemyId): void {
     enemy.once('enemy-defeated', this.onEnemyDefeated);
 
-    if (enemy.isBoss && this.onBossPhaseTwo) {
-      enemy.once('boss-phase-two', this.onBossPhaseTwo);
-    }
-
-    // A boss (e.g. the Worm King) summons adds by emitting an event repeatedly
-    // rather than creating enemies itself, mirroring the split path below.
+    // Boss-only wiring. Phase transitions and direct-damage feedback have no
+    // meaning for a regular enemy.
     if (enemy.isBoss) {
-      enemy.on('boss-summon', (payload: BossSummonRequest) =>
-        this.handleBossSummon(enemy, payload),
-      );
+      if (this.onBossPhaseTwo) {
+        enemy.once('boss-phase-two', this.onBossPhaseTwo);
+      }
+
       // Direct-damage attacks (Farmer's melee swing / boomerang) call player.damage
       // themselves, so they route their hit feedback through here on a real hit.
       enemy.on('player-damaged', () => this.onPlayerDamaged?.());
     }
+
+    // Summoning is not boss-only, so the listener goes on every enemy and only
+    // the classes that can summon ever emit. Enemies request a summon rather
+    // than creating one themselves, mirroring the split path below.
+    enemy.on('summon-request', (payload: EnemySummonRequest) =>
+      this.handleEnemySummon(enemy, payload),
+    );
+
+    // One place to drop an enemy out of the ownership index, whether it died or
+    // the room was torn down underneath it.
+    enemy.once('destroy', () => this.summonOwnership.forget(enemy));
 
     // A splitter spawns its children while it is still counted as active, so the
     // room never briefly registers zero enemies and opens its doors early.
@@ -427,16 +443,16 @@ export class RoomController {
     }
   }
 
-  private handleBossSummon(boss: BaseEnemy, request: BossSummonRequest): void {
+  private handleEnemySummon(summoner: BaseEnemy, request: EnemySummonRequest): void {
     const roomId = this.dungeon.getCurrentRoom().id;
 
     // The event fires from inside the enemy update loop, so defer the spawn to
     // avoid mutating the enemies group while it is being iterated. By the time it
-    // runs the boss may be dead, the room may have changed, or the run may have
-    // ended (game over / escape) — only summon when all three are still valid.
+    // runs the summoner may be dead, the room may have changed, or the run may
+    // have ended (game over / escape) — only summon when all three still hold.
     this.scene.time.delayedCall(0, () => {
       const canSummon = shouldExecuteDeferredSummon({
-        bossActive: boss.active,
+        summonerActive: summoner.active,
         sameRoom: this.dungeon.getCurrentRoom().id === roomId,
         runEnded: isRunEnded(this.runState),
       });
@@ -445,19 +461,26 @@ export class RoomController {
         return;
       }
 
-      // countActive includes the boss itself, so subtract it to count only adds.
-      const aliveAdds = Math.max(0, this.enemies.countActive(true) - 1);
-      const spawnCount = getAllowedSummonCount(request.count, aliveAdds, request.maxAlive);
+      // Each summoner is charged only for its own minions: a shared count
+      // would let whoever summoned first take the whole allowance, and in a
+      // combat room the enemies already standing there would be miscounted.
+      const spawnCount = resolveSummonCount({
+        requested: request.count,
+        ownMinionsAlive: this.summonOwnership.countMinionsOf(summoner),
+        ownMaxAlive: request.maxAlive,
+        roomMinionsAlive: this.summonOwnership.countAllMinions(),
+        isBossRoom: this.dungeon.getCurrentRoom().type === 'boss',
+      });
 
       if (spawnCount <= 0) {
         return;
       }
 
-      const spawns = getBossSummonSpawns(
+      const spawns = getSummonSpawns(
         request.childId,
         spawnCount,
-        boss.x,
-        boss.y,
+        summoner.x,
+        summoner.y,
         ROOM_RECT,
         this.random,
       );
@@ -472,6 +495,7 @@ export class RoomController {
           this.runState.floor,
         );
         this.registerSpawnedEnemy(child, spawn.enemyId);
+        this.summonOwnership.remember(summoner, child);
       }
     });
   }

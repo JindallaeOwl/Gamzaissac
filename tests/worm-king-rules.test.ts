@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   clampResurfacePoint,
   isBurrowInvulnerable,
-  shouldExecuteDeferredSummon,
   type PointBounds,
   type WormKingState,
 } from '../src/systems/WormKingRules';
@@ -23,32 +22,6 @@ describe('burrow invulnerability rule', () => {
     for (const state of vulnerable) {
       expect(isBurrowInvulnerable(state), state).toBe(false);
     }
-  });
-});
-
-describe('deferred summon execution condition', () => {
-  it('summons only when the boss is alive, still in the room, and the run is ongoing', () => {
-    expect(shouldExecuteDeferredSummon({ bossActive: true, sameRoom: true, runEnded: false })).toBe(
-      true,
-    );
-  });
-
-  it('skips the summon if the boss died before the callback ran', () => {
-    expect(
-      shouldExecuteDeferredSummon({ bossActive: false, sameRoom: true, runEnded: false }),
-    ).toBe(false);
-  });
-
-  it('skips the summon if the player already left the room', () => {
-    expect(
-      shouldExecuteDeferredSummon({ bossActive: true, sameRoom: false, runEnded: false }),
-    ).toBe(false);
-  });
-
-  it('skips the summon after the run ended (game over or escape)', () => {
-    expect(shouldExecuteDeferredSummon({ bossActive: true, sameRoom: true, runEnded: true })).toBe(
-      false,
-    );
   });
 });
 
