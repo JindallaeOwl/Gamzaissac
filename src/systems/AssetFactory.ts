@@ -978,28 +978,75 @@ function createWallTexture(scene: Phaser.Scene): void {
   graphics.destroy();
 }
 
+// 나무 상자. 40×40 텍스처를 20×20 격자 × 2배로 찍어, 도트로 바꾼 적·아이템·바닥과
+// 같은 결을 갖게 한다(이전에는 둥근 사각형과 대각선이라 혼자 매끄러웠다).
+// 바닥 그림자만 알파가 필요해 격자 밖에서 따로 그린다.
+//
+// d 테두리 · s 이음매/그늘 · b 판재 · l 판재 밝은면 · h 윗면 하이라이트 · n 못
+const OBSTACLE_CRATE_PALETTE: Record<string, number> = {
+  d: 0x2a1a0e,
+  s: 0x4a2e18,
+  b: 0x7d5531,
+  l: 0xa3763f,
+  h: 0xc59355,
+  n: 0xdcc189,
+};
+
+// 빛이 위에서 온다는 전제로 윗줄만 밝고 아랫줄은 그늘진다. 세로 이음매를 같은
+// 열에 맞춰 판자 세 장을 붙인 것처럼 보이게 한다.
+const OBSTACLE_CRATE_ROWS = [
+  '....................',
+  '.dddddddddddddddddd.',
+  '.dhhhhhhhhhhhhhhhhd.',
+  '.dnbbbbsbbbbsbbbbnd.',
+  '.dbbbbbsbbbbsbbbbbd.',
+  '.dbbbbbsbbbbsbbbbbd.',
+  '.dbbbbbsbbbbsbbbbbd.',
+  '.dbbbbbsbbbbsbbbbbd.',
+  '.dlllllllllllllllld.',
+  '.dssssssssssssssssd.',
+  '.dbbbbbsbbbbsbbbbbd.',
+  '.dbbbbbsbbbbsbbbbbd.',
+  '.dbbbbbsbbbbsbbbbbd.',
+  '.dbbbbbsbbbbsbbbbbd.',
+  '.dbbbbbsbbbbsbbbbbd.',
+  '.dnbbbbsbbbbsbbbbnd.',
+  '.dssssssssssssssssd.',
+  '.dddddddddddddddddd.',
+  '....................',
+  '....................',
+];
+
+const OBSTACLE_CRATE_SCALE = 2;
+
 function createObstacleTexture(scene: Phaser.Scene): void {
   const graphics = scene.add.graphics();
+  const size = OBSTACLE_CRATE_ROWS.length * OBSTACLE_CRATE_SCALE;
+
+  // 접지 그림자. 반투명이라야 바닥 흙 무늬가 비쳐 상자가 얹혀 있는 것으로 보인다.
   graphics.fillStyle(0x160e09, 0.45);
-  graphics.fillEllipse(20, 37, 34, 6);
-  graphics.fillStyle(0x765033, 1);
-  graphics.fillRoundedRect(2, 2, 36, 36, 4);
-  graphics.lineStyle(3, 0x2b1b10, 1);
-  graphics.strokeRoundedRect(2, 2, 36, 36, 4);
-  graphics.lineStyle(3, 0xa8794c, 0.9);
-  graphics.lineBetween(5, 9, 35, 9);
-  graphics.lineBetween(5, 30, 35, 30);
-  graphics.lineStyle(4, 0x4a2d1c, 1);
-  graphics.lineBetween(7, 6, 33, 34);
-  graphics.lineBetween(33, 6, 7, 34);
-  graphics.fillStyle(0xd4b07a, 1);
-  graphics.fillCircle(8, 8, 2);
-  graphics.fillCircle(32, 8, 2);
-  graphics.fillCircle(8, 32, 2);
-  graphics.fillCircle(32, 32, 2);
-  graphics.lineStyle(2, 0x2b1b10, 1);
-  graphics.lineBetween(18, 13, 22, 19);
-  graphics.lineBetween(22, 19, 18, 24);
-  graphics.generateTexture(TextureKeys.obstacleCrate, 40, 40);
+  graphics.fillEllipse(size / 2, size - 3, 34, 6);
+
+  for (let y = 0; y < OBSTACLE_CRATE_ROWS.length; y += 1) {
+    const row = OBSTACLE_CRATE_ROWS[y];
+
+    for (let x = 0; x < row.length; x += 1) {
+      const color = OBSTACLE_CRATE_PALETTE[row[x]];
+
+      if (color === undefined) {
+        continue;
+      }
+
+      graphics.fillStyle(color, 1);
+      graphics.fillRect(
+        x * OBSTACLE_CRATE_SCALE,
+        y * OBSTACLE_CRATE_SCALE,
+        OBSTACLE_CRATE_SCALE,
+        OBSTACLE_CRATE_SCALE,
+      );
+    }
+  }
+
+  graphics.generateTexture(TextureKeys.obstacleCrate, size, size);
   graphics.destroy();
 }

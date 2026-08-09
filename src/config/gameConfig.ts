@@ -349,6 +349,14 @@ export const OBSTACLE_TUNING = {
   maxHealth: 3,
   hitTint: 0xffe8ad,
   hitFlashMs: 60,
+  // 40×40 텍스처를 이 배율로 줄여 그린다.
+  displayScale: 0.8,
+  // 충돌 범위. 정적 바디는 setScale을 따라가지 않으므로 직접 지정해야 한다.
+  // 텍스처 가장자리 여백과 아래쪽 접지 그림자는 제외하고, 실제로 그려진 나무
+  // 상자(텍스처 36×34)에 표시 배율을 곱한 크기다. 그림보다 크면 보이지 않는
+  // 벽에 걸리는 것처럼 느껴진다.
+  bodyWidth: 29,
+  bodyHeight: 27,
 };
 
 export const DEPTH = {

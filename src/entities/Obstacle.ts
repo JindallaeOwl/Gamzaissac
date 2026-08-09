@@ -21,8 +21,15 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
     this.onHealthChanged = onHealthChanged;
     this.onDestroyed = onDestroyed;
     scene.add.existing(this);
+    // 축소를 먼저 하고 바디를 만든다. 정적 바디는 나중에 setScale을 해도 따라
+    // 줄지 않아, 순서가 바뀌면 그림보다 큰 충돌 범위가 남는다.
+    this.setDepth(DEPTH.item).setScale(OBSTACLE_TUNING.displayScale);
     scene.physics.add.existing(this, true);
-    this.setDepth(DEPTH.item).setScale(0.8);
+
+    const body = this.body as Phaser.Physics.Arcade.StaticBody | undefined;
+
+    // 텍스처 여백과 접지 그림자를 뺀, 실제로 그려진 상자만 막는다.
+    body?.setSize(OBSTACLE_TUNING.bodyWidth, OBSTACLE_TUNING.bodyHeight);
   }
 
   takeDamage(amount: number): boolean {
