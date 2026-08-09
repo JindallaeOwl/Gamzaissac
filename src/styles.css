@@ -505,6 +505,45 @@ canvas {
   transition: opacity 420ms var(--intro-ease-in);
 }
 
+/* 배경에 아주 옅게 깔려 계속 대각선으로 흐르는 감자 무늬. 검은 화면에 글자만
+   있어 허전한 것을 메운다.
+
+   감자는 "창"이고 그 안을 투명 격자가 채운다. 창과 격자가 서로 다른 속도로
+   움직여 시차가 생긴다 — 격자가 감자보다 느리게 흐르므로 감자 너머 더 깊은
+   곳에 있는 것처럼 보인다. 감자마다 격자가 같이 흐르는 것이 아니라, 감자가
+   지나가는 동안 그 안에 보이는 격자가 뒤에 남는다.
+
+   층 구조: 바깥은 한 번뿐인 탄력 진입, 가운데는 감자 마스크, 안쪽은 격자다.
+   transform 하나에 여러 속도를 겹칠 수 없어 나눴다. */
+.intro-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: intro-pattern-enter 1500ms 60ms cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+
+/* 감자 모양으로 오려내는 창. 마스크는 자손까지 함께 자른다. */
+.intro-pattern-shapes {
+  position: absolute;
+  inset: calc(var(--intro-scale) * -240);
+  /* 타일 하나에 큰 감자와 작은 감자가 들어 있어 격자처럼 줄 서 보이지 않는다. */
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='190' viewBox='0 0 160 190'%3E%3Cg fill='%23ffffff'%3E%3Cg transform='translate(52 60) rotate(-14)'%3E%3Cpath d='M0 -42 C21 -44 35 -25 34 1 C33 27 18 44 -3 43 C-23 42 -34 24 -33 -1 C-32 -25 -21 -40 0 -42 Z'/%3E%3C/g%3E%3Cg transform='translate(126 152) rotate(24) scale(0.62)'%3E%3Cpath d='M0 -42 C21 -44 35 -25 34 1 C33 27 18 44 -3 43 C-23 42 -34 24 -33 -1 C-32 -25 -21 -40 0 -42 Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  mask-size: calc(var(--intro-scale) * 76) calc(var(--intro-scale) * 90);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='190' viewBox='0 0 160 190'%3E%3Cg fill='%23ffffff'%3E%3Cg transform='translate(52 60) rotate(-14)'%3E%3Cpath d='M0 -42 C21 -44 35 -25 34 1 C33 27 18 44 -3 43 C-23 42 -34 24 -33 -1 C-32 -25 -21 -40 0 -42 Z'/%3E%3C/g%3E%3Cg transform='translate(126 152) rotate(24) scale(0.62)'%3E%3Cpath d='M0 -42 C21 -44 35 -25 34 1 C33 27 18 44 -3 43 C-23 42 -34 24 -33 -1 C-32 -25 -21 -40 0 -42 Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  -webkit-mask-size: calc(var(--intro-scale) * 76) calc(var(--intro-scale) * 90);
+  animation: intro-shapes-drift 18s linear infinite;
+}
+
+/* 창 안을 채우는 투명 격자. 부모와 반대로 움직여 실제 속도를 늦춘다. */
+.intro-pattern-grid {
+  position: absolute;
+  inset: calc(var(--intro-scale) * -160);
+  background-image: repeating-conic-gradient(#3c3c3c 0 25%, transparent 0 50%);
+  background-size: calc(var(--intro-scale) * 5) calc(var(--intro-scale) * 5);
+  opacity: 0.72;
+  animation: intro-grid-drift 7.6s linear infinite;
+}
+
 #intro-overlay[hidden] {
   display: none;
 }
@@ -804,6 +843,52 @@ canvas {
   animation-delay: 380ms;
 }
 
+/* 왼쪽 아래에서 오른쪽 위로 미끄러져 들어와 서서히 멎는다. 흐름과 같은 방향이라
+   들어온 기세가 그대로 흐르는 속도로 이어진다.
+
+   되돌아오는 반동은 두지 않는다. 마찰로 멎는 물체는 목표를 지나쳤다 돌아오지
+   않고 속도만 줄어든다 — ease-out-cubic이 그 감속 곡선이다. */
+@keyframes intro-pattern-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(calc(var(--intro-scale) * -170), calc(var(--intro-scale) * 200), 0);
+  }
+
+  22% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 감자 창은 오른쪽 위로 흐른다 — "위로 파고 올라간다"는 이야기 방향이다.
+   타일 한 칸만큼 정확히 움직인 뒤 처음으로 돌아가 이음매가 보이지 않는다. */
+@keyframes intro-shapes-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(calc(var(--intro-scale) * 76), calc(var(--intro-scale) * -90), 0);
+  }
+}
+
+/* 격자는 부모 안에서 반대로 움직인다. 부모 이동(초당 4.2)에서 이것(2.5)을 빼
+   실제로는 초당 1.7로 흘러, 감자보다 느린 = 더 뒤에 있는 것으로 읽힌다.
+   격자 칸(5)의 배수만큼 움직여야 반복 이음매가 생기지 않는다. */
+@keyframes intro-grid-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(calc(var(--intro-scale) * -20), calc(var(--intro-scale) * 20), 0);
+  }
+}
+
 @keyframes intro-guide-x {
   to {
     transform: scaleX(1);
@@ -1100,6 +1185,13 @@ canvas {
    반복 횟수도 1로 묶는다 — 스킵 안내의 무한 호흡(intro-breathe)이 남으면
    1ms 주기로 무한히 깜빡여 오히려 더 위험해진다. */
 @media (prefers-reduced-motion: reduce) {
+  /* 배경 무늬는 끝없이 흐르는 연출이라 1ms로 줄이면 오히려 튄다. 아예 세운다. */
+  .intro-pattern,
+  .intro-pattern-shapes,
+  .intro-pattern-grid {
+    animation: none;
+  }
+
   #intro-overlay,
   #intro-overlay *,
   #intro-overlay *::before {

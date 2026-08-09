@@ -67,6 +67,11 @@
       </div>
     </div>
     <div id="intro-overlay" hidden>
+      <!-- 배경 감자 무늬. 감자는 창이고 그 안의 격자가 다른 속도로 흘러 시차를
+           만든다. 바깥은 진입, 가운데는 감자 모양 마스크, 안쪽은 격자다. -->
+      <div class="intro-pattern" aria-hidden="true">
+        <div class="intro-pattern-shapes"><div class="intro-pattern-grid"></div></div>
+      </div>
       <!-- 스킵 안내가 "쾅" 찍히는 순간 위에서 쏟아지는 파편. 텍스트 뒤에 깔리도록
            .intro-stage보다 앞에 둔다. 개수·위치는 CSS의 nth-child가 정한다. -->
       <div class="intro-debris" aria-hidden="true">
