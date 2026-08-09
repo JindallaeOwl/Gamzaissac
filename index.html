@@ -67,6 +67,25 @@
       </div>
     </div>
     <div id="intro-overlay" hidden>
+      <!-- 스킵 안내가 "쾅" 찍히는 순간 위에서 쏟아지는 파편. 텍스트 뒤에 깔리도록
+           .intro-stage보다 앞에 둔다. 개수·위치는 CSS의 nth-child가 정한다. -->
+      <div class="intro-debris" aria-hidden="true">
+        <span class="intro-dust"></span>
+        <span class="intro-dust"></span>
+        <span class="intro-dust"></span>
+        <span class="intro-dust"></span>
+        <span class="intro-dust"></span>
+        <span class="intro-dust"></span>
+        <span class="intro-dust"></span>
+        <span class="intro-pebble intro-pebble--a"></span>
+        <span class="intro-pebble intro-pebble--b"></span>
+        <span class="intro-pebble intro-pebble--c"></span>
+        <span class="intro-pebble intro-pebble--a"></span>
+        <span class="intro-pebble intro-pebble--b"></span>
+        <span class="intro-root"></span>
+        <span class="intro-root"></span>
+        <span class="intro-root"></span>
+      </div>
       <div class="intro-stage">
         <span class="intro-guide intro-guide--top" aria-hidden="true"></span>
         <span class="intro-guide intro-guide--bottom" aria-hidden="true"></span>

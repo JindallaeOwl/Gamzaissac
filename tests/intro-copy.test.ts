@@ -180,3 +180,38 @@ describe('estimateTitleWidthEm', () => {
     expect(estimateTitleWidthEm('가')).toBeGreaterThan(estimateTitleWidthEm('a'));
   });
 });
+
+describe('intro impact', () => {
+  const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
+  const index = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+
+  it('drives the stamp, shake, and debris from one impact time', () => {
+    // Three separate animations have to read as one event. Deriving them all
+    // from a single custom property is what keeps them from drifting apart.
+    expect(styles).toMatch(/--intro-impact-delay:\s*calc\(var\(--intro-skip-delay/);
+    expect(styles).toMatch(/\.intro-skip\s*\{[\s\S]*?animation:[\s\S]*?intro-stamp/);
+    expect(styles).toMatch(
+      /\.intro-stage\s*\{[\s\S]*?animation:\s*intro-impact-shake[^;]*var\(--intro-impact-delay\)/,
+    );
+    expect(styles).toMatch(
+      /\.intro-debris > \*\s*\{[\s\S]*?animation-delay:\s*calc\(var\(--intro-impact-delay\)/,
+    );
+  });
+
+  it('keeps the debris behind the text and out of the accessibility tree', () => {
+    const debrisAt = index.indexOf('class="intro-debris"');
+    const stageAt = index.indexOf('class="intro-stage"');
+
+    expect(debrisAt).toBeGreaterThan(-1);
+    // Earlier in the markup means painted underneath the positioned stage.
+    expect(debrisAt).toBeLessThan(stageAt);
+    expect(index).toMatch(/class="intro-debris" aria-hidden="true"/);
+  });
+
+  it('hides the debris entirely when motion is reduced', () => {
+    // The shared 1ms override would otherwise flash every piece for a frame.
+    expect(styles).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.intro-debris\s*\{\s*display:\s*none;/,
+    );
+  });
+});

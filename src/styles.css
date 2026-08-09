@@ -487,6 +487,10 @@ canvas {
      기존 디자인이 상한에 걸렸을 때(창 너비 약 1033px, 배율 2.15)의 비율을 그대로
      환산한 값이다. 즉 레이아웃 비율은 그대로 두고 상한만 없앤 것이다. */
   --intro-scale: min(calc(100vw / 480), calc(100vh / 272));
+  /* 스킵 안내가 착지하는 순간. intro-stamp의 40% 지점(520ms × 0.4)이며,
+     흔들림과 파편이 이 시각에 맞춰 함께 시작한다. 세 연출이 한 사건으로
+     읽히려면 값이 하나여야 하므로 여기서만 정의한다. */
+  --intro-impact-delay: calc(var(--intro-skip-delay, 2200ms) + 208ms);
 
   position: fixed;
   inset: 0;
@@ -507,6 +511,7 @@ canvas {
 
 .intro-stage {
   position: relative;
+  animation: intro-impact-shake 460ms var(--intro-impact-delay) ease-out both;
   /* 게임 폭(480) 대비 약 83%. 좌우 보조선이 화면 가장자리에 붙지 않게 여백을 남긴다 */
   width: calc(var(--intro-scale) * 400);
   padding: calc(var(--intro-scale) * 26) 0;
@@ -514,6 +519,188 @@ canvas {
 }
 
 /* 얇은 보조선이 먼저 뻗어 나오며 화면의 뼈대를 잡는다 */
+/* 파편은 텍스트 뒤에 깔린다. .intro-stage가 position: relative라 뒤에 그려진다. */
+.intro-debris {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.intro-debris > * {
+  position: absolute;
+  top: calc(var(--intro-scale) * -16);
+  left: var(--debris-x);
+  animation-name: intro-debris-fall;
+  animation-duration: var(--debris-fall);
+  animation-delay: calc(var(--intro-impact-delay) + var(--debris-delay, 0ms));
+  /* 중력. 처음엔 느리고 갈수록 빨라진다 */
+  animation-timing-function: cubic-bezier(0.42, 0, 0.86, 0.52);
+  animation-fill-mode: both;
+}
+
+/* 흙먼지: 작고 흐릿해 배경에 가깝다 */
+.intro-dust {
+  --debris-opacity: 0.42;
+  width: calc(var(--intro-scale) * 1.5);
+  height: calc(var(--intro-scale) * 1.5);
+  border-radius: 50%;
+  background: #6d5c3f;
+  filter: blur(calc(var(--intro-scale) * 0.45));
+}
+
+/* 조약돌: 정원이 아니라 찌그러진 다각형이라야 돌로 보인다. 빛이 위에서 온다는
+   전제로 윗면만 밝게 두어 입체감을 낸다. */
+.intro-pebble {
+  --debris-opacity: 0.9;
+  width: calc(var(--intro-scale) * 3.6);
+  height: calc(var(--intro-scale) * 3.1);
+  background: linear-gradient(163deg, #94836a 0%, #5e4e39 48%, #2f2517 100%);
+}
+
+.intro-pebble--a {
+  clip-path: polygon(30% 0%, 79% 9%, 100% 51%, 72% 100%, 21% 90%, 0% 41%);
+}
+
+.intro-pebble--b {
+  clip-path: polygon(46% 0%, 100% 27%, 88% 79%, 39% 100%, 0% 62%, 8% 19%);
+}
+
+.intro-pebble--c {
+  clip-path: polygon(22% 6%, 71% 0%, 100% 44%, 83% 92%, 30% 100%, 0% 58%);
+}
+
+/* 뿌리: 양 끝이 가늘어지는 조각 */
+.intro-root {
+  --debris-opacity: 0.82;
+  width: calc(var(--intro-scale) * 1.8);
+  height: calc(var(--intro-scale) * 7.5);
+  background: linear-gradient(180deg, #7d5c31 0%, #4b371d 68%, #291c0e 100%);
+  clip-path: polygon(38% 0%, 62% 0%, 76% 44%, 50% 100%, 24% 44%);
+}
+
+/* 조각마다 낙하 위치·시차·속도·회전을 달리한다. 값이 겹치면 한 덩어리로
+   떨어지는 것처럼 보여 사실감이 사라진다. */
+.intro-debris > *:nth-child(1) {
+  --debris-x: 9%;
+  --debris-delay: 30ms;
+  --debris-fall: 1720ms;
+  --debris-drift: calc(var(--intro-scale) * 5);
+  --debris-spin: 40deg;
+}
+
+.intro-debris > *:nth-child(2) {
+  --debris-x: 23%;
+  --debris-delay: 260ms;
+  --debris-fall: 2050ms;
+  --debris-drift: calc(var(--intro-scale) * -7);
+  --debris-spin: -25deg;
+}
+
+.intro-debris > *:nth-child(3) {
+  --debris-x: 37%;
+  --debris-delay: 90ms;
+  --debris-fall: 1880ms;
+  --debris-drift: calc(var(--intro-scale) * 3);
+  --debris-spin: 15deg;
+}
+
+.intro-debris > *:nth-child(4) {
+  --debris-x: 52%;
+  --debris-delay: 410ms;
+  --debris-fall: 2210ms;
+  --debris-drift: calc(var(--intro-scale) * -4);
+  --debris-spin: 30deg;
+}
+
+.intro-debris > *:nth-child(5) {
+  --debris-x: 66%;
+  --debris-delay: 150ms;
+  --debris-fall: 1640ms;
+  --debris-drift: calc(var(--intro-scale) * 6);
+  --debris-spin: -18deg;
+}
+
+.intro-debris > *:nth-child(6) {
+  --debris-x: 79%;
+  --debris-delay: 330ms;
+  --debris-fall: 1960ms;
+  --debris-drift: calc(var(--intro-scale) * -5);
+  --debris-spin: 22deg;
+}
+
+.intro-debris > *:nth-child(7) {
+  --debris-x: 91%;
+  --debris-delay: 60ms;
+  --debris-fall: 1790ms;
+  --debris-drift: calc(var(--intro-scale) * 4);
+  --debris-spin: -35deg;
+}
+
+.intro-debris > *:nth-child(8) {
+  --debris-x: 15%;
+  --debris-delay: 0ms;
+  --debris-fall: 1180ms;
+  --debris-drift: calc(var(--intro-scale) * -6);
+  --debris-spin: 280deg;
+}
+
+.intro-debris > *:nth-child(9) {
+  --debris-x: 33%;
+  --debris-delay: 180ms;
+  --debris-fall: 1320ms;
+  --debris-drift: calc(var(--intro-scale) * 8);
+  --debris-spin: -215deg;
+}
+
+.intro-debris > *:nth-child(10) {
+  --debris-x: 58%;
+  --debris-delay: 70ms;
+  --debris-fall: 1090ms;
+  --debris-drift: calc(var(--intro-scale) * -3);
+  --debris-spin: 340deg;
+}
+
+.intro-debris > *:nth-child(11) {
+  --debris-x: 73%;
+  --debris-delay: 300ms;
+  --debris-fall: 1420ms;
+  --debris-drift: calc(var(--intro-scale) * 5);
+  --debris-spin: -260deg;
+}
+
+.intro-debris > *:nth-child(12) {
+  --debris-x: 86%;
+  --debris-delay: 120ms;
+  --debris-fall: 1240ms;
+  --debris-drift: calc(var(--intro-scale) * -8);
+  --debris-spin: 190deg;
+}
+
+.intro-debris > *:nth-child(13) {
+  --debris-x: 27%;
+  --debris-delay: 220ms;
+  --debris-fall: 1560ms;
+  --debris-drift: calc(var(--intro-scale) * 7);
+  --debris-spin: 150deg;
+}
+
+.intro-debris > *:nth-child(14) {
+  --debris-x: 47%;
+  --debris-delay: 40ms;
+  --debris-fall: 1380ms;
+  --debris-drift: calc(var(--intro-scale) * -9);
+  --debris-spin: -170deg;
+}
+
+.intro-debris > *:nth-child(15) {
+  --debris-x: 68%;
+  --debris-delay: 380ms;
+  --debris-fall: 1650ms;
+  --debris-drift: calc(var(--intro-scale) * 6);
+  --debris-spin: 205deg;
+}
+
 .intro-guide {
   position: absolute;
   background: rgb(232 176 75 / 34%);
@@ -647,8 +834,8 @@ canvas {
      --intro-skip-delay로 넣어 준다. 두 값이 어긋나면 "안내가 없는데 넘어가거나,
      안내가 떠 있는데 안 넘어가는" 상태가 되므로 CSS는 이 변수만 쓴다. */
   animation:
-    intro-rise 600ms var(--intro-skip-delay, 2200ms) var(--intro-ease-out) both,
-    intro-breathe 2200ms calc(var(--intro-skip-delay, 2200ms) + 600ms) ease-in-out infinite;
+    intro-stamp 520ms var(--intro-skip-delay, 2200ms) both,
+    intro-breathe 2200ms calc(var(--intro-skip-delay, 2200ms) + 520ms) ease-in-out infinite;
 }
 
 /* 등·퇴장 이동 거리도 배율을 따른다. 큰 화면에서 글자만 커지고 움직임은 그대로면
@@ -713,6 +900,102 @@ canvas {
   }
 }
 
+/* 도장. 크고 흐릿한 상태로 위에서 빠르게 내려와 40% 지점에서 착지하고,
+   그 뒤 눌렸다 튀어오르며 자리를 잡는다. 하강과 반동은 성격이 달라
+   키프레임별로 다른 timing-function을 준다. */
+@keyframes intro-stamp {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(var(--intro-scale) * -13)) scale(2.7);
+    filter: blur(calc(var(--intro-scale) * 1.5));
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.42);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+    animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+  }
+
+  /* 착지 충격으로 눌린다 */
+  54% {
+    transform: scale(1.18, 0.82);
+  }
+
+  72% {
+    transform: scale(0.95, 1.07);
+  }
+
+  87% {
+    transform: scale(1.03, 0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+/* 착지 충격. 진폭이 빠르게 줄어드는 감쇠 진동이라야 "쿵" 하고 멎은 것처럼
+   보인다. 등진폭으로 흔들면 진동하는 것처럼만 보인다. */
+@keyframes intro-impact-shake {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  9% {
+    transform: translate3d(calc(var(--intro-scale) * -3.4), calc(var(--intro-scale) * 2.6), 0);
+  }
+
+  21% {
+    transform: translate3d(calc(var(--intro-scale) * 2.8), calc(var(--intro-scale) * -1.9), 0);
+  }
+
+  34% {
+    transform: translate3d(calc(var(--intro-scale) * -2.1), calc(var(--intro-scale) * 1.4), 0);
+  }
+
+  48% {
+    transform: translate3d(calc(var(--intro-scale) * 1.5), calc(var(--intro-scale) * -1), 0);
+  }
+
+  63% {
+    transform: translate3d(calc(var(--intro-scale) * -0.9), calc(var(--intro-scale) * 0.6), 0);
+  }
+
+  79% {
+    transform: translate3d(calc(var(--intro-scale) * 0.5), calc(var(--intro-scale) * -0.3), 0);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 낙하. 등속으로 떨어지면 가짜로 보이므로 중력처럼 가속시킨다. */
+@keyframes intro-debris-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  7% {
+    opacity: var(--debris-opacity, 0.8);
+  }
+
+  84% {
+    opacity: var(--debris-opacity, 0.8);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--debris-drift, 0px), calc(var(--intro-scale) * 320), 0)
+      rotate(var(--debris-spin, 0deg));
+  }
+}
+
 @keyframes intro-breathe {
   0%,
   100% {
@@ -771,6 +1054,12 @@ canvas {
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
     transition-delay: 0ms !important;
+  }
+
+  /* 위 규칙만으로는 파편이 1ms 동안 번쩍이고 사라진다. 낙하 연출 자체가
+     목적인 요소이므로 아예 그리지 않는다. */
+  .intro-debris {
+    display: none;
   }
 }
 
