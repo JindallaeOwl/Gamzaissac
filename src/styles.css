@@ -579,6 +579,34 @@ canvas {
   clip-path: polygon(38% 0%, 62% 0%, 76% 44%, 50% 100%, 24% 44%);
 }
 
+/* 감자: 주인공이 감자이므로 오프닝에도 떨어진다. 실제처럼 보이려면 세 가지가
+   필요하다 — 타원이 아닌 울퉁불퉁한 윤곽(border-radius를 네 모서리 다르게),
+   위쪽 하이라이트, 그리고 껍질의 싹눈. 매끈한 타원이면 달걀로 보인다. */
+.intro-potato {
+  --debris-opacity: 0.95;
+  width: calc(var(--intro-scale) * 6.4);
+  height: calc(var(--intro-scale) * 5.2);
+  background:
+    radial-gradient(circle at 32% 26%, rgb(255 244 214 / 22%) 0 11%, transparent 12%),
+    radial-gradient(circle at 61% 43%, rgb(74 48 20 / 85%) 0 5%, transparent 6%),
+    radial-gradient(circle at 38% 64%, rgb(74 48 20 / 78%) 0 4%, transparent 5%),
+    radial-gradient(circle at 73% 69%, rgb(74 48 20 / 70%) 0 3.5%, transparent 4.5%),
+    linear-gradient(157deg, #d0a463 0%, #ac8146 44%, #6b4a22 100%);
+}
+
+/* 세 개가 같은 윤곽이면 복제한 티가 난다 */
+.intro-potato--a {
+  border-radius: 58% 42% 47% 53% / 44% 51% 49% 56%;
+}
+
+.intro-potato--b {
+  border-radius: 44% 56% 62% 38% / 56% 41% 59% 44%;
+}
+
+.intro-potato--c {
+  border-radius: 51% 49% 39% 61% / 47% 58% 42% 53%;
+}
+
 /* 조각마다 낙하 위치·시차·속도·회전을 달리한다. 값이 겹치면 한 덩어리로
    떨어지는 것처럼 보여 사실감이 사라진다. */
 .intro-debris > *:nth-child(1) {
@@ -699,6 +727,32 @@ canvas {
   --debris-fall: 1650ms;
   --debris-drift: calc(var(--intro-scale) * 6);
   --debris-spin: 205deg;
+}
+
+/* 감자는 크고 무거워 빠르게 떨어지되 천천히 구른다. 작은 조각처럼 팽팽 돌면
+   가벼워 보인다. */
+.intro-debris > *:nth-child(16) {
+  --debris-x: 16%;
+  --debris-delay: 140ms;
+  --debris-fall: 1310ms;
+  --debris-drift: calc(var(--intro-scale) * -4);
+  --debris-spin: 112deg;
+}
+
+.intro-debris > *:nth-child(17) {
+  --debris-x: 45%;
+  --debris-delay: 480ms;
+  --debris-fall: 1520ms;
+  --debris-drift: calc(var(--intro-scale) * 6);
+  --debris-spin: -138deg;
+}
+
+.intro-debris > *:nth-child(18) {
+  --debris-x: 81%;
+  --debris-delay: 260ms;
+  --debris-fall: 1400ms;
+  --debris-drift: calc(var(--intro-scale) * -7);
+  --debris-spin: 94deg;
 }
 
 .intro-guide {
