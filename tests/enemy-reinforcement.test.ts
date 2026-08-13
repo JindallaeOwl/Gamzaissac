@@ -81,6 +81,25 @@ describe('reinforcement line-up', () => {
     expect(picked.filter((id) => id === 'summoner')).toHaveLength(1);
   });
 
+  // 템플릿이 이미 깐 적은 증원 상한에서 차감된다. 이것이 없으면 brood-nest의
+  // 소환사 1 + 증원 소환사 1로 방당 1마리 상한이 깨진다.
+  it('counts template-placed enemies against the per-room caps', () => {
+    const alwaysLast = () => 0.999999;
+
+    expect(getReinforcementIds(5, 4, alwaysLast, ['summoner'])).not.toContain('summoner');
+
+    const flankers = getReinforcementIds(3, 4, alwaysLast, ['flanker']).filter(
+      (id) => id === 'flanker',
+    );
+
+    expect(flankers).toHaveLength(1);
+
+    // 빈 배열이면 기존 동작과 같다 — 위의 다른 테스트들이 그 근거다.
+    expect(getReinforcementIds(5, 4, alwaysLast, [])).toEqual(
+      getReinforcementIds(5, 4, alwaysLast),
+    );
+  });
+
   it('returns nothing when no reinforcements were requested', () => {
     expect(getReinforcementIds(6, 0, alwaysLast)).toEqual([]);
   });

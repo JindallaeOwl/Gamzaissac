@@ -1,6 +1,5 @@
 import {
   bossRoomTemplateId,
-  COMBAT_ROOM_TEMPLATES,
   SHOP_ROOM_TEMPLATE,
   START_ROOM_TEMPLATE,
   TREASURE_ROOM_TEMPLATE,
@@ -9,6 +8,7 @@ import {
 import { getStageProgress, TOTAL_FLOORS } from '../data/stages';
 import { DIRECTIONS, OPPOSITE_DIRECTION, type Direction, moveCoord } from '../utils/directions';
 import { randomOf, shuffled, type RandomSource } from '../utils/random';
+import { pickCombatTemplate } from './RoomTemplateRules';
 import type { RewardDrop } from './RewardSystem';
 import type { ShopOfferState } from '../data/shop';
 
@@ -67,6 +67,9 @@ export class DungeonManager {
 
   floor = 1;
 
+  // 직전에 뽑힌 전투 템플릿. 같은 방이 연달아 나오는 것을 막기 위한 기억이다.
+  private lastCombatTemplateId: string | null = null;
+
   constructor(private readonly random: RandomSource = Math.random) {}
 
   generateFloor(floor: number): void {
@@ -77,6 +80,9 @@ export class DungeonManager {
     this.floor = floor;
     this.rooms.clear();
     this.nextDroppedRewardId = 1;
+    // 층을 새로 만들 때마다 초기화한다. 이전 층의 마지막 방이 다음 층 첫 방의
+    // 중복 제외에 걸리는 것은 의미가 없다.
+    this.lastCombatTemplateId = null;
 
     const startNode = this.createRoom({ x: 0, y: 0 }, 'start', START_ROOM_TEMPLATE.id);
     startNode.cleared = true;
@@ -437,7 +443,11 @@ export class DungeonManager {
   }
 
   private pickCombatTemplateId(): string {
-    return randomOf(COMBAT_ROOM_TEMPLATES, this.random).id;
+    const template = pickCombatTemplate(this.floor, this.lastCombatTemplateId, this.random);
+
+    this.lastCombatTemplateId = template.id;
+
+    return template.id;
   }
 
   private keyFor(coord: GridCoord): string {

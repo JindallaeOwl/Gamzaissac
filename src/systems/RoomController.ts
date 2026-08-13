@@ -374,10 +374,18 @@ export class RoomController {
       ...scaleRoomTemplatePoint(spawn.x, spawn.y),
     }));
     const extraEnemies = getReinforcementCount(this.runState.floor, room.type);
+    // 상한 계산에는 템플릿이 이미 깐 적도 포함해야 한다. 이 시점의 spawnSet은
+    // 아직 증원이 더해지기 전이라 곧 템플릿 배치 그대로다.
+    const templateEnemyIds = spawnSet.map((spawn) => spawn.enemyId);
 
     // The rule function applies the per-room caps, so a room can never fill up
     // with the same behaviour-heavy reinforcement.
-    for (const enemyId of getReinforcementIds(this.runState.floor, extraEnemies, this.random)) {
+    for (const enemyId of getReinforcementIds(
+      this.runState.floor,
+      extraEnemies,
+      this.random,
+      templateEnemyIds,
+    )) {
       spawnSet.push({
         enemyId,
         x: randomInt(ROOM_RECT.left + 64, ROOM_RECT.right - 64, this.random),

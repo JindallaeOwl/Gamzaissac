@@ -36,6 +36,20 @@ const REINFORCEMENT_ENTRIES: readonly {
   { id: 'summoner', fromFloor: 5, maxPerRoom: 1 },
 ];
 
+/** 이 적이 등장할 수 있는 가장 이른 층. 목록에 없는 적은 1층부터로 본다.
+    방 템플릿의 minFloor 검증(테스트)이 이 값을 기준으로 삼는다. */
+export function getEnemyEarliestFloor(enemyId: EnemyId): number {
+  return REINFORCEMENT_ENTRIES.find((entry) => entry.id === enemyId)?.fromFloor ?? 1;
+}
+
+/** 방당 최대 마리 수. 상한이 없는 적은 Infinity. */
+export function getEnemyMaxPerRoom(enemyId: EnemyId): number {
+  return (
+    REINFORCEMENT_ENTRIES.find((entry) => entry.id === enemyId)?.maxPerRoom ??
+    Number.POSITIVE_INFINITY
+  );
+}
+
 /** Enemy types eligible as reinforcements on a floor, ignoring per-room caps. */
 export function getReinforcementPool(floor: number): EnemyId[] {
   return REINFORCEMENT_ENTRIES.filter((entry) => floor >= entry.fromFloor).map((entry) => entry.id);
@@ -49,10 +63,21 @@ export function getReinforcementPool(floor: number): EnemyId[] {
  * candidates once it hits its limit. The basic three have no cap and keep the
  * pool from ever emptying.
  */
-export function getReinforcementIds(floor: number, count: number, random: RandomSource): EnemyId[] {
+export function getReinforcementIds(
+  floor: number,
+  count: number,
+  random: RandomSource,
+  // 방 템플릿이 이미 고정 배치한 적들. 방당 상한은 배치 출처와 무관하게 방 전체
+  // 기준이므로, 템플릿의 소환사 1을 모르면 증원이 둘째를 뽑아 상한이 깨진다.
+  alreadyPresent: readonly EnemyId[] = [],
+): EnemyId[] {
   const candidates = REINFORCEMENT_ENTRIES.filter((entry) => floor >= entry.fromFloor);
   const remaining = new Map<EnemyId, number>(
-    candidates.map((entry) => [entry.id, entry.maxPerRoom ?? Number.POSITIVE_INFINITY]),
+    candidates.map((entry) => {
+      const used = alreadyPresent.filter((id) => id === entry.id).length;
+
+      return [entry.id, (entry.maxPerRoom ?? Number.POSITIVE_INFINITY) - used];
+    }),
   );
   const picked: EnemyId[] = [];
 

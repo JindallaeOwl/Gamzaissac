@@ -35,7 +35,9 @@ describe('splitter enemy data', () => {
 });
 
 describe('room template enemy pools', () => {
-  it('keeps the splitter family out of the fixed spawn sets so it only appears as a floor 2+ reinforcement', () => {
+  // 층 제한 적(분열형·플랭커·소환사)의 고정 배치는 이제 템플릿 minFloor가 막는다
+  // (room-template-rules.test.ts). 여기서는 분열로만 태어나야 하는 새끼만 금지한다.
+  it('keeps the split child out of every fixed spawn set', () => {
     const templates = [
       START_ROOM_TEMPLATE,
       SHOP_ROOM_TEMPLATE,
@@ -47,7 +49,6 @@ describe('room template enemy pools', () => {
       template.spawnSets.flat().map((spawn) => spawn.enemyId),
     );
 
-    expect(spawnedIds).not.toContain('splitter');
     expect(spawnedIds).not.toContain('splitterling');
   });
 });
