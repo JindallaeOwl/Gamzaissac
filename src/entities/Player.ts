@@ -11,6 +11,7 @@ import {
   type PlayerStats,
 } from '../config/gameConfig';
 import { Bullet } from './Bullet';
+import { getSeedDisplayScale } from '../systems/ItemFeedbackRules';
 import { clamp, normalizeVector } from '../utils/math';
 import { resolvePlayerFacing, type PlayerFacing } from '../utils/playerFacing';
 import { createSpreadDirections, type AttackDirection } from '../utils/attackDirections';
@@ -279,6 +280,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const fireRate = getEffectiveFireRate(this.stats);
     const projectileSpeed = getEffectiveProjectileSpeed(this.stats);
     const damage = getEffectiveDamage(this.stats);
+    // 공격력이 오르면 씨앗이 "보기에만" 커진다. 판정은 아이템이 명시한
+    // seedScale(scale)만 따르므로, 순수 공격력 아이템이 히트박스를 몰래 키우는
+    // 숨은 밸런스 변경이 생기지 않는다. 방향 수와 무관하게 발사당 한 번 계산한다.
+    const seedDisplayScale = getSeedDisplayScale(this.attackProfile.seedScale, damage);
+    const seedTint = this.attackProfile.forceRedSeeds ? 0xff4d4d : undefined;
     const seedDirections = createSpreadDirections(
       direction,
       this.attackProfile.seedCount,
@@ -302,7 +308,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         lifeMs: (this.stats.range / projectileSpeed) * 1000,
         overflowPenetration: this.attackProfile.overflowPenetration,
         scale: this.attackProfile.seedScale,
-        tint: this.attackProfile.forceRedSeeds ? 0xff4d4d : undefined,
+        displayScale: seedDisplayScale,
+        tint: seedTint,
       });
     });
 

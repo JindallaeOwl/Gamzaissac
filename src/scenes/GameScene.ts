@@ -21,7 +21,13 @@ import {
   WORLD_WIDTH,
   ITEM_PREVIEW_RADIUS,
 } from '../config/gameConfig';
-import { PASSIVE_ITEMS, PRISM_LANCE_ITEM_ID, QUAD_SHOT_ITEM_ID } from '../data/items';
+import {
+  ITEM_CATEGORY_COLORS,
+  PASSIVE_ITEMS,
+  PRISM_LANCE_ITEM_ID,
+  QUAD_SHOT_ITEM_ID,
+  type PassiveItemDefinition,
+} from '../data/items';
 import { getShopProduct, SHOP_INTERACTION_RADIUS, type ShopProductDefinition } from '../data/shop';
 import { t, toggleLocale } from '../i18n';
 import { AudioSystem } from '../systems/AudioSystem';
@@ -30,7 +36,7 @@ import { CombatCollisionSystem } from '../systems/CombatCollisionSystem';
 import { DeveloperConsoleController } from '../systems/DeveloperConsoleController';
 import { DungeonManager, type RoomNode } from '../systems/DungeonManager';
 import { EffectsSystem } from '../systems/EffectsSystem';
-import { ItemSystem } from '../systems/ItemSystem';
+import { ItemSystem, type ItemAcquisitionResult } from '../systems/ItemSystem';
 import {
   formatRunElapsedTime,
   MinimapExpansionController,
@@ -1027,6 +1033,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private requestPause(): boolean {
+    // 일시정지는 트윈도 함께 멈춘다. 진행 중인 스탯 강조를 그대로 두면 금색
+    // 글자와 광택 띠가 정지 화면에 얼어붙어 그 화면 내내 보인다.
+    this.hud.settleStatFlashes();
     if (
       isRunEnded(this.runState) ||
       // 오프닝 중 Esc는 오프닝을 넘기기만 하고 일시정지를 열지 않는다.
@@ -1160,6 +1169,24 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
+  /**
+   * 패시브 획득의 공통 마무리 — 능력 해금, 스탯 반영, 플레이어 위 분류 색 흡수
+   * 연출. 줍기와 구매가 이 하나를 거쳐야 "샀는데 조용하다"는 비일관이 없고,
+   * 다음 획득 경로(보스 상자 등)도 이것만 부르면 된다.
+   */
+  private applyPassiveAcquisition(
+    item: PassiveItemDefinition,
+    acquisition: ItemAcquisitionResult,
+  ): void {
+    if (acquisition.newlyUnlockedAbilityId === 'charge-beam') {
+      this.player.hasChargeBeam = true;
+    }
+
+    this.player.setStats(this.runState.stats);
+    this.player.setAttackProfile(this.runState.attackProfile);
+    this.effects.itemAbsorb(this.player.x, this.player.y, ITEM_CATEGORY_COLORS[item.category]);
+  }
+
   private collectItem(pickup: ItemPickup): void {
     if (!pickup.active) {
       return;
@@ -1178,12 +1205,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    if (acquisition.newlyUnlockedAbilityId === 'charge-beam') {
-      this.player.hasChargeBeam = true;
-    }
-
-    this.player.setStats(this.runState.stats);
-    this.player.setAttackProfile(this.runState.attackProfile);
+    this.applyPassiveAcquisition(pickup.item, acquisition);
     const currentRoom = this.dungeon.getCurrentRoom();
 
     if (pickup.source === 'room' && currentRoom.type === 'treasure') {
@@ -1199,7 +1221,6 @@ export class GameScene extends Phaser.Scene {
       title: t(pickup.item.nameKey),
       description,
     });
-    this.effects.pickup(pickup.x, pickup.y);
     this.audio.play('pickup');
     pickup.destroy();
   }
@@ -1269,15 +1290,23 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    if (result.acquisition?.newlyUnlockedAbilityId === 'charge-beam') {
-      this.player.hasChargeBeam = true;
+    if (result.item && result.acquisition) {
+      this.applyPassiveAcquisition(result.item, result.acquisition);
+    } else {
+      // 소모품(하트·열쇠·폭탄)은 아이템이 아니라 흡수 연출 없이 스탯만 반영한다.
+      this.player.setStats(this.runState.stats);
+      this.player.setAttackProfile(this.runState.attackProfile);
     }
 
-    this.player.setStats(this.runState.stats);
-    this.player.setAttackProfile(this.runState.attackProfile);
     const productName = this.getShopProductName(result.product);
     this.hud.showMessage(t('messages.shopPurchased', { name: productName }), 2200);
-    this.effects.pickup(offerObject.x, offerObject.y);
+    // 진열대 반짝임은 패시브 구매에는 내지 않는다. 구매는 근접 상호작용이라
+    // 진열대와 플레이어가 몇 픽셀 차이로 겹쳐, 금색 반짝임이 분류 색 흡수를
+    // 덮어버린다 — 줍기 경로에서 이중 연출을 걷어낸 것과 같은 이유다.
+    if (!result.item) {
+      this.effects.pickup(offerObject.x, offerObject.y);
+    }
+
     this.audio.play('pickup');
     offerObject.destroy();
   }

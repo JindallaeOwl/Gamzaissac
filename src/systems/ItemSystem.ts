@@ -1,4 +1,8 @@
-import type { PlayerAttackProfile, PlayerStats } from '../config/gameConfig';
+import {
+  SEED_SCALE_LIMITS,
+  type PlayerAttackProfile,
+  type PlayerStats,
+} from '../config/gameConfig';
 import { BOSS_REWARD_ITEM_IDS } from '../data/bossRewards';
 import {
   ITEM_DROP_TABLES,
@@ -226,7 +230,11 @@ function applyAttackModifiers(
     seedCount: clamp(profile.seedCount + (modifiers.seedCountAdd ?? 0), 1, 12),
     spreadStepDegrees: modifiers.spreadStepDegrees ?? profile.spreadStepDegrees,
     overflowPenetration: profile.overflowPenetration || (modifiers.overflowPenetration ?? false),
-    seedScale: clamp(profile.seedScale * (modifiers.seedScaleMultiplier ?? 1), 0.6, 2.4),
+    seedScale: clamp(
+      profile.seedScale * (modifiers.seedScaleMultiplier ?? 1),
+      SEED_SCALE_LIMITS.min,
+      SEED_SCALE_LIMITS.max,
+    ),
     forceRedSeeds: profile.forceRedSeeds || (modifiers.forceRedSeeds ?? false),
     extraForeheadEyeCount: clamp(
       profile.extraForeheadEyeCount + (modifiers.extraForeheadEyeCountAdd ?? 0),

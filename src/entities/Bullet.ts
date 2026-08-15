@@ -14,6 +14,8 @@ interface BulletLaunchConfig {
   lifeMs: number;
   overflowPenetration?: boolean;
   scale?: number;
+  /** 그리기에만 쓰는 배율. 생략하면 scale과 같다. 판정은 언제나 scale만 따른다. */
+  displayScale?: number;
   tint?: number;
 }
 
@@ -57,7 +59,7 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     this.hitTargets.clear();
     this.clearTint();
     this.tintColor = config.tint;
-    this.setScale(config.scale ?? 1);
+    this.setScale(config.displayScale ?? config.scale ?? 1);
     this.setTexture(config.owner === 'player' ? TextureKeys.playerSeed : TextureKeys.enemyBullet);
     if (config.tint !== undefined) {
       this.setTint(config.tint);
@@ -69,8 +71,26 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
-    const playerRadius = Math.round(3 * (config.scale ?? 1));
-    body.setCircle(config.owner === 'player' ? playerRadius : 4);
+    // Phaser는 원형 바디도 스프라이트 배율로 다시 곱한다(Body.updateBounds:
+    // sourceWidth * scaleX). 그래서 이 게임의 월드 판정 반지름은 예전부터
+    // round(3·scale)·scale — scale의 제곱꼴이었다. 여기서는 그 기존 동작을
+    // 그대로 보존하면서, 표시 배율(displayScale)만 판정에서 상쇄한다:
+    // 바디에 주는 값에서 미리 나누면 Phaser가 다시 곱해 원래 크기가 된다.
+    // 즉 공격력이 키우는 것은 그림뿐이고, 판정은 아이템이 명시한 seedScale의
+    // 함수로 남는다.
+    const physicsScale = config.scale ?? 1;
+    const visualScale = config.displayScale ?? physicsScale;
+    const worldRadius = Math.round(3 * physicsScale) * physicsScale;
+    // 나눴다 다시 곱하는 왕복에서 3이 2.99999…가 되면 Phaser의 floor(halfWidth)가
+    // 한 픽셀을 통째로 깎는다. 미세한 여유로 그 절벽을 막는다.
+    const playerRadius = (worldRadius + 0.0001) / visualScale;
+    const radius = config.owner === 'player' ? playerRadius : 4;
+
+    // 오프셋 없이 setCircle을 부르면 바디가 스프라이트의 왼쪽 위에 붙는다.
+    // 표시 배율이 커질수록 그 어긋남도 함께 커져(배율 2에서 중심이 5px 이탈)
+    // 그림의 오른쪽 아래 절반이 판정 밖이 된다. displayOrigin - 반지름 오프셋이
+    // 원을 스프라이트 중심에 앉힌다(적 탄은 4-4=0이라 기존과 동일).
+    body.setCircle(radius, this.displayOriginX - radius, this.displayOriginY - radius);
     body.enable = true;
     body.checkCollision.none = false;
     body.setVelocity(config.direction.x * config.speed, config.direction.y * config.speed);

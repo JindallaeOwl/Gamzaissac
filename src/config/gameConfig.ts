@@ -88,6 +88,10 @@ export const PLAYER_BASE_STATS: PlayerStats = {
   projectileSpeedMultiplier: 1,
 };
 
+// 저장되는 seedScale의 한계. ItemSystem(중첩 계산)과 표시 배율 계산이 같은 값을
+// 봐야, 한쪽만 조정했을 때 "아이템을 먹어도 커지지 않는" 어긋남이 생기지 않는다.
+export const SEED_SCALE_LIMITS = { min: 0.6, max: 2.4 } as const;
+
 export const PLAYER_BASE_ATTACK_PROFILE: PlayerAttackProfile = {
   seedCount: 1,
   spreadStepDegrees: 12,
@@ -151,6 +155,10 @@ export const FEEDBACK_TUNING = {
     floatingTextMs: 620,
     playerFlashMs: 180,
     beamChargePulseMs: 180,
+    // 아이템으로 수치가 바뀐 HUD 스탯을 잠깐 밝히는 시간과 색. 색은 setTint용
+    // 숫자다 — setColor는 텍스트 캔버스를 다시 그리지만 tint는 GPU에서 곱한다.
+    statFlashMs: 1100,
+    statFlashColor: 0xffd370,
   },
   audio: {
     enabled: true,

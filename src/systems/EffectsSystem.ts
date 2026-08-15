@@ -88,6 +88,14 @@ export class EffectsSystem {
     this.expandingRing(x, y, 0xffe39b, 7, 210);
   }
 
+  /** 아이템 흡수. 분류 색 두 겹 링 + 파편을 플레이어 위에 터뜨려, 두루마리 UI가
+      아니라 게임 세계 안에서도 "몸에 들어왔다"가 보이게 한다. */
+  itemAbsorb(x: number, y: number, color: number): void {
+    this.burst(x, y, color, 10);
+    this.expandingRing(x, y, color, 9, 260);
+    this.expandingRing(x, y, color, 16, 380);
+  }
+
   beamChargePulse(x: number, y: number, ready: boolean): void {
     this.expandingRing(x, y, ready ? 0xff7af2 : 0x8beeff, ready ? 10 : 6, 180);
   }

@@ -18,6 +18,18 @@ export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 export type ItemCategory = 'offense' | 'defense' | 'utility' | 'resource';
 export type ItemDropSource = 'combat' | 'shop' | 'treasure' | 'boss';
 
+// 획득 연출 등에 쓰는 분류 색. 분류 타입 옆에 두어, UI 쪽에 두 번째 매핑이 생겨
+// 서로 어긋나는 일을 막는다. 공격=주홍, 방어=초록, 보조=하늘, 자원=금.
+// 개별 tint 필드를 쓰지 않는 이유: tint는 배지 아이콘 시절의 유물로, 지금의
+// 손도트 아이콘 색과 무관하다. 연출은 "어떤 분류를 먹었나"를 가르치는 것이
+// 목적이라 아이템별 색보다 분류 색이 맞다.
+export const ITEM_CATEGORY_COLORS: Record<ItemCategory, number> = {
+  offense: 0xff7a5c,
+  defense: 0x7ed98a,
+  utility: 0x7ab8ff,
+  resource: 0xffd166,
+};
+
 export interface ItemDropTable {
   dropChance: number;
   rarityWeights: Record<ItemRarity, number>;
