@@ -11,6 +11,7 @@ import {
   type AttackProfileModifier,
   type ItemDropSource,
   type ItemRarity,
+  type ItemSynergyDefinition,
   type PassiveItemDefinition,
   type StatModifier,
 } from '../data/items';
@@ -22,7 +23,9 @@ export interface ItemAcquisitionResult {
   acquired: boolean;
   stackCount: number;
   newlyUnlockedAbilityId?: NonNullable<PassiveItemDefinition['abilityId']>;
-  newlyActivatedSynergyIds: string[];
+  /** 이번 획득으로 방금 발동한 시너지. id가 아니라 정의를 통째로 담아,
+      받는 쪽(발동 안내)이 다시 찾아보다 실패하는 경우가 없게 한다 */
+  newlyActivatedSynergies: ItemSynergyDefinition[];
 }
 
 const RARITY_ORDER: readonly ItemRarity[] = ['common', 'uncommon', 'rare', 'legendary'];
@@ -95,7 +98,7 @@ export class ItemSystem {
       return {
         acquired: false,
         stackCount: currentStackCount,
-        newlyActivatedSynergyIds: [],
+        newlyActivatedSynergies: [],
       };
     }
 
@@ -106,7 +109,7 @@ export class ItemSystem {
     const result: ItemAcquisitionResult = {
       acquired: true,
       stackCount: currentStackCount + 1,
-      newlyActivatedSynergyIds: [],
+      newlyActivatedSynergies: [],
     };
 
     if (item.abilityId && !runState.unlockedAbilityIds.includes(item.abilityId)) {
@@ -128,7 +131,7 @@ export class ItemSystem {
         synergy.attackModifiers,
       );
       runState.activatedSynergyIds.push(synergy.id);
-      result.newlyActivatedSynergyIds.push(synergy.id);
+      result.newlyActivatedSynergies.push(synergy);
     }
 
     return result;
@@ -242,5 +245,8 @@ function applyAttackModifiers(
       6,
     ),
     hasToothpickCosmetic: profile.hasToothpickCosmetic || (modifiers.hasToothpickCosmetic ?? false),
+    // 곱으로 중첩한다. 극단값은 getEffectiveBeamChargeMs의 최종 clamp가 막는다.
+    beamChargeMsMultiplier:
+      profile.beamChargeMsMultiplier * (modifiers.beamChargeMsMultiplier ?? 1),
   };
 }

@@ -96,6 +96,14 @@ export class EffectsSystem {
     this.expandingRing(x, y, color, 16, 380);
   }
 
+  /** 시너지 발동. 아이템 흡수(분류 색)와 구별되는 금·백색 링을 더 크고 길게
+      터뜨린다. 흡수 연출과 같은 프레임에 겹쳐 재생되므로 색으로 구별해야 한다. */
+  synergyActivate(x: number, y: number): void {
+    this.burst(x, y, 0xfff3c4, 14);
+    this.expandingRing(x, y, 0xffd166, 12, 320);
+    this.expandingRing(x, y, 0xffffff, 20, 480);
+  }
+
   beamChargePulse(x: number, y: number, ready: boolean): void {
     this.expandingRing(x, y, ready ? 0xff7af2 : 0x8beeff, ready ? 10 : 6, 180);
   }

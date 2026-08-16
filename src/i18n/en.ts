@@ -132,6 +132,8 @@ export const en: TranslationTree = {
     chestConsumable: 'Chest: +{amount} {resource}',
     itemPreview: '[{rarity} · {category}] {name}: {description}',
     secretItemSpawned: 'Secret input detected: Prism Lance + Quad Shot spawned',
+    // Scroll title. The announcement UI appends a trailing '!' automatically.
+    synergyActivated: '{name} Synergy',
     clear: 'CLEAR',
     localeKo: 'Korean',
     localeEn: 'English',
@@ -321,11 +323,30 @@ export const en: TranslationTree = {
     resource: 'Resource',
   },
   synergies: {
-    prismArray: 'Prism Array',
-    glassHorizon: 'Glass Horizon',
-    tunedCircuit: 'Tuned Circuit',
-    backupShell: 'Backup Shell',
-    compoundLuck: 'Compound Luck',
-    meteorSeed: 'Meteor Seed',
+    prismArray: {
+      name: 'Prism Array',
+      description: 'Beam charge time is 30% shorter.',
+    },
+    glassHorizon: {
+      name: 'Glass Horizon',
+      description: 'Damage and range rise together (damage +0.55, range +45).',
+    },
+    tunedCircuit: {
+      name: 'Tuned Circuit',
+      description: 'Fire rate and seed speed rise together (fire rate +0.4, seed speed +30).',
+    },
+    backupShell: {
+      name: 'Backup Shell',
+      description: 'Gain a max heart and restore one heart.',
+    },
+    compoundLuck: {
+      name: 'Compound Luck',
+      description: 'Luck rises by 2.',
+    },
+    meteorSeed: {
+      name: 'Meteor Seed',
+      description:
+        'Seeds get bigger, faster, and harder (damage +0.75, seed speed +60, size ×1.15).',
+    },
   },
 };

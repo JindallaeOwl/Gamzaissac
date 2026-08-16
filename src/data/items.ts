@@ -12,6 +12,8 @@ export interface AttackProfileModifier {
   forceRedSeeds?: boolean;
   extraForeheadEyeCountAdd?: number;
   hasToothpickCosmetic?: boolean;
+  /** 빔 차징 시간 배율(곱). 프로필 속성이므로 어떤 아이템·시너지든 줄일 수 있다 */
+  beamChargeMsMultiplier?: number;
 }
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
@@ -55,6 +57,9 @@ export interface PassiveItemDefinition {
 export interface ItemSynergyDefinition {
   id: string;
   nameKey: string;
+  /** 발동 알림에 보여 줄 효과 설명. 발동이 화면에 전달되지 않으면 시너지는
+      없는 것과 같으므로, 모든 시너지는 설명을 반드시 갖는다(테스트로 강제). */
+  descriptionKey: string;
   requiredItemIds: readonly string[];
   modifiers: StatModifier;
   attackModifiers?: AttackProfileModifier;
@@ -491,37 +496,46 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
 export const ITEM_SYNERGIES: readonly ItemSynergyDefinition[] = [
   {
     id: 'prism-array',
-    nameKey: 'synergies.prismArray',
+    nameKey: 'synergies.prismArray.name',
+    descriptionKey: 'synergies.prismArray.description',
     requiredItemIds: ['quad-shot', 'prism-lance'],
     modifiers: {},
+    // 빔과 같은 방향의 씨앗 동시 발사는 관통 빔과 겹쳐 낭비라는 플레이 피드백으로
+    // 폐기했다(2026-08-16). 차징 단축은 매 발사마다 체감된다.
+    attackModifiers: { beamChargeMsMultiplier: 0.7 },
   },
   {
     id: 'glass-horizon',
-    nameKey: 'synergies.glassHorizon',
+    nameKey: 'synergies.glassHorizon.name',
+    descriptionKey: 'synergies.glassHorizon.description',
     requiredItemIds: ['glass-fern', 'long-echo'],
     modifiers: { damage: 0.55, range: 45 },
   },
   {
     id: 'tuned-circuit',
-    nameKey: 'synergies.tunedCircuit',
+    nameKey: 'synergies.tunedCircuit.name',
+    descriptionKey: 'synergies.tunedCircuit.description',
     requiredItemIds: ['pulse-relay', 'steady-pin'],
     modifiers: { fireRate: 0.4, projectileSpeed: 30 },
   },
   {
     id: 'backup-shell',
-    nameKey: 'synergies.backupShell',
+    nameKey: 'synergies.backupShell.name',
+    descriptionKey: 'synergies.backupShell.description',
     requiredItemIds: ['pocket-battery', 'bark-vest'],
     modifiers: { maxHealth: 2, heal: 2 },
   },
   {
     id: 'compound-luck',
-    nameKey: 'synergies.compoundLuck',
+    nameKey: 'synergies.compoundLuck.name',
+    descriptionKey: 'synergies.compoundLuck.description',
     requiredItemIds: ['clover-sprout', 'lucky-ledger'],
     modifiers: { luck: 2 },
   },
   {
     id: 'meteor-seed',
-    nameKey: 'synergies.meteorSeed',
+    nameKey: 'synergies.meteorSeed.name',
+    descriptionKey: 'synergies.meteorSeed.description',
     requiredItemIds: ['hot-pebble', 'mega-seed'],
     modifiers: { damage: 0.75, projectileSpeed: 60 },
     attackModifiers: { seedScaleMultiplier: 1.15 },

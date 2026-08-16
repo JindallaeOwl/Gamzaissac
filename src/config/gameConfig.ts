@@ -68,6 +68,8 @@ export interface PlayerAttackProfile {
   forceRedSeeds: boolean;
   extraForeheadEyeCount: number;
   hasToothpickCosmetic: boolean;
+  /** 빔 차징 시간 배율(1보다 작으면 빨리 모인다). 프리즘 배열 시너지가 줄인다 */
+  beamChargeMsMultiplier: number;
 }
 
 export const PLAYER_HEALTH_UNITS_PER_HEART = 2;
@@ -100,6 +102,7 @@ export const PLAYER_BASE_ATTACK_PROFILE: PlayerAttackProfile = {
   forceRedSeeds: false,
   extraForeheadEyeCount: 0,
   hasToothpickCosmetic: false,
+  beamChargeMsMultiplier: 1,
 };
 
 export const COMBAT_TUNING = {

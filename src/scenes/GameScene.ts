@@ -1171,8 +1171,10 @@ export class GameScene extends Phaser.Scene {
 
   /**
    * 패시브 획득의 공통 마무리 — 능력 해금, 스탯 반영, 플레이어 위 분류 색 흡수
-   * 연출. 줍기와 구매가 이 하나를 거쳐야 "샀는데 조용하다"는 비일관이 없고,
-   * 다음 획득 경로(보스 상자 등)도 이것만 부르면 된다.
+   * 연출, 그리고 방금 발동한 시너지 안내까지. 줍기와 구매가 이 하나를 거쳐야
+   * "샀는데 조용하다"는 비일관이 없고, 다음 획득 경로(보스 상자 등)도 이것만
+   * 부르면 시너지 안내를 빠뜨릴 수 없다. 아이템 자체의 스크롤 알림을 쓰는
+   * 경로라면 그 알림을 먼저 큐에 넣고 불러야 아이템 → 시너지 순서가 유지된다.
    */
   private applyPassiveAcquisition(
     item: PassiveItemDefinition,
@@ -1185,6 +1187,27 @@ export class GameScene extends Phaser.Scene {
     this.player.setStats(this.runState.stats);
     this.player.setAttackProfile(this.runState.attackProfile);
     this.effects.itemAbsorb(this.player.x, this.player.y, ITEM_CATEGORY_COLORS[item.category]);
+    this.presentActivatedSynergies(acquisition);
+  }
+
+  /**
+   * 시너지 발동 안내. 스탯만 조용히 합쳐지면 발동 자체를 알 수 없으므로
+   * 시너지마다 스크롤 알림을 붙인다. 링·효과음은 큐에 넣는 순간이 아니라
+   * 알림이 실제로 화면에 나타나는 순간(onShow) 재생한다 — 즉시 내면 줍기
+   * 연출·소리와 같은 프레임에 겹쳐 묻히고, 스크롤은 대기열 뒤라 몇 초 뒤에
+   * 소리 없이 나타나기 때문이다.
+   */
+  private presentActivatedSynergies(acquisition: ItemAcquisitionResult): void {
+    for (const synergy of acquisition.newlyActivatedSynergies) {
+      this.itemPickupAnnouncement.show({
+        title: t('messages.synergyActivated', { name: t(synergy.nameKey) }),
+        description: t(synergy.descriptionKey),
+        onShow: () => {
+          this.effects.synergyActivate(this.player.x, this.player.y);
+          this.audio.play('synergy');
+        },
+      });
+    }
   }
 
   private collectItem(pickup: ItemPickup): void {
@@ -1205,6 +1228,12 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    // 아이템 알림을 먼저 큐에 넣는다. applyPassiveAcquisition이 시너지 알림을
+    // 이어 붙이므로, 순서가 뒤집히면 시너지가 아이템보다 먼저 표시된다.
+    this.itemPickupAnnouncement.show({
+      title: t(pickup.item.nameKey),
+      description: t(pickup.item.descriptionKey),
+    });
     this.applyPassiveAcquisition(pickup.item, acquisition);
     const currentRoom = this.dungeon.getCurrentRoom();
 
@@ -1216,11 +1245,6 @@ export class GameScene extends Phaser.Scene {
       this.dungeon.markCurrentBossRewardClaimed();
     }
 
-    const description = t(pickup.item.descriptionKey);
-    this.itemPickupAnnouncement.show({
-      title: t(pickup.item.nameKey),
-      description,
-    });
     this.audio.play('pickup');
     pickup.destroy();
   }

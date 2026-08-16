@@ -5,11 +5,14 @@ import {
   findItemByReference,
   formatItemNumber,
   ITEM_DROP_TABLES,
+  ITEM_SYNERGIES,
   PASSIVE_ITEMS,
   type ItemDropSource,
   type ItemRarity,
   type PassiveItemDefinition,
 } from '../src/data/items';
+import { ko } from '../src/i18n/ko';
+import type { TranslationTree } from '../src/i18n/types';
 import { isItemAtStackLimit, isStatOnlyBossReward, ItemSystem } from '../src/systems/ItemSystem';
 import { getEffectiveDamage, getEffectiveFireRate } from '../src/systems/PlayerStatSystem';
 import { createInitialRunState } from '../src/systems/RunState';
@@ -168,7 +171,7 @@ describe('ItemSystem', () => {
     expect(system.acquireItem(state, item!)).toEqual({
       acquired: true,
       stackCount: 1,
-      newlyActivatedSynergyIds: [],
+      newlyActivatedSynergies: [],
     });
     expect(state.collectedItemIds).toEqual(['quad-shot']);
     expect(state.attackProfile.seedCount).toBe(4);
@@ -185,12 +188,12 @@ describe('ItemSystem', () => {
       acquired: true,
       stackCount: 1,
       newlyUnlockedAbilityId: 'charge-beam',
-      newlyActivatedSynergyIds: [],
+      newlyActivatedSynergies: [],
     });
     expect(system.acquireItem(state, prismLance!)).toEqual({
       acquired: false,
       stackCount: 1,
-      newlyActivatedSynergyIds: [],
+      newlyActivatedSynergies: [],
     });
     expect(state.unlockedAbilityIds).toEqual(['charge-beam']);
     expect(state.collectedItemIds).toEqual(['prism-lance']);
@@ -213,6 +216,8 @@ describe('ItemSystem', () => {
     expect(state.attackProfile.seedCount).toBe(4);
     expect(state.attackProfile.spreadStepDegrees).toBe(12);
     expect(state.unlockedAbilityIds).toContain('charge-beam');
+    // 프리즘 배열 시너지의 실효과 — 획득 순서와 무관하게 차징 배율이 줄어든다.
+    expect(state.attackProfile.beamChargeMsMultiplier).toBeCloseTo(0.7);
   });
 
   it('defines rarity, category, source pools, and stack limits for all 33 passives', () => {
@@ -253,13 +258,15 @@ describe('ItemSystem', () => {
     system.acquireItem(state, glassFern);
     const activation = system.acquireItem(state, longEcho);
 
-    expect(activation.newlyActivatedSynergyIds).toEqual(['glass-horizon']);
+    expect(activation.newlyActivatedSynergies.map((synergy) => synergy.id)).toEqual([
+      'glass-horizon',
+    ]);
     expect(state.activatedSynergyIds).toEqual(['glass-horizon']);
     expect(state.stats.damage).toBeCloseTo(2);
     expect(state.stats.range).toBe(380);
 
     const nextStack = system.acquireItem(state, glassFern);
-    expect(nextStack.newlyActivatedSynergyIds).toEqual([]);
+    expect(nextStack.newlyActivatedSynergies).toEqual([]);
     expect(state.activatedSynergyIds).toEqual(['glass-horizon']);
   });
 
@@ -271,6 +278,29 @@ describe('ItemSystem', () => {
     expect(alwaysHigh.pickItemForSource('treasure', [])?.rarity).toBe('legendary');
     expect(alwaysLow.rollCombatRewardItem([], 0)).not.toBeNull();
     expect(alwaysHigh.rollCombatRewardItem([], 10)).toBeNull();
+  });
+});
+
+function resolveTranslation(tree: TranslationTree, path: string): unknown {
+  return path.split('.').reduce<unknown>((node, key) => {
+    if (node && typeof node === 'object') {
+      return (node as Record<string, unknown>)[key];
+    }
+
+    return undefined;
+  }, tree);
+}
+
+describe('item synergies', () => {
+  it('gives every synergy a resolvable name and effect description', () => {
+    // 발동 알림이 이름·설명을 그대로 화면에 올린다. 키가 깨지면 알림에
+    // 'synergies.…' 같은 원시 키 문자열이 노출되므로 여기서 미리 잡는다.
+    // ko만 검사한다 — ko/en 키 집합 일치와 빈 문자열 금지는 i18n-parity가 전담한다.
+    for (const synergy of ITEM_SYNERGIES) {
+      for (const key of [synergy.nameKey, synergy.descriptionKey]) {
+        expect(resolveTranslation(ko, key), `${synergy.id}: ${key}`).toBeTypeOf('string');
+      }
+    }
   });
 });
 

@@ -13,9 +13,13 @@ export function getEffectiveProjectileSpeed(stats: PlayerStats): number {
   return clamp(stats.projectileSpeed * stats.projectileSpeedMultiplier, 120, 1200);
 }
 
-export function getEffectiveBeamChargeMs(stats: PlayerStats): number {
+// beamChargeMsMultiplier는 공격 프로필의 곱 배율(프리즘 배열 등)이다. clamp 안에서
+// 곱해야 배율로도 하한(250ms)을 뚫을 수 없다.
+export function getEffectiveBeamChargeMs(stats: PlayerStats, beamChargeMsMultiplier = 1): number {
   return clamp(
-    BEAM_TUNING.chargeMs * (PLAYER_BASE_STATS.fireRate / getEffectiveFireRate(stats)),
+    BEAM_TUNING.chargeMs *
+      beamChargeMsMultiplier *
+      (PLAYER_BASE_STATS.fireRate / getEffectiveFireRate(stats)),
     250,
     5000,
   );

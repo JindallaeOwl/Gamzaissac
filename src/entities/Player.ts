@@ -278,6 +278,29 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     const fireRate = getEffectiveFireRate(this.stats);
+    this.nextShotAt = time + 1000 / fireRate;
+    this.fireSeedVolley(direction, bulletGroup);
+
+    const muzzleX = this.x + direction.x * 12;
+    const muzzleY = this.y + direction.y * 12;
+    this.emit('player-shot', { x: muzzleX, y: muzzleY, direction });
+  }
+
+  /**
+   * 씨앗 부채꼴 발사의 몸통. 부채꼴 계산과 수치 계산(실효 스탯·표시 배율·판정
+   * 배율)이 한 곳에 있어, 앞으로 다른 발사 경로가 생겨도 이것을 부르면 일반
+   * 사격과 같은 씨앗이 나간다. 연사 쿨다운(nextShotAt)과 발사 이벤트는 일반
+   * 사격(tryShoot)만의 것이므로 여기서 건드리지 않는다.
+   */
+  private fireSeedVolley(
+    direction: AttackDirection,
+    bulletGroup: Phaser.Physics.Arcade.Group,
+  ): void {
+    const seedDirections = createSpreadDirections(
+      direction,
+      this.attackProfile.seedCount,
+      this.attackProfile.spreadStepDegrees,
+    );
     const projectileSpeed = getEffectiveProjectileSpeed(this.stats);
     const damage = getEffectiveDamage(this.stats);
     // 공격력이 오르면 씨앗이 "보기에만" 커진다. 판정은 아이템이 명시한
@@ -285,13 +308,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // 숨은 밸런스 변경이 생기지 않는다. 방향 수와 무관하게 발사당 한 번 계산한다.
     const seedDisplayScale = getSeedDisplayScale(this.attackProfile.seedScale, damage);
     const seedTint = this.attackProfile.forceRedSeeds ? 0xff4d4d : undefined;
-    const seedDirections = createSpreadDirections(
-      direction,
-      this.attackProfile.seedCount,
-      this.attackProfile.spreadStepDegrees,
-    );
     const centerIndex = (seedDirections.length - 1) / 2;
-    this.nextShotAt = time + 1000 / fireRate;
 
     seedDirections.forEach((seedDirection, index) => {
       const lateralOffset = (index - centerIndex) * 2;
@@ -312,10 +329,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         tint: seedTint,
       });
     });
-
-    const muzzleX = this.x + direction.x * 12;
-    const muzzleY = this.y + direction.y * 12;
-    this.emit('player-shot', { x: muzzleX, y: muzzleY, direction });
   }
 
   private updateBeamCharge(time: number, controls: PlayerControls): void {
@@ -331,7 +344,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.beamChargeDirection = direction;
       }
 
-      const requiredChargeMs = getEffectiveBeamChargeMs(this.stats);
+      const requiredChargeMs = getEffectiveBeamChargeMs(
+        this.stats,
+        this.attackProfile.beamChargeMsMultiplier,
+      );
       const chargeProgress = Math.min(1, (time - this.beamChargeStartedAt) / requiredChargeMs);
       this.setTint(chargeProgress >= 1 ? 0xff7af2 : 0x8beeff);
 
@@ -350,7 +366,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const chargeMs = time - this.beamChargeStartedAt;
     const canFire =
-      chargeMs >= getEffectiveBeamChargeMs(this.stats) && time >= this.beamCooldownUntil;
+      chargeMs >= getEffectiveBeamChargeMs(this.stats, this.attackProfile.beamChargeMsMultiplier) &&
+      time >= this.beamCooldownUntil;
 
     if (canFire) {
       this.beamCooldownUntil = time + BEAM_TUNING.cooldownMs;

@@ -9,11 +9,16 @@ import type { UiObjectRegistrar } from './UiCameraSystem';
 interface AnnouncementEntry {
   title: string;
   description: string;
+  onShow?: () => void;
 }
 
 export interface ItemPickupAnnouncementInput {
   title: string;
   description: string;
+  /** 이 알림이 실제로 화면에 나타나는 순간 호출된다. 알림은 대기열 뒤에서 몇 초
+      늦게 뜰 수 있으므로, 알림과 짝을 이루는 연출·효과음은 큐에 넣는 시점이
+      아니라 여기서 재생해야 화면과 소리가 같은 순간에 맞는다. */
+  onShow?: () => void;
 }
 
 export class ItemPickupAnnouncement {
@@ -33,6 +38,7 @@ export class ItemPickupAnnouncement {
     this.queue.push({
       title: input.title.endsWith('!') ? input.title : `${input.title}!`,
       description: input.description,
+      onShow: input.onShow,
     });
 
     if (!this.activeContainer) {
@@ -54,6 +60,8 @@ export class ItemPickupAnnouncement {
     if (!entry) {
       return;
     }
+
+    entry.onShow?.();
 
     const motion = getAnnouncementMotion();
     const background = this.registerUiObject(

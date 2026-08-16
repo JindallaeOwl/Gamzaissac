@@ -132,6 +132,8 @@ export const ko: TranslationTree = {
     chestConsumable: '상자: +{amount} {resource}',
     itemPreview: '[{rarity} · {category}] {name}: {description}',
     secretItemSpawned: '비밀 입력 감지: 프리즘 창 + 쿼드샷 생성',
+    // 스크롤 알림 제목. 알림 UI가 끝에 !를 자동으로 붙이므로 문장 안에 !를 넣지 않는다
+    synergyActivated: '{name} 시너지 발동',
     clear: '클리어',
     localeKo: '한국어',
     localeEn: '영어',
@@ -320,11 +322,29 @@ export const ko: TranslationTree = {
     resource: '자원',
   },
   synergies: {
-    prismArray: '프리즘 배열',
-    glassHorizon: '유리 지평선',
-    tunedCircuit: '조율 회로',
-    backupShell: '예비 껍질',
-    compoundLuck: '복리 행운',
-    meteorSeed: '유성 씨앗',
+    prismArray: {
+      name: '프리즘 배열',
+      description: '빔 모으는 시간이 30% 짧아집니다.',
+    },
+    glassHorizon: {
+      name: '유리 지평선',
+      description: '공격력과 사거리가 함께 오릅니다 (공격 +0.55, 사거리 +45).',
+    },
+    tunedCircuit: {
+      name: '조율 회로',
+      description: '연사와 씨앗 속도가 함께 오릅니다 (연사 +0.4, 씨앗 속도 +30).',
+    },
+    backupShell: {
+      name: '예비 껍질',
+      description: '최대 하트가 1개 늘고 하트 1개를 회복합니다.',
+    },
+    compoundLuck: {
+      name: '복리 행운',
+      description: '행운이 2 오릅니다.',
+    },
+    meteorSeed: {
+      name: '유성 씨앗',
+      description: '씨앗이 더 크고 빠르고 아파집니다 (공격 +0.75, 씨앗 속도 +60, 크기 ×1.15).',
+    },
   },
 };
