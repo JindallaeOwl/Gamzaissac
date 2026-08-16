@@ -32,7 +32,8 @@ export class ShooterEnemy extends BaseEnemy {
 
     if (this.fireAt > 0 && time >= this.fireAt) {
       this.fireAt = 0;
-      this.clearTint();
+      // clearTint를 직접 부르면 챔피언 금색 같은 지속 tint까지 지워진다.
+      this.restorePersistentTint();
       this.setScale(shooterPulseScale(baseScale, 'idle'));
       this.fireAtPlayer(
         player,

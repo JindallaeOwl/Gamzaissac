@@ -82,3 +82,15 @@ export const ROOM_CLEAR_REWARDS: RewardDefinition[] = [
     tint: 0xd6a15f,
   },
 ];
+
+/** 종류별 방 클리어 보상 정의. 표에 없는 종류는 데이터 실수이므로 조용한 기본값
+    대신 던진다 — 폴백 리터럴이 표와 어긋난 채 살아남는 것을 막는다. */
+export function getRoomClearRewardDefinition(kind: RewardKind): RewardDefinition {
+  const definition = ROOM_CLEAR_REWARDS.find((reward) => reward.kind === kind);
+
+  if (!definition) {
+    throw new Error(`Missing room clear reward definition: ${kind}`);
+  }
+
+  return definition;
+}

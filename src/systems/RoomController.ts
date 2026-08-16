@@ -45,6 +45,7 @@ import { isRunEnded, type RunState } from './RunState';
 import { DIRECTIONS, type Direction } from '../utils/directions';
 import { createSeededRandom, randomInt, randomOf, type RandomSource } from '../utils/random';
 import { BossRewardSystem } from './BossRewardSystem';
+import { CHAMPION_TUNING, rollChampionIndex } from './ChampionRules';
 import type { ShopSystem } from './ShopSystem';
 import { createShopNpcSpeechBubble, SHOP_SPEECH_BUBBLE_DATA_KEY } from '../ui/ShopNpcSpeechBubble';
 import { t } from '../i18n';
@@ -87,6 +88,8 @@ interface RoomControllerConfig {
   runState: RunState;
   onRoomCleared: (room: RoomNode) => void;
   onEnemyDefeated: (score: number) => void;
+  /** 챔피언이 죽은 자리 — 처치 보상(보물 상자)을 떨구는 데 쓴다 */
+  onChampionDefeated?: (x: number, y: number) => void;
   onObstacleDestroyed?: (x: number, y: number) => void;
   onBossPhaseTwo?: (boss: BaseEnemy) => void;
   // 보스가 탄·접촉이 아닌 직접 피해(근접 휘두르기·부메랑)로 플레이어를 맞혔을 때,
@@ -112,6 +115,7 @@ export class RoomController {
   private readonly runState: RunState;
   private readonly onRoomCleared: (room: RoomNode) => void;
   private readonly onEnemyDefeated: (score: number) => void;
+  private readonly onChampionDefeated?: (x: number, y: number) => void;
   private readonly onObstacleDestroyed?: (x: number, y: number) => void;
   private readonly onBossPhaseTwo?: (boss: BaseEnemy) => void;
   private readonly onPlayerDamaged?: () => void;
@@ -136,6 +140,7 @@ export class RoomController {
     this.runState = config.runState;
     this.onRoomCleared = config.onRoomCleared;
     this.onEnemyDefeated = config.onEnemyDefeated;
+    this.onChampionDefeated = config.onChampionDefeated;
     this.onObstacleDestroyed = config.onObstacleDestroyed;
     this.onBossPhaseTwo = config.onBossPhaseTwo;
     this.onPlayerDamaged = config.onPlayerDamaged;
@@ -397,8 +402,17 @@ export class RoomController {
     const obstaclePositions = (template.obstacles ?? []).map((position) =>
       scaleRoomTemplatePoint(position.x, position.y),
     );
+    // 챔피언은 전투방의 자연 스폰에서만, 방마다 한 번만 굴린다 — 방을 나갔다 와서
+    // 스폰이 다시 깔려도 재추첨으로 상자를 반복 획득할 수 없다. 보스방은 굴리지
+    // 않고, 분열 새끼·소환 하수인·콘솔 스폰은 이 경로를 지나지 않아 자연히 제외된다.
+    let championIndex: number | null = null;
 
-    for (const spawn of spawnSet) {
+    if (room.type === 'combat' && !room.championRolled) {
+      room.championRolled = true;
+      championIndex = rollChampionIndex(this.random, spawnSet.length, this.runState.floor);
+    }
+
+    for (const [index, spawn] of spawnSet.entries()) {
       const safePosition = resolveEnemySpawnAwayFromEntry(
         spawn,
         entryPosition,
@@ -413,6 +427,11 @@ export class RoomController {
         safePosition.y,
         this.runState.floor,
       );
+
+      if (index === championIndex) {
+        enemy.promoteToChampion(CHAMPION_TUNING);
+      }
+
       occupiedPositions.push(safePosition);
       this.registerSpawnedEnemy(enemy, spawn.enemyId);
     }
@@ -448,6 +467,13 @@ export class RoomController {
     // room never briefly registers zero enemies and opens its doors early.
     if (ENEMY_DEFINITIONS[enemyId].splitChildId) {
       enemy.once('enemy-defeated', () => this.spawnSplitChildren(enemy, enemyId));
+    }
+
+    // 챔피언 처치 보상. 승격은 스폰 경로가 정하지만 배선은 다른 처치 리스너와
+    // 같은 집에 둔다 — 새 스폰 경로가 챔피언을 만들어도 여기만 지나면 상자가
+    // 빠지지 않는다.
+    if (enemy.isChampion) {
+      enemy.once('enemy-defeated', () => this.onChampionDefeated?.(enemy.x, enemy.y));
     }
   }
 

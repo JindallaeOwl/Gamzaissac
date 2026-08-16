@@ -8,16 +8,25 @@ import { getCenteredCircleBodyOffset } from '../../utils/collisionBody';
 import { effectiveBodyRadius } from '../../systems/EnemyScaleRules';
 import { t } from '../../i18n';
 
+/** 챔피언 승격이 적용할 수치 묶음. 값은 스폰 정책(ChampionRules)이 정해 넘긴다 —
+    엔티티는 받은 숫자를 적용할 뿐, 등장 확률 같은 정책을 알지 못한다. */
+export interface ChampionModifier {
+  healthMultiplier: number;
+  scoreMultiplier: number;
+  displayScaleMultiplier: number;
+  tint: number;
+}
+
 export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   readonly definition: EnemyDefinition;
-  readonly scoreValue: number;
   contactDamage: number;
   readonly isBoss: boolean;
-  // displayScale이 반영된 월드 기준 몸 반경 (탄환 생성 위치·방 경계 여백에 사용)
-  readonly effectiveBodyRadius: number;
 
   protected hp: number;
   protected floorScale: number;
+  private maxHp: number;
+  private baseScoreValue: number;
+  private champion = false;
   private nextContactAt = 0;
   private defeated = false;
   private persistentTint?: number;
@@ -32,11 +41,11 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, definition.textureKey);
     this.definition = definition;
     this.floorScale = 1 + Math.max(0, floor - 1) * 0.16;
-    this.hp = definition.maxHealth * this.floorScale;
+    this.maxHp = definition.maxHealth * this.floorScale;
+    this.hp = this.maxHp;
     this.contactDamage = definition.contactDamage;
-    this.scoreValue = Math.round(definition.score * this.floorScale);
+    this.baseScoreValue = Math.round(definition.score * this.floorScale);
     this.isBoss = definition.kind === 'boss';
-    this.effectiveBodyRadius = effectiveBodyRadius(definition.bodyRadius, definition.displayScale);
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -58,6 +67,34 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   abstract updateAI(time: number, player: Player, enemyBullets: Phaser.Physics.Arcade.Group): void;
+
+  get scoreValue(): number {
+    return this.baseScoreValue;
+  }
+
+  get isChampion(): boolean {
+    return this.champion;
+  }
+
+  /** displayScale·챔피언 확대가 반영된 월드 기준 몸 반경. 현재 배율에서 계산하므로
+      승격처럼 생성 후 크기가 바뀌어도 낡지 않는다 (탄 생성 위치·벽 여백에 사용). */
+  get effectiveBodyRadius(): number {
+    return effectiveBodyRadius(this.definition.bodyRadius, this.scaleX);
+  }
+
+  /** 전투방 스폰이 부르는 챔피언 승격 — 체력·점수·크기·금색을 한 번에 적용한다. */
+  promoteToChampion(modifier: ChampionModifier): void {
+    if (this.champion || this.isBoss) {
+      return;
+    }
+
+    this.champion = true;
+    this.maxHp *= modifier.healthMultiplier;
+    this.hp *= modifier.healthMultiplier;
+    this.baseScoreValue = Math.round(this.baseScoreValue * modifier.scoreMultiplier);
+    this.setScale(this.scaleX * modifier.displayScaleMultiplier);
+    this.setPersistentTint(modifier.tint);
+  }
 
   takeDamage(amount: number, sourceX: number, sourceY: number): boolean {
     if (!this.active || this.defeated || !this.body) {
@@ -136,7 +173,7 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   getHealthRatio(): number {
-    return Phaser.Math.Clamp(this.hp / (this.definition.maxHealth * this.floorScale), 0, 1);
+    return Phaser.Math.Clamp(this.hp / this.maxHp, 0, 1);
   }
 
   getDisplayName(): string {
@@ -176,7 +213,9 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     this.setTint(tint);
   }
 
-  private restorePersistentTint(): void {
+  // protected: 사수처럼 발사 예고에 임시 tint를 쓰는 하위 클래스가 예고를 끝낼 때
+  // clearTint 대신 이것을 불러야, 챔피언 금색 같은 지속 tint가 지워지지 않는다.
+  protected restorePersistentTint(): void {
     if (this.persistentTint === undefined) {
       this.clearTint();
       return;

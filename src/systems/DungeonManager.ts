@@ -45,6 +45,8 @@ export interface RoomNode {
   combatItemRewardClaimed: boolean;
   combatItemRewardRolled: boolean;
   combatItemRewardId?: string;
+  // 챔피언 추첨을 이미 했는가. 방 재진입 때 재추첨해 상자를 반복 획득하는 것을 막는다.
+  championRolled?: boolean;
   obstacleHealth?: number[];
   // 폭탄에 상인이 날아간 흔적. 값이 있으면 상인은 다시 나오지 않고 바닥 자국만 남는다.
   // 자국을 폭발 반대쪽으로 눕히기 위해 위치와 밀려난 방향을 함께 보관한다.

@@ -17,6 +17,7 @@ import {
   COMBAT_TUNING,
   ROOM_CENTER_X,
   ROOM_CENTER_Y,
+  ROOM_RECT,
   WORLD_HEIGHT,
   WORLD_WIDTH,
   ITEM_PREVIEW_RADIUS,
@@ -301,6 +302,7 @@ export class GameScene extends Phaser.Scene {
       runState: this.runState,
       onRoomCleared: (room) => this.handleRoomCleared(room),
       onEnemyDefeated: (score) => this.handleEnemyDefeated(score),
+      onChampionDefeated: (x, y) => this.handleChampionDefeated(x, y),
       onObstacleDestroyed: (x, y) => this.handleObstacleDestroyed(x, y),
       onBossPhaseTwo: (boss) => this.handleBossPhaseTwo(boss),
       onPlayerDamaged: () => this.queuePlayerDamagedFeedback(),
@@ -1450,6 +1452,24 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.roomTransitions.spawnPersistentReward(this.dungeon.getCurrentRoom(), reward, x, y);
+  }
+
+  // 챔피언 처치 보상 — 죽은 자리에 보물 상자를 떨군다. 상자 코인 드랍과 같은
+  // 지속 경로라 방을 나갔다 돌아와도 남는다.
+  private handleChampionDefeated(x: number, y: number): void {
+    if (isRunEnded(this.runState)) {
+      return;
+    }
+
+    // 상자는 벽·장애물과 충돌하는 미는 물체다. 벽에 붙어 죽은 챔피언의 좌표
+    // 그대로 만들면 분리 판정이 상자를 벽 밖으로 밀어낼 수 있어 방 안쪽으로
+    // 당겨서 떨군다.
+    this.roomTransitions.spawnPersistentReward(
+      this.dungeon.getCurrentRoom(),
+      this.rewardSystem.championChestDrop(),
+      Phaser.Math.Clamp(x, ROOM_RECT.left + 24, ROOM_RECT.right - 24),
+      Phaser.Math.Clamp(y, ROOM_RECT.top + 24, ROOM_RECT.bottom - 24),
+    );
   }
 
   private handleBossPhaseTwo(boss: BaseEnemy): void {

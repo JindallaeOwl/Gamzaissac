@@ -4,6 +4,7 @@ import {
   type PlayerStats,
 } from '../config/gameConfig';
 import {
+  getRoomClearRewardDefinition,
   REWARD_DROP_TUNING,
   ROOM_CLEAR_REWARD_THRESHOLDS,
   ROOM_CLEAR_REWARDS,
@@ -101,6 +102,13 @@ export class RewardSystem {
       consumable,
       amount: consumable === 'coins' ? randomInt(4, 10, this.random) : randomInt(1, 2, this.random),
     };
+  }
+
+  /** 챔피언 처치 보상: 확정 보물 상자. 내용물은 주울 때 rollChestResult로 굴린다. */
+  championChestDrop(): RewardDrop {
+    const chest = getRoomClearRewardDefinition('chest');
+
+    return { kind: 'chest', amount: 1, labelKey: chest.labelKey, tint: chest.tint };
   }
 
   rollDestroyedCrateCoinDrop(): RewardDrop | null {
