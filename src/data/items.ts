@@ -126,7 +126,10 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     category: 'offense',
     maxStacks: 1,
     dropSources: ['combat', 'treasure'],
-    modifiers: { damage: 4, damageMultiplier: 2, fireRateMultiplier: 0.42 },
+    // 원래 +4/×2(단독 화력 4.2배)였는데 하나만 먹어도 런 전체가 쉬워져
+    // "단일 아이템 화력 상한 2배" 규칙에 맞춰 내렸다(2026-08-17 밸런스 1차,
+    // 현재 약 1.9배). 거탄+관통 정체성은 seedScale·관통이 담당한다.
+    modifiers: { damage: 2.5, damageMultiplier: 1.3, fireRateMultiplier: 0.42 },
     attackModifiers: { overflowPenetration: true, seedScaleMultiplier: 1.65 },
   },
   {
@@ -199,7 +202,10 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     rarity: 'uncommon',
     category: 'defense',
     maxStacks: 2,
-    dropSources: ['combat', 'shop', 'treasure'],
+    // 랜덤 드랍(전투·보물)에서 체력템이 너무 자주 나온다는 플레이 피드백으로
+    // 상점 전용으로 옮겼다(2026-08-17 밸런스 1차). 상점은 돈 내고 고르는
+    // 선택이라 체력템이 있어도 김새지 않는다.
+    dropSources: ['shop'],
     modifiers: { maxHealth: 2, heal: 2 },
   },
   {
@@ -272,7 +278,9 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     rarity: 'common',
     category: 'defense',
     maxStacks: 3,
-    dropSources: ['combat', 'shop'],
+    // 전투 드랍의 유일한 일반 등급 체력템이라 등장 빈도를 홀로 크게 끌어올렸다.
+    // 상점 전용으로 이동(2026-08-17 밸런스 1차).
+    dropSources: ['shop'],
     modifiers: { maxHealth: 1, heal: 1 },
   },
   {
@@ -457,7 +465,9 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     rarity: 'uncommon',
     category: 'resource',
     maxStacks: 2,
-    dropSources: ['combat', 'shop', 'treasure'],
+    // 보물방에서 하트류가 19%나 나와 기대를 깎았다. 보물 풀에서 제외
+    // (2026-08-17 밸런스 1차). 회복 딸린 행운템이라 전투·상점에는 남긴다.
+    dropSources: ['combat', 'shop'],
     modifiers: { luck: 1.5, heal: 2 },
   },
   {

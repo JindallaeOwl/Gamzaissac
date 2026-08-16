@@ -221,7 +221,7 @@ export const ko: TranslationTree = {
     megaSeed: {
       name: '메가씨드',
       description:
-        '거대한 씨앗이 처치 후 남은 피해로 관통합니다 (공격 +4, 공격력 ×2, 공격 속도 ×0.42).',
+        '거대한 씨앗이 처치 후 남은 피해로 관통합니다 (공격 +2.5, 공격력 ×1.3, 공격 속도 ×0.42).',
     },
     toothpick: {
       name: '이쑤시개',

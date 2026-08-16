@@ -178,8 +178,12 @@ export const FEEDBACK_TUNING = {
   },
 };
 
+// 스테이지 보스 체력은 "그 층의 평균 빌드 화력으로 22~38초"를 목표로 역산했다
+// (2026-08-17 밸런스 1차: 목표 초 × 예상 화력 ÷ 층 배율). 원래 22~34로, 중반
+// 빌드 기준 5~11초 만에 죽어 2페이즈 패턴을 볼 시간이 없었다.
 export const BOSS_TUNING = {
-  maxHealth: 26,
+  // 6층 퇴비 파수꾼 — 목표 약 30초
+  maxHealth: 125,
   speed: 42,
   contactDamage: PLAYER_DAMAGE_PER_HIT,
   bodyRadius: 28,
@@ -202,7 +206,8 @@ export const BOSS_TUNING = {
 };
 
 export const ROOT_KERNEL_TUNING = {
-  maxHealth: 30,
+  // 2층 첫 스테이지 보스 — 목표 약 22초
+  maxHealth: 80,
   speed: 32,
   contactDamage: PLAYER_DAMAGE_PER_HIT,
   bodyRadius: 28,
@@ -234,7 +239,8 @@ export const ROOT_KERNEL_TUNING = {
 // 2스테이지 II층 보스 "늙은 지렁이 왕". 8층 중 4층(중간 난도)에 배치한다.
 // 탄막형인 뿌리핵과 달리 근접 돌진·땅굴 잠수·새끼 소환으로 압박하는 이동형 보스다.
 export const WORM_KING_TUNING = {
-  maxHealth: 22,
+  // 4층 — 목표 약 26초 (새끼 소환 정리 시간이 더 있어 약간 낮게)
+  maxHealth: 100,
   speed: 48,
   contactDamage: PLAYER_DAMAGE_PER_HIT,
   bodyRadius: 13,
@@ -278,7 +284,8 @@ export const WORM_KING_TUNING = {
 // 스윕·씨앗 흩뿌리기·발 구르기·쇠스랑 근접 휘두르기), 2페이즈 "광란"에서 건초 커튼과
 // 회전 낫 부메랑이 추가되고 쿨다운·탄속이 강화된다.
 export const PITCHFORK_FARMER_TUNING = {
-  maxHealth: 34,
+  // 8층 최종 보스 — 목표 약 38초
+  maxHealth: 165,
   speed: 34,
   contactDamage: PLAYER_DAMAGE_PER_HIT,
   bodyRadius: 28,

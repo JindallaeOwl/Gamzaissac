@@ -221,7 +221,7 @@ export const en: TranslationTree = {
     megaSeed: {
       name: 'Mega Seed',
       description:
-        'A huge seed carries excess killing damage through enemies (+4 damage, ×2 damage, ×0.42 attack speed).',
+        'A huge seed carries excess killing damage through enemies (+2.5 damage, ×1.3 damage, ×0.42 attack speed).',
     },
     toothpick: {
       name: 'Toothpick',

@@ -183,13 +183,17 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
   },
   // --- I층 중간보스 4종: 기존 일반 적 AI·텍스처를 재사용하고 displayScale로 확대한다.
   // 전용 도트는 placeholder 교체 작업에서 제작 예정.
+  //
+  // 체력은 "그 층의 평균 빌드 화력으로 약 14초"를 목표로 역산했다(2026-08-17
+  // 밸런스 1차: 목표 초 × 예상 화력 ÷ 층 배율). 원래 12~14로, 아이템 몇 개만
+  // 있어도 2~4초에 죽어 패턴을 볼 시간이 없었다.
   rootGnarl: {
     id: 'rootGnarl',
     kind: 'boss',
     displayName: 'Root Gnarl',
     displayNameKey: 'bosses.rootGnarl',
     textureKey: TextureKeys.enemyChaser,
-    maxHealth: 14,
+    maxHealth: 46,
     speed: 40,
     contactDamage: PLAYER_DAMAGE_PER_HIT * 2,
     bodyRadius: 11,
@@ -203,7 +207,8 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     displayName: 'Wriggle Mass',
     displayNameKey: 'bosses.wriggleMass',
     textureKey: TextureKeys.enemySplitter,
-    maxHealth: 12,
+    // 다른 중간보스보다 조금 낮다 — 죽은 뒤 분열 새끼 4마리 정리가 남는다.
+    maxHealth: 50,
     speed: 55,
     contactDamage: PLAYER_DAMAGE_PER_HIT,
     bodyRadius: 13,
@@ -219,7 +224,7 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     displayName: 'Fly Queen',
     displayNameKey: 'bosses.flyQueen',
     textureKey: TextureKeys.enemyShooter,
-    maxHealth: 13,
+    maxHealth: 56,
     speed: 46,
     contactDamage: PLAYER_DAMAGE_PER_HIT,
     bodyRadius: 11,
@@ -237,7 +242,7 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     displayName: 'Thorn Tangle',
     displayNameKey: 'bosses.thornTangle',
     textureKey: TextureKeys.enemyDasher,
-    maxHealth: 13,
+    maxHealth: 60,
     speed: 46,
     contactDamage: PLAYER_DAMAGE_PER_HIT,
     bodyRadius: 12,
