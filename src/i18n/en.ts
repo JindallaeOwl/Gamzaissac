@@ -309,6 +309,18 @@ export const en: TranslationTree = {
       description:
         'Seeds carry excess killing damage on to the enemy behind, but fire slightly more slowly.',
     },
+    backPocketSeed: {
+      name: 'Back Pocket Seed',
+      description: 'Mirrors your whole seed fan backward on every shot (damage -0.1).',
+    },
+    wavySeed: {
+      name: 'Wavy Seed',
+      description: 'Seeds swim in waves, sweeping a wider path.',
+    },
+    burstPod: {
+      name: 'Burst Pod',
+      description: 'Fires three quick seeds, then takes a breath (fire rate -0.2).',
+    },
   },
   rarities: {
     common: 'Common',

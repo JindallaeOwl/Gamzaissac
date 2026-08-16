@@ -248,5 +248,8 @@ function applyAttackModifiers(
     // 곱으로 중첩한다. 극단값은 getEffectiveBeamChargeMs의 최종 clamp가 막는다.
     beamChargeMsMultiplier:
       profile.beamChargeMsMultiplier * (modifiers.beamChargeMsMultiplier ?? 1),
+    rearFire: profile.rearFire || (modifiers.rearFire ?? false),
+    waveDegrees: clamp(profile.waveDegrees + (modifiers.waveDegreesAdd ?? 0), 0, 60),
+    burstCount: clamp(profile.burstCount + (modifiers.burstCountAdd ?? 0), 1, 5),
   };
 }

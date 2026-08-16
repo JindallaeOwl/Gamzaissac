@@ -220,8 +220,8 @@ describe('ItemSystem', () => {
     expect(state.attackProfile.beamChargeMsMultiplier).toBeCloseTo(0.7);
   });
 
-  it('defines rarity, category, source pools, and stack limits for all 33 passives', () => {
-    expect(PASSIVE_ITEMS).toHaveLength(33);
+  it('defines rarity, category, source pools, and stack limits for all 36 passives', () => {
+    expect(PASSIVE_ITEMS).toHaveLength(36);
     expect(
       PASSIVE_ITEMS.every(
         (item) =>
@@ -290,6 +290,77 @@ function resolveTranslation(tree: TranslationTree, path: string): unknown {
     return undefined;
   }, tree);
 }
+
+describe('stacking behavior items', () => {
+  it('mirrors the whole seed fan backward with the Back Pocket Seed', () => {
+    const system = new ItemSystem(() => 0);
+    const state = createInitialRunState();
+    const backPocketSeed = itemById('back-pocket-seed');
+    const baseDamage = state.stats.damage;
+
+    system.acquireItem(state, backPocketSeed);
+    expect(state.attackProfile.rearFire).toBe(true);
+    expect(state.stats.damage).toBeCloseTo(baseDamage - 0.1);
+
+    // 거울 규칙이라 셀 것이 없다 — 두 번째 획득은 거부된다.
+    expect(system.acquireItem(state, backPocketSeed).acquired).toBe(false);
+
+    // 쿼드샷을 이어 먹으면 앞이 4갈래가 되고 뒤는 그 거울이다. 발사 수는
+    // seedCount 하나만 늘면 되므로 rearFire는 그대로 true다.
+    system.acquireItem(state, itemById('quad-shot'));
+    expect(state.attackProfile.seedCount).toBe(4);
+    expect(state.attackProfile.rearFire).toBe(true);
+  });
+
+  it('bends seed paths with the Wavy Seed without touching stats', () => {
+    const system = new ItemSystem(() => 0);
+    const state = createInitialRunState();
+    const statsBefore = { ...state.stats };
+
+    system.acquireItem(state, itemById('wavy-seed'));
+
+    expect(state.attackProfile.waveDegrees).toBe(35);
+    // 첫 순수 거동 아이템 — 스탯은 하나도 건드리지 않는다.
+    expect(state.stats).toEqual(statsBefore);
+  });
+
+  it('turns firing into three-shot bursts with the Burst Pod', () => {
+    const system = new ItemSystem(() => 0);
+    const state = createInitialRunState();
+    const baseFireRate = state.stats.fireRate;
+
+    system.acquireItem(state, itemById('burst-pod'));
+
+    expect(state.attackProfile.burstCount).toBe(3);
+    expect(state.stats.fireRate).toBeCloseTo(baseFireRate - 0.2);
+  });
+
+  it('every attack modifier actually changes the profile when applied', () => {
+    // attackModifiers를 선언했는데 적용해도 프로필이 그대로면(빈 객체 등)
+    // "이름뿐인 거동 아이템"이다. 병합 함수에 새 키를 잊은 경우도 여기서 잡힌다.
+    const system = new ItemSystem(() => 0);
+
+    for (const item of PASSIVE_ITEMS) {
+      if (!item.attackModifiers) {
+        continue;
+      }
+
+      const before = createInitialRunState().attackProfile;
+      const after = system.applyAttackProfile(before, item);
+
+      expect(after, `${item.id}의 attackModifiers가 프로필을 바꾸지 않는다`).not.toEqual(before);
+    }
+  });
+
+  it('keeps behavior items out of the stat-only boss reward pool', () => {
+    // 보스방 보상은 순수 능력치형만 허용한다. 거동 아이템이 attackModifiers를
+    // 갖는 한 자동으로 걸러지는데, 실수로 attackModifiers 없이 만들면 이 검사가
+    // 잡아 준다.
+    for (const id of ['back-pocket-seed', 'wavy-seed', 'burst-pod']) {
+      expect(isStatOnlyBossReward(itemById(id)), id).toBe(false);
+    }
+  });
+});
 
 describe('item synergies', () => {
   it('gives every synergy a resolvable name and effect description', () => {

@@ -308,6 +308,18 @@ export const ko: TranslationTree = {
       name: '관통 송곳',
       description: '적을 처치하고 남은 피해가 뒤의 적에게 이어집니다. 대신 연사가 조금 느려집니다.',
     },
+    backPocketSeed: {
+      name: '뒷주머니 씨앗',
+      description: '앞으로 쏘는 그대로를 뒤쪽으로도 발사합니다 (공격 -0.1).',
+    },
+    wavySeed: {
+      name: '물결 씨앗',
+      description: '씨앗이 물결을 그리며 날아가 더 넓게 쓸어냅니다.',
+    },
+    burstPod: {
+      name: '삼연발 꼬투리',
+      description: '씨앗을 세 발씩 따다닥 몰아 쏘고 잠시 쉽니다 (연사 -0.2).',
+    },
   },
   rarities: {
     common: '일반',

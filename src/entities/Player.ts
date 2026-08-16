@@ -12,6 +12,7 @@ import {
 } from '../config/gameConfig';
 import { Bullet } from './Bullet';
 import { getSeedDisplayScale } from '../systems/ItemFeedbackRules';
+import { getWaveSign } from '../systems/SeedWaveRules';
 import { clamp, normalizeVector } from '../utils/math';
 import { resolvePlayerFacing, type PlayerFacing } from '../utils/playerFacing';
 import { createSpreadDirections, type AttackDirection } from '../utils/attackDirections';
@@ -69,6 +70,11 @@ const PLAYER_SHADOW_DEATH_ANIMATIONS: Record<
 
 const EXTERNAL_PLAYER_SCALE = 2;
 
+// 점사(burstCount > 1)에서 연속 발사 사이 간격의 상한. 리듬의 "따다닥" 밀도를
+// 정하며, 연사가 아주 빨라 기본 발사 간격이 이보다 짧아지면 그쪽을 따른다 —
+// 점사가 고연사 빌드를 오히려 늦추지 않기 위해서다.
+const BURST_SHOT_INTERVAL_MS = 85;
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   stats: PlayerStats;
   hasChargeBeam = false;
@@ -79,6 +85,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly toothpick: Phaser.GameObjects.Image;
 
   private nextShotAt = 0;
+  private burstShotsRemaining = 0;
+  private nextBurstShotAt = 0;
   private invulnerableUntil = 0;
   private beamCooldownUntil = 0;
   private beamChargeStartedAt: number | null = null;
@@ -259,6 +267,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     bulletGroup: Phaser.Physics.Arcade.Group,
   ): void {
     if (this.hasChargeBeam) {
+      // 빔 전환 시 점사 잔여분이 남아 있으면 비운다. 지금은 tryShoot만 읽어
+      // 무해하지만, 남겨 두면 빔이 꺼지는 순간 잔여분이 한꺼번에 발사된다.
+      this.burstShotsRemaining = 0;
       this.updateBeamCharge(time, controls);
       return;
     }
@@ -271,15 +282,70 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     controls: PlayerControls,
     bulletGroup: Phaser.Physics.Arcade.Group,
   ): void {
+    // 같은 프레임의 점사 후속 발과 새 발사가 같은 입력 스냅샷을 읽게 한 번만 구한다.
     const direction = this.getFireDirection(controls);
+    this.updatePendingBurst(time, direction, bulletGroup);
 
-    if (!direction || time < this.nextShotAt) {
+    if (!direction || time < this.nextShotAt || this.burstShotsRemaining > 0) {
       return;
     }
 
-    const fireRate = getEffectiveFireRate(this.stats);
-    this.nextShotAt = time + 1000 / fireRate;
-    this.fireSeedVolley(direction, bulletGroup);
+    const shotIntervalMs = 1000 / getEffectiveFireRate(this.stats);
+    // 쿨다운은 점사 발수만큼 선불하지 않고 실제로 쏜 발마다 쌓는다(후속 발은
+    // updatePendingBurst가 같은 방식으로 더한다). 풀 점사는 발수 × 간격이 되어
+    // 평균 발사 수가 유지되고, 점사를 끊으면 쏜 만큼만 기다리므로 끊어 쏘는
+    // 플레이가 손해 보지 않는다.
+    this.nextShotAt = time + shotIntervalMs;
+    this.fireSeedShot(direction, bulletGroup);
+
+    if (this.attackProfile.burstCount > 1) {
+      this.burstShotsRemaining = this.attackProfile.burstCount - 1;
+      this.nextBurstShotAt = time + Math.min(BURST_SHOT_INTERVAL_MS, shotIntervalMs);
+    }
+  }
+
+  // 진행 중인 점사의 후속 발. 발사 입력을 유지하는 동안만 이어진다 — 입력을
+  // 놓으면 남은 점사가 취소되고, 쿨다운은 이미 쏜 발만큼만 쌓여 있어 손해가
+  // 없다. 입력을 쥔 채 방을 옮기면 일반 연사와 똑같이 새 방에서 이어진다.
+  private updatePendingBurst(
+    time: number,
+    direction: AttackDirection | null,
+    bulletGroup: Phaser.Physics.Arcade.Group,
+  ): void {
+    if (this.burstShotsRemaining <= 0) {
+      return;
+    }
+
+    if (!direction) {
+      this.burstShotsRemaining = 0;
+      return;
+    }
+
+    if (time < this.nextBurstShotAt) {
+      return;
+    }
+
+    const shotIntervalMs = 1000 / getEffectiveFireRate(this.stats);
+    this.burstShotsRemaining -= 1;
+    // 쏜 발만큼 쿨다운을 쌓는다. max는 프레임 지연으로 time이 이미 nextShotAt을
+    // 지난 경우에도 쌓인 빚이 사라지지 않게 한다.
+    this.nextShotAt = Math.max(this.nextShotAt, time) + shotIntervalMs;
+    this.nextBurstShotAt = time + Math.min(BURST_SHOT_INTERVAL_MS, shotIntervalMs);
+    this.fireSeedShot(direction, bulletGroup);
+  }
+
+  // 한 번의 발사: 앞 부채꼴 + (있다면) 뒷씨앗 + 발사 이벤트(총구 연출·효과음).
+  // 점사의 후속 발도 이것을 거쳐 첫 발과 같은 피드백을 낸다.
+  private fireSeedShot(direction: AttackDirection, bulletGroup: Phaser.Physics.Arcade.Group): void {
+    const seedCount = this.attackProfile.seedCount;
+    this.spawnSeedFan(direction, seedCount, bulletGroup, 0);
+
+    // 뒷발사: 앞 부채꼴 전체가 정반대 방향으로도 복사된다 — 앞이 4갈래면 뒤도
+    // 4갈래(플레이 피드백으로 확정한 거울 규칙). 물결 위상은 앞 부채꼴에서 이어
+    // 세어 앞뒤 씨앗이 같은 박자로 흔들리지 않게 한다.
+    if (this.attackProfile.rearFire) {
+      this.spawnSeedFan({ x: -direction.x, y: -direction.y }, seedCount, bulletGroup, seedCount);
+    }
 
     const muzzleX = this.x + direction.x * 12;
     const muzzleY = this.y + direction.y * 12;
@@ -289,16 +355,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   /**
    * 씨앗 부채꼴 발사의 몸통. 부채꼴 계산과 수치 계산(실효 스탯·표시 배율·판정
    * 배율)이 한 곳에 있어, 앞으로 다른 발사 경로가 생겨도 이것을 부르면 일반
-   * 사격과 같은 씨앗이 나간다. 연사 쿨다운(nextShotAt)과 발사 이벤트는 일반
-   * 사격(tryShoot)만의 것이므로 여기서 건드리지 않는다.
+   * 사격과 같은 씨앗이 나간다.
    */
-  private fireSeedVolley(
+  private spawnSeedFan(
     direction: AttackDirection,
+    seedCount: number,
     bulletGroup: Phaser.Physics.Arcade.Group,
+    waveIndexOffset: number,
   ): void {
     const seedDirections = createSpreadDirections(
       direction,
-      this.attackProfile.seedCount,
+      seedCount,
       this.attackProfile.spreadStepDegrees,
     );
     const projectileSpeed = getEffectiveProjectileSpeed(this.stats);
@@ -327,6 +394,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         scale: this.attackProfile.seedScale,
         displayScale: seedDisplayScale,
         tint: seedTint,
+        waveDegrees: this.attackProfile.waveDegrees,
+        // 이웃 씨앗과 위상을 엇갈리게 해 부채꼴이 한 덩어리로 흔들리지 않게 한다.
+        waveSign: getWaveSign(index + waveIndexOffset),
       });
     });
   }

@@ -852,6 +852,81 @@ const STAR_FERTILIZER: ItemIconArt = {
   ],
 };
 
+/** A leather back pocket with a seed tucked in, pointing the wrong way on purpose. */
+const BACK_POCKET_SEED: ItemIconArt = {
+  palette: {
+    a: SEED_LIGHT,
+    b: SEED_BASE,
+    c: LEATHER_CUFF,
+    d: LEATHER_BASE,
+    e: LEATHER_LIGHT,
+  },
+  rows: [
+    '................',
+    '................',
+    '......aa........',
+    '.....aaab.......',
+    '.....aabb.......',
+    '......bb........',
+    '..ceeeeeeeeeec..',
+    '..cddddddddddc..',
+    '...cddddddddc...',
+    '...cddddddddc...',
+    '....cddddddc....',
+    '.....cddddc.....',
+    '......cccc......',
+    '................',
+    '................',
+    '................',
+  ],
+};
+
+/** A seed leaving two rippling wakes: the trajectory is the item. */
+const WAVY_SEED: ItemIconArt = {
+  palette: { a: SEED_LIGHT, b: SEED_BASE, m: DEW_BASE, n: DEW_SHADE },
+  rows: [
+    '................',
+    '................',
+    '................',
+    '......aa........',
+    '.....aaab.......',
+    '.....aabb.......',
+    '......bb........',
+    '................',
+    '..mm..mm..mm....',
+    '.m..mm..mm..m...',
+    '................',
+    '..nn..nn..nn....',
+    '.n..nn..nn..n...',
+    '................',
+    '................',
+    '................',
+  ],
+};
+
+/** A pea pod with three seeds bulging out: one squeeze, three shots. */
+const BURST_POD: ItemIconArt = {
+  palette: { a: SEED_LIGHT, b: SEED_BASE, h: HUSK_LIGHT, s: HUSK_SHADE },
+  rows: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '..hh..hh..hh....',
+    '.haahhaahhaah...',
+    '.habhhabhhabh...',
+    '..ssssssssss....',
+    '...ssssssss.....',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+  ],
+};
+
 export const ITEM_PIXEL_ICONS: Readonly<Record<string, ItemIconArt>> = {
   'quad-shot': QUAD_SHOT,
   'mega-seed': MEGA_SEED,
@@ -885,6 +960,9 @@ export const ITEM_PIXEL_ICONS: Readonly<Record<string, ItemIconArt>> = {
   'deep-root': DEEP_ROOT,
   'silver-dew': SILVER_DEW,
   'spike-rind': SPIKE_RIND,
+  'back-pocket-seed': BACK_POCKET_SEED,
+  'wavy-seed': WAVY_SEED,
+  'burst-pod': BURST_POD,
 };
 
 export function hasItemPixelIcon(itemId: string): boolean {

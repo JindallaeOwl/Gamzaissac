@@ -14,6 +14,12 @@ export interface AttackProfileModifier {
   hasToothpickCosmetic?: boolean;
   /** 빔 차징 시간 배율(곱). 프로필 속성이므로 어떤 아이템·시너지든 줄일 수 있다 */
   beamChargeMsMultiplier?: number;
+  /** 앞 부채꼴 전체를 뒤로도 복사 발사 */
+  rearFire?: boolean;
+  /** 물결 궤적 진폭(도) 추가 */
+  waveDegreesAdd?: number;
+  /** 연속 발사 수 추가 */
+  burstCountAdd?: number;
 }
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
@@ -490,6 +496,54 @@ export const PASSIVE_ITEMS: PassiveItemDefinition[] = [
     dropSources: ['treasure', 'shop'],
     modifiers: { fireRate: -0.15, projectileSpeed: 25 },
     attackModifiers: { overflowPenetration: true },
+  },
+  // 34번부터는 "쌓이는 거동" 아이템이다 (2026-08-16 방향 전환). 스탯 대신 공격
+  // 프로필의 서로 다른 축(방향·궤적·리듬)을 고쳐, 기존·신규 아이템과 조합이
+  // 저절로 성립한다 — 물결+쿼드샷 = 물결치는 4발, 뒷주머니+메가씨드 = 앞뒤 거탄.
+  {
+    itemNumber: 34,
+    id: 'back-pocket-seed',
+    nameKey: 'items.backPocketSeed.name',
+    descriptionKey: 'items.backPocketSeed.description',
+    tint: 0xd7b46a,
+    rarity: 'common',
+    category: 'offense',
+    maxStacks: 1,
+    dropSources: ['combat', 'shop'],
+    // "뒤로 몇 발"이 아니라 앞 부채꼴 전체의 거울이다 — 쿼드샷을 먹으면 뒤도
+    // 4갈래가 된다(2026-08-17 플레이 피드백). 그래서 셀 것이 없어 중첩도 없다.
+    modifiers: { damage: -0.1 },
+    attackModifiers: { rearFire: true },
+  },
+  {
+    itemNumber: 35,
+    id: 'wavy-seed',
+    nameKey: 'items.wavySeed.name',
+    descriptionKey: 'items.wavySeed.description',
+    tint: 0x8fd2ff,
+    rarity: 'uncommon',
+    category: 'offense',
+    maxStacks: 1,
+    dropSources: ['combat', 'treasure'],
+    // 순수 거동 아이템. 넓게 쓸지만 조준이 어려워지고, 길이 굽이치는 만큼 같은
+    // 수명으로 나아가는 거리가 약 9% 짧아진다(35도 기준) — 여기까지가 의도된
+    // 트레이드오프다.
+    modifiers: {},
+    attackModifiers: { waveDegreesAdd: 35 },
+  },
+  {
+    itemNumber: 36,
+    id: 'burst-pod',
+    nameKey: 'items.burstPod.name',
+    descriptionKey: 'items.burstPod.description',
+    tint: 0x9dff8a,
+    rarity: 'uncommon',
+    category: 'offense',
+    maxStacks: 1,
+    dropSources: ['combat', 'shop', 'treasure'],
+    // 점사는 화력을 앞당겨 쏘는 이점이 있어 평균 연사로 값을 치른다.
+    modifiers: { fireRate: -0.2 },
+    attackModifiers: { burstCountAdd: 2 },
   },
 ];
 

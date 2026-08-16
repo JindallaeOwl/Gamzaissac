@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
 import { DEPTH, ROOM_RECT } from '../config/gameConfig';
+import { getWaveAngleOffset } from '../systems/SeedWaveRules';
 
 export type BulletOwner = 'player' | 'enemy';
 
@@ -17,6 +18,10 @@ interface BulletLaunchConfig {
   /** 그리기에만 쓰는 배율. 생략하면 scale과 같다. 판정은 언제나 scale만 따른다. */
   displayScale?: number;
   tint?: number;
+  /** 물결 궤적 진폭(도). 0 또는 생략이면 직선 */
+  waveDegrees?: number;
+  /** 물결 위상 부호. 부채꼴에서 이웃 씨앗과 엇갈리게 한다 */
+  waveSign?: 1 | -1;
 }
 
 export class Bullet extends Phaser.Physics.Arcade.Sprite {
@@ -30,6 +35,9 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
   private destroyQueued = false;
   private tintColor?: number;
   private hitTargets = new Set<object>();
+  private waveDegrees = 0;
+  private waveSign: 1 | -1 = 1;
+  private waveBaseAngle = 0;
 
   constructor(scene: Phaser.Scene) {
     super(scene, 0, 0, TextureKeys.playerSeed);
@@ -59,6 +67,8 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     this.hitTargets.clear();
     this.clearTint();
     this.tintColor = config.tint;
+    this.waveDegrees = config.waveDegrees ?? 0;
+    this.waveSign = config.waveSign ?? 1;
     this.setScale(config.displayScale ?? config.scale ?? 1);
     this.setTexture(config.owner === 'player' ? TextureKeys.playerSeed : TextureKeys.enemyBullet);
     if (config.tint !== undefined) {
@@ -94,7 +104,10 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     body.enable = true;
     body.checkCollision.none = false;
     body.setVelocity(config.direction.x * config.speed, config.direction.y * config.speed);
-    this.setRotation(Math.atan2(config.direction.y, config.direction.x));
+
+    const launchAngle = Math.atan2(config.direction.y, config.direction.x);
+    this.waveBaseAngle = launchAngle;
+    this.setRotation(launchAngle);
   }
 
   hasHitTarget(target: object): boolean {
@@ -159,6 +172,22 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
       this.consume();
       this.queueDestroy();
       return;
+    }
+
+    // 물결 궤적: 발사 각에 조향 오프셋을 더해 속도의 "방향"만 돌린다. 크기는
+    // body가 가진 현재 속력을 그대로 보존하므로(setAngle), 나중에 탄속을 바꾸는
+    // 효과가 생겨도 물결이 그것을 덮어쓰지 않는다. 위치를 직접 옮기지 않으므로
+    // 벽·장애물 충돌도 기존 콜라이더가 그대로 처리한다.
+    if (this.waveDegrees > 0) {
+      const body = this.body as Phaser.Physics.Arcade.Body | undefined;
+
+      if (body) {
+        const angle =
+          this.waveBaseAngle +
+          getWaveAngleOffset(time - this.bornAt, this.waveDegrees, this.waveSign);
+        body.velocity.setAngle(angle);
+        this.setRotation(angle);
+      }
     }
 
     const margin = 14;

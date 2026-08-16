@@ -70,6 +70,12 @@ export interface PlayerAttackProfile {
   hasToothpickCosmetic: boolean;
   /** 빔 차징 시간 배율(1보다 작으면 빨리 모인다). 프리즘 배열 시너지가 줄인다 */
   beamChargeMsMultiplier: number;
+  /** 앞 부채꼴 전체를 정반대 방향으로도 복사해 발사. 앞이 4갈래면 뒤도 4갈래다 */
+  rearFire: boolean;
+  /** 물결 궤적의 조향 진폭(도). 0이면 직선으로 날아간다 */
+  waveDegrees: number;
+  /** 발사 입력당 연속 발사 수 (1 = 점사 없음) */
+  burstCount: number;
 }
 
 export const PLAYER_HEALTH_UNITS_PER_HEART = 2;
@@ -103,6 +109,9 @@ export const PLAYER_BASE_ATTACK_PROFILE: PlayerAttackProfile = {
   extraForeheadEyeCount: 0,
   hasToothpickCosmetic: false,
   beamChargeMsMultiplier: 1,
+  rearFire: false,
+  waveDegrees: 0,
+  burstCount: 1,
 };
 
 export const COMBAT_TUNING = {
