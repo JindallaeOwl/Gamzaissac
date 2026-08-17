@@ -30,8 +30,11 @@ export class FloorExit extends Phaser.Physics.Arcade.Sprite {
 
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
-    const pulse = (Math.sin(time * 0.006) + 1) / 2;
-    this.setScale(0.5 + pulse * 0.025);
-    this.setAlpha(time < this.usableAt ? 0.55 : 0.82 + pulse * 0.18);
+    // 구멍은 바닥에 파인 것이다. 반투명하게 깜빡이면 바닥에서 붕 뜬 홀로그램처럼
+    // 보여 "따로 노는" 느낌을 만든다 — 쓸 수 있게 되면 완전히 불투명하게 두고,
+    // 시선을 끌 정도의 아주 작은 숨(배율)만 남긴다.
+    const pulse = (Math.sin(time * 0.005) + 1) / 2;
+    this.setScale(0.5 + pulse * 0.012);
+    this.setAlpha(time < this.usableAt ? 0.65 : 1);
   }
 }

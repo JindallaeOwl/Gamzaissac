@@ -950,18 +950,77 @@ function createChestTexture(scene: Phaser.Scene): void {
   opened.destroy();
 }
 
+// 위로 뚫린 뿌리 굴. 원래는 매끄러운 타원에 회청색 테두리라, 따뜻한 갈색 도트인
+// 바닥·벽과 완전히 따로 놀았다(2026-08-17 사용자 판단). 흙 타일과 같은 팔레트로
+// 16×10 격자에 다시 찍었다 — 파낸 흙이 부스러진 테두리, 안쪽으로 드리운 뿌리,
+// 테두리에 걸린 돌멩이가 "여기를 파고 올라간다"를 말한다.
+//
+// R 테두리 밝은 입술 · r 테두리 · e 테두리 흙(바닥과 이어짐) · d 테두리 그늘
+// p 돌멩이 · w 굴 안 먼 벽(빛 닿는 면) · h 벽 중간 · g 깊은 곳 · k 굴 속 어둠
+// t 뿌리 · T 뿌리 밝은면
+//
+// 색을 고를 때 흙 바닥(0x3c2e1f)과의 대비를 먼저 맞췄다. 처음에는 바닥과 값이
+// 비슷해 구멍이 얼룩처럼 보였다 — 위 입술은 확실히 밝게, 안쪽은 먼 벽(w)에서
+// 어둠(k)까지 네 단계로 떨어뜨려야 "내려다보는 구멍"으로 읽힌다.
+const FLOOR_EXIT_PALETTE: Record<string, number> = {
+  R: 0x8a6c44,
+  r: 0x6b5334,
+  e: 0x4a3a26,
+  d: 0x241a10,
+  p: 0x7a6a58,
+  w: 0x3a2a18,
+  h: 0x241a0f,
+  g: 0x120c06,
+  k: 0x040302,
+  t: 0x7d6544,
+  T: 0x9a8058,
+};
+
+// 빛이 위에서 온다는 전제로 위 입술은 밝고 아래 입술은 그늘진다. 뿌리는 굴 속에
+// 세로로 늘어뜨리지 않는다 — 좌우로 나란히 세우면 이빨처럼 보였다. 대신 한 가닥이
+// 위 입술을 넘어 왼쪽 벽을 타고 흐르고, 아래 오른쪽 입술에 짧게 한 가닥이 걸린다
+// (비대칭이라야 "자라난 뿌리"로 읽힌다). 테두리는 일부러 들쭉날쭉하게 둔다 —
+// 고른 타원은 기계로 뚫은 티가 난다.
+const FLOOR_EXIT_ROWS = [
+  '....RRttRpRR....',
+  '...rtwwwwwwRr...',
+  '.etwhhhhhhhhwRe.',
+  'erhgggggggggghre',
+  'rhgkkkkkkkkkkghr',
+  'rhgkkkkkkkkkkghr',
+  'edhgkkkkkkkkghte',
+  '.edhgggggggghde.',
+  '...ddhgggghdd...',
+  '....dddeeddd....',
+];
+
+// 설계 1픽셀 = 텍스처 4픽셀. FloorExit이 배율 0.5로 그리므로 화면에서는 2×2 블록이
+// 되어 흙 타일(설계 1픽셀 = 화면 2×2)과 픽셀 크기가 정확히 맞는다.
+const FLOOR_EXIT_SCALE = 4;
+
 function createFloorExitTexture(scene: Phaser.Scene): void {
   const graphics = scene.add.graphics();
-  graphics.fillStyle(0x020407, 0.55);
-  graphics.fillEllipse(32, 24, 62, 30);
-  graphics.fillStyle(0x05080d, 1);
-  graphics.fillEllipse(32, 20, 54, 25);
-  graphics.lineStyle(4, 0x65727d, 1);
-  graphics.strokeEllipse(32, 20, 56, 27);
-  graphics.lineStyle(2, 0xa7c4ca, 0.55);
-  graphics.strokeEllipse(32, 18, 43, 16);
-  graphics.fillStyle(0x17242b, 0.8);
-  graphics.fillEllipse(32, 18, 31, 10);
+
+  for (let y = 0; y < FLOOR_EXIT_ROWS.length; y += 1) {
+    const row = FLOOR_EXIT_ROWS[y];
+
+    for (let x = 0; x < row.length; x += 1) {
+      const color = FLOOR_EXIT_PALETTE[row[x]];
+
+      if (color === undefined) {
+        continue;
+      }
+
+      graphics.fillStyle(color, 1);
+      graphics.fillRect(
+        x * FLOOR_EXIT_SCALE,
+        y * FLOOR_EXIT_SCALE,
+        FLOOR_EXIT_SCALE,
+        FLOOR_EXIT_SCALE,
+      );
+    }
+  }
+
   graphics.generateTexture(TextureKeys.floorExit, 64, 40);
   graphics.destroy();
 }
