@@ -1,6 +1,7 @@
 ﻿import Phaser from 'phaser';
 import { MusicKeys } from '../config/assets';
 import { BeamAttack } from '../entities/BeamAttack';
+import { Bomb } from '../entities/Bomb';
 import { Bullet } from '../entities/Bullet';
 import { Door } from '../entities/Door';
 import { FloorExit } from '../entities/FloorExit';
@@ -275,7 +276,14 @@ export class GameScene extends Phaser.Scene {
     this.enemyBullets = this.physics.add.group();
     this.beams = this.physics.add.group();
     this.items = this.physics.add.group();
-    this.rewards = this.physics.add.group();
+    // createCallback은 그룹 기본값이 덮어써진 뒤에 실행되므로(Phaser Group.add),
+    // 여기서 픽업이 자기 물리 성질을 다시 세운다. 이게 없으면 상자·하트의 감속이
+    // 0으로 지워져 벽까지 등속으로 미끄러진다.
+    this.rewards = this.physics.add.group({
+      createCallback: (child) => {
+        (child as RewardPickup).applyBodyPhysics();
+      },
+    });
     this.floorExits = this.physics.add.group({ allowGravity: false, immovable: true });
 
     this.player = new Player(
@@ -309,6 +317,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.bombSystem = new BombSystem({
       scene: this,
+      dungeon: this.dungeon,
       runState: this.runState,
       player: this.player,
       enemies: this.enemies,
@@ -471,6 +480,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.combatCollisions.update();
+    // 심은 폭탄이 밀 수 있는 물체가 되는 시점을 판정한다(플레이어가 발밑에서 벗어났는지).
+    this.bombSystem.update();
 
     for (const beam of this.beams.getChildren() as BeamAttack[]) {
       beam.update(time);
@@ -618,6 +629,41 @@ export class GameScene extends Phaser.Scene {
         firstRewardObject !== secondRewardObject &&
         (firstRewardObject as RewardPickup).isPushable &&
         (secondRewardObject as RewardPickup).isPushable,
+    );
+
+    // 설치된 폭탄도 밀리는 물체다 — 몸으로 밀거나 씨앗으로 맞혀 굴린다. 심은
+    // 직후에는 플레이어 발밑이라 상호작용이 꺼져 있고(isPushArmed), 플레이어가
+    // 한 번 벗어나면 켜진다.
+    const plantedBombs = this.bombSystem.plantedBombs;
+
+    this.physics.add.collider(
+      this.player,
+      plantedBombs,
+      (_playerObject, bombObject) => {
+        this.pushBombWithBody(bombObject as Bomb);
+      },
+      (_playerObject, bombObject) => (bombObject as Bomb).isPushArmed,
+    );
+    this.physics.add.collider(plantedBombs, this.roomController.walls);
+    this.physics.add.collider(plantedBombs, this.roomController.obstacles);
+    this.physics.add.collider(
+      plantedBombs,
+      plantedBombs,
+      undefined,
+      (firstBomb, secondBomb) =>
+        firstBomb !== secondBomb &&
+        // 둘 다 켜져 있어야 한다. 발밑에 두 개를 연달아 심으면(쿨다운 900ms <
+        // 도화선 2000ms) 아직 꺼진 폭탄끼리 서로를 밀어내 발밑 규칙이 깨진다.
+        (firstBomb as Bomb).isPushArmed &&
+        (secondBomb as Bomb).isPushArmed,
+    );
+    this.physics.add.overlap(
+      this.playerBullets,
+      plantedBombs,
+      (bulletObject, bombObject) => {
+        this.handleSeedHitBomb(bulletObject as Bullet, bombObject as Bomb);
+      },
+      (_bulletObject, bombObject) => (bombObject as Bomb).isPushArmed,
     );
 
     this.physics.add.overlap(
@@ -1400,6 +1446,50 @@ export class GameScene extends Phaser.Scene {
     this.audio.play('pickup');
     this.roomTransitions.clearPendingRewardForPickup(pickup);
     pickup.destroy();
+  }
+
+  /**
+   * 몸으로 폭탄을 밀어낸다. 방향은 플레이어에서 폭탄 쪽으로.
+   *
+   * 스프라이트 원점이 아니라 두 **바디 중심**을 쓴다. 폭탄은 도화선·불꽃까지
+   * 포함한 그림의 원점이 공보다 위에 있고 플레이어도 바디가 아래로 치우쳐 있어,
+   * 원점으로 재면 옆에서 밀었는데 14도쯤 아래로 밀리는 식으로 어긋난다.
+   */
+  private pushBombWithBody(bomb: Bomb): void {
+    const bombBody = bomb.body as Phaser.Physics.Arcade.Body | undefined;
+    const playerBody = this.player.body as Phaser.Physics.Arcade.Body | undefined;
+
+    if (!bombBody || !playerBody) {
+      return;
+    }
+
+    bomb.pushByBody(
+      bombBody.center.x - playerBody.center.x,
+      bombBody.center.y - playerBody.center.y,
+      this.time.now,
+    );
+  }
+
+  /**
+   * 씨앗이 폭탄에 맞으면 씨앗은 사라지고 폭탄이 굴러간다. 방향은 탄의 진행
+   * 방향이라 "쏜 쪽으로 굴러간다"가 성립한다 — 좌표·속도를 consume 전에 읽는
+   * 이유는 consume이 바디를 세우기 때문이다.
+   */
+  private handleSeedHitBomb(bullet: Bullet, bomb: Bomb): void {
+    const body = bullet.body as Phaser.Physics.Arcade.Body | undefined;
+    const direction = body
+      ? body.velocity.clone().normalize()
+      : new Phaser.Math.Vector2(bomb.x - bullet.x, bomb.y - bullet.y).normalize();
+    const impactX = bullet.x;
+    const impactY = bullet.y;
+
+    if (!bullet.consume()) {
+      return;
+    }
+
+    bomb.pushBySeed(direction.x, direction.y);
+    this.effects.impact(impactX, impactY, 0xffd166);
+    bullet.queueDestroy();
   }
 
   private handlePushableRewardCollision(pickup: RewardPickup): void {

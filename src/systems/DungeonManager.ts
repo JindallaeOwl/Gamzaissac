@@ -23,6 +23,17 @@ export interface PendingDroppedReward extends PendingRoomReward {
   id: number;
 }
 
+/**
+ * 아직 터지지 않은 폭탄. 방을 나가도 남아 있다가 다시 들어오면 그 자리에 되살아난다.
+ * 도화선 시간은 저장하지 않는다 — 다시 들어오면 처음부터 새로 센다(2026-08-17
+ * 사용자 지시). 그래서 자리를 비운 동안 다른 방에서 저 혼자 터지는 일도 없다.
+ */
+export interface PlantedBombState {
+  id: number;
+  x: number;
+  y: number;
+}
+
 export interface GridCoord {
   x: number;
   y: number;
@@ -53,6 +64,7 @@ export interface RoomNode {
   shopNpcBlast?: ShopNpcBlastState;
   pendingReward?: PendingRoomReward;
   droppedRewards: PendingDroppedReward[];
+  plantedBombs: PlantedBombState[];
 }
 
 export interface ShopNpcBlastState {
@@ -66,6 +78,7 @@ export class DungeonManager {
   private rooms = new Map<string, RoomNode>();
   private currentKey = '0,0';
   private nextDroppedRewardId = 1;
+  private nextPlantedBombId = 1;
 
   floor = 1;
 
@@ -82,6 +95,7 @@ export class DungeonManager {
     this.floor = floor;
     this.rooms.clear();
     this.nextDroppedRewardId = 1;
+    this.nextPlantedBombId = 1;
     // 층을 새로 만들 때마다 초기화한다. 이전 층의 마지막 방이 다음 층 첫 방의
     // 중복 제외에 걸리는 것은 의미가 없다.
     this.lastCombatTemplateId = null;
@@ -286,6 +300,46 @@ export class DungeonManager {
     droppedReward.opened = opened;
   }
 
+  /** 심은 폭탄을 방 상태에 등록한다. 되살릴 때 쓰는 id를 함께 돌려준다. */
+  addPlantedBomb(roomId: string, x: number, y: number): PlantedBombState | null {
+    const room = this.rooms.get(roomId);
+
+    if (!room) {
+      return null;
+    }
+
+    const plantedBomb = { id: this.nextPlantedBombId, x, y };
+    this.nextPlantedBombId += 1;
+    room.plantedBombs.push(plantedBomb);
+    return plantedBomb;
+  }
+
+  /**
+   * 터진 폭탄을 방 상태에서 지운다. 이걸 빠뜨리면 방에 들어올 때마다 같은 폭탄이
+   * 되살아나 무한히 늘어난다.
+   */
+  clearPlantedBomb(roomId: string, plantedBombId: number): void {
+    const room = this.rooms.get(roomId);
+
+    if (room) {
+      room.plantedBombs = room.plantedBombs.filter((bomb) => bomb.id !== plantedBombId);
+    }
+  }
+
+  /** 굴러간 폭탄의 자리를 갱신한다. 방을 나갈 때 마지막 위치를 남기는 용도다. */
+  updatePlantedBomb(roomId: string, plantedBombId: number, x: number, y: number): void {
+    const plantedBomb = this.rooms
+      .get(roomId)
+      ?.plantedBombs.find((bomb) => bomb.id === plantedBombId);
+
+    if (!plantedBomb) {
+      return;
+    }
+
+    plantedBomb.x = x;
+    plantedBomb.y = y;
+  }
+
   unlockRoom(roomId: string): void {
     const room = this.rooms.get(roomId);
 
@@ -322,6 +376,7 @@ export class DungeonManager {
       combatItemRewardClaimed: false,
       combatItemRewardRolled: false,
       droppedRewards: [],
+      plantedBombs: [],
     };
 
     this.rooms.set(key, node);

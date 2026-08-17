@@ -62,6 +62,7 @@ export class RoomTransitionSystem {
     this.roomController.enterCurrentRoom(spawnPosition);
     this.restorePendingReward(room);
     this.restoreDroppedRewards(room);
+    this.bombSystem.restoreRoomBombs(room);
     this.restoreFloorExit(room);
   }
 
@@ -73,6 +74,7 @@ export class RoomTransitionSystem {
     this.roomController.enterCurrentRoom(spawnPosition);
     this.restorePendingReward(room);
     this.restoreDroppedRewards(room);
+    this.bombSystem.restoreRoomBombs(room);
     this.restoreFloorExit(room);
   }
 
@@ -165,6 +167,9 @@ export class RoomTransitionSystem {
 
   private clearTransientObjects(includeRoomEntities: boolean): void {
     this.savePendingRewardPositions();
+    // 폭탄은 방을 나가도 남는다(다시 들어오면 도화선만 새로 센다). 화면에서 지우기
+    // 전에 굴러가 있는 마지막 자리를 방 상태에 적어 둔다.
+    this.bombSystem.saveRoomBombPositions();
     this.playerBullets.clear(true, true);
     this.enemyBullets.clear(true, true);
     this.beams.clear(true, true);

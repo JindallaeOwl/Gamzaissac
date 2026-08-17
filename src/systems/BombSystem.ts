@@ -8,12 +8,20 @@ import { ShopNpc } from '../entities/ShopNpc';
 import { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import { normalizeVector } from '../utils/math';
 import type { AudioSystem } from './AudioSystem';
+import { BOMB_PUSH_BOUNCE, BOMB_PUSH_DRAG, BOMB_SEED_PUSH_SPEED } from './BombPushRules';
 import { isWithinBombRadius, resolveBombPlantAttempt, shouldDetonateBomb } from './BombRules';
+import type { DungeonManager, RoomNode } from './DungeonManager';
 import type { EffectsSystem } from './EffectsSystem';
 import type { RunState } from './RunState';
 
+// 폭탄 하나를 방 상태와 잇는 꼬리표. 되살아난 폭탄도 같은 id를 지녀, 터질 때
+// 자기 항목만 정확히 지운다(안 지우면 방에 들어올 때마다 되살아나 무한히 늘어난다).
+const PLANTED_BOMB_ID_KEY = 'plantedBombId';
+const PLANTED_BOMB_ROOM_KEY = 'plantedBombRoomId';
+
 interface BombSystemConfig {
   scene: Phaser.Scene;
+  dungeon: DungeonManager;
   runState: RunState;
   player: Player;
   enemies: Phaser.Physics.Arcade.Group;
@@ -33,6 +41,7 @@ export type BombPlantResult = 'planted' | 'no-bombs' | 'cooldown' | 'blocked';
 
 export class BombSystem {
   private readonly scene: Phaser.Scene;
+  private readonly dungeon: DungeonManager;
   private readonly runState: RunState;
   private readonly player: Player;
   private readonly enemies: Phaser.Physics.Arcade.Group;
@@ -48,11 +57,14 @@ export class BombSystem {
     y: number,
     direction: { x: number; y: number },
   ) => void;
-  private readonly plantedBombs: Phaser.GameObjects.Group;
+  // 밀리는 물체이므로 물리 그룹이다. 충돌(벽·장애물·플레이어·씨앗) 배선은
+  // 보상 픽업과 같은 자리에서 GameScene이 건다.
+  readonly plantedBombs: Phaser.Physics.Arcade.Group;
   private nextBombAt = 0;
 
   constructor(config: BombSystemConfig) {
     this.scene = config.scene;
+    this.dungeon = config.dungeon;
     this.runState = config.runState;
     this.player = config.player;
     this.enemies = config.enemies;
@@ -64,8 +76,32 @@ export class BombSystem {
     this.isRunEnded = config.isRunEnded;
     this.onPlayerDamaged = config.onPlayerDamaged;
     this.onShopNpcDestroyed = config.onShopNpcDestroyed;
-    this.plantedBombs = this.scene.add.group();
+    // 폭탄의 물리 성질은 반드시 이 그룹 설정으로 준다. Phaser의 물리 그룹은 자식을
+    // 추가하는 순간 바디에 그룹 기본값을 덮어쓰므로(PhysicsGroup.createCallbackHandler),
+    // Bomb 생성자에서 setDrag를 해도 add 시점에 0으로 지워진다 — 그러면 한 번 밀린
+    // 폭탄이 벽에 닿을 때까지 등속으로 미끄러진다.
+    this.plantedBombs = this.scene.physics.add.group({
+      allowGravity: false,
+      dragX: BOMB_PUSH_DRAG,
+      dragY: BOMB_PUSH_DRAG,
+      bounceX: BOMB_PUSH_BOUNCE,
+      bounceY: BOMB_PUSH_BOUNCE,
+      // 어떤 경로로 밀려도 씨앗 한 발보다 빨라지지 않게 상한을 둔다. maxVelocity는
+      // 축별 상한이라 대각선에서 1.4배까지 새므로, 속력 자체를 묶는 maxSpeed를 쓴다.
+      maxSpeed: BOMB_SEED_PUSH_SPEED,
+    });
     this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.clear());
+  }
+
+  /**
+   * 심은 폭탄이 "밀 수 있는 물체"가 되는 시점을 판정한다. 폭탄은 플레이어 발밑에
+   * 생기므로 곧바로 단단해지면 심는 순간 플레이어가 밀려나고 자기 씨앗도 발밑에서
+   * 사라진다. 플레이어가 한 번 벗어난 뒤부터 켠다.
+   */
+  update(): void {
+    for (const bomb of this.plantedBombs.getChildren() as Bomb[]) {
+      bomb.updatePushArming(this.player.x, this.player.y);
+    }
   }
 
   tryPlant(x: number, y: number): BombPlantResult {
@@ -81,15 +117,57 @@ export class BombSystem {
     }
 
     this.nextBombAt = decision.nextBombAt;
-    const bomb = new Bomb(this.scene, x, y, (originX, originY) => {
-      this.detonate(originX, originY);
-    });
-    this.plantedBombs.add(bomb);
+    const roomId = this.dungeon.getCurrentRoom().id;
+    const state = this.dungeon.addPlantedBomb(roomId, x, y);
+
+    this.spawnBomb(x, y, roomId, state?.id);
     return 'planted';
+  }
+
+  /**
+   * 방에 다시 들어올 때 아직 터지지 않은 폭탄을 그 자리에 되살린다. 도화선은 처음부터
+   * 새로 센다 — 저장한 것은 자리뿐이다.
+   */
+  restoreRoomBombs(room: RoomNode): void {
+    for (const state of room.plantedBombs) {
+      this.spawnBomb(state.x, state.y, room.id, state.id);
+    }
+  }
+
+  /**
+   * 방을 나가기 전에 살아있는 폭탄의 마지막 자리를 방 상태에 적어 둔다. 밀어서
+   * 굴려 놓은 위치가 그대로 보존된다.
+   */
+  saveRoomBombPositions(): void {
+    for (const bomb of this.plantedBombs.getChildren() as Bomb[]) {
+      const roomId = bomb.getData(PLANTED_BOMB_ROOM_KEY) as string | undefined;
+      const bombId = bomb.getData(PLANTED_BOMB_ID_KEY) as number | undefined;
+
+      if (!bomb.active || !roomId || bombId === undefined) {
+        continue;
+      }
+
+      this.dungeon.updatePlantedBomb(roomId, bombId, bomb.x, bomb.y);
+    }
   }
 
   clear(): void {
     this.plantedBombs.clear(true, true);
+  }
+
+  private spawnBomb(x: number, y: number, roomId: string, bombId?: number): void {
+    const bomb = new Bomb(this.scene, x, y, (originX, originY) => {
+      // 터진 폭탄은 방 상태에서 빠져야 다시 들어올 때 되살아나지 않는다.
+      if (bombId !== undefined) {
+        this.dungeon.clearPlantedBomb(roomId, bombId);
+      }
+
+      this.detonate(originX, originY);
+    });
+
+    bomb.setData(PLANTED_BOMB_ROOM_KEY, roomId);
+    bomb.setData(PLANTED_BOMB_ID_KEY, bombId);
+    this.plantedBombs.add(bomb);
   }
 
   private detonate(originX: number, originY: number): void {
