@@ -13,7 +13,8 @@ import {
 } from '../src/data/items';
 import { ko } from '../src/i18n/ko';
 import type { TranslationTree } from '../src/i18n/types';
-import { isItemAtStackLimit, isStatOnlyBossReward, ItemSystem } from '../src/systems/ItemSystem';
+import { isItemAtStackLimit, isStatOnlyItem, ItemSystem } from '../src/systems/ItemSystem';
+import { createSeededRandom } from '../src/utils/random';
 import { getEffectiveDamage, getEffectiveFireRate } from '../src/systems/PlayerStatSystem';
 import { createInitialRunState } from '../src/systems/RunState';
 
@@ -39,7 +40,7 @@ function expectedPoolForSource(
     (item) =>
       item.dropSources.includes(source) &&
       !isItemAtStackLimit(item, collectedItemIds) &&
-      (source !== 'boss' || (bossRewardIds.has(item.id) && isStatOnlyBossReward(item))),
+      (source !== 'boss' || (bossRewardIds.has(item.id) && isStatOnlyItem(item))),
   );
 }
 
@@ -152,6 +153,19 @@ describe('ItemSystem', () => {
 
     expect(reachableItemIds('combat')).toContain(stackable.id);
     expect(reachableItemIds('combat', maxedOut)).not.toContain(stackable.id);
+  });
+
+  it('drops only stat-only items from combat room clears', () => {
+    // 전투방 클리어 보상은 순수 능력치형만 나온다(2026-08-17 사용자 지시).
+    // 거동 아이템은 보물방·상점의 몫이다. 시드 랜덤으로 넓게 쓸어 확인한다.
+    const system = new ItemSystem(createSeededRandom(20260817));
+
+    for (let roll = 0; roll < 300; roll += 1) {
+      const item = system.pickRewardItem([]);
+
+      expect(item).not.toBeNull();
+      expect(isStatOnlyItem(item!), item!.id).toBe(true);
+    }
   });
 
   it('can select the Prism Lance only from the treasure pool', () => {
@@ -357,7 +371,7 @@ describe('stacking behavior items', () => {
     // 갖는 한 자동으로 걸러지는데, 실수로 attackModifiers 없이 만들면 이 검사가
     // 잡아 준다.
     for (const id of ['back-pocket-seed', 'wavy-seed', 'burst-pod']) {
-      expect(isStatOnlyBossReward(itemById(id)), id).toBe(false);
+      expect(isStatOnlyItem(itemById(id)), id).toBe(false);
     }
   });
 });
@@ -476,7 +490,7 @@ describe('hand-pixeled item batch', () => {
       expect(item.dropSources, id).toContain('boss');
       expect(BOSS_REWARD_ITEM_IDS, id).toContain(id);
       // Boss rooms reject attack-changing passives, so these must stay stat-only.
-      expect(isStatOnlyBossReward(item), id).toBe(true);
+      expect(isStatOnlyItem(item), id).toBe(true);
     }
 
     const reachable = reachableItemIds('boss');

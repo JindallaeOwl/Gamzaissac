@@ -18,6 +18,7 @@ export interface RewardDropTuning {
   chestLuckBonus: number;
   crateCoinDropChance: number;
   crateFiveCoinChance: number;
+  shopNpcBlastCoinChance: number;
 }
 
 export const REWARD_DROP_TUNING: RewardDropTuning = {
@@ -28,6 +29,8 @@ export const REWARD_DROP_TUNING: RewardDropTuning = {
   chestLuckBonus: 0.03,
   crateCoinDropChance: 0.2,
   crateFiveCoinChance: 0.15,
+  // 상인을 폭탄으로 날렸을 때 5코인이 나올 확률. 상점 이용을 포기하는 한탕이다
+  shopNpcBlastCoinChance: 0.5,
 };
 
 // Adapted from Rebirth's base room-clear reward ranges. The unsupported

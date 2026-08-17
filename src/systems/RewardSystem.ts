@@ -111,6 +111,22 @@ export class RewardSystem {
     return { kind: 'chest', amount: 1, labelKey: chest.labelKey, tint: chest.tint };
   }
 
+  /** 상인을 폭탄으로 날린 대가. 절반 확률로 5코인 — 상인은 방당 한 명뿐이라
+      반복 획득은 구조적으로 불가능하다. */
+  rollShopNpcBlastCoinDrop(): RewardDrop | null {
+    if (this.random() >= REWARD_DROP_TUNING.shopNpcBlastCoinChance) {
+      return null;
+    }
+
+    return {
+      kind: 'coins',
+      amount: 5,
+      labelKey: 'resources.coins',
+      tint: 0xffffff,
+      appearance: 'five-coin',
+    };
+  }
+
   rollDestroyedCrateCoinDrop(): RewardDrop | null {
     if (this.random() >= REWARD_DROP_TUNING.crateCoinDropChance) {
       return null;

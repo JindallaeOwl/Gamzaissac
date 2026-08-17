@@ -73,7 +73,10 @@ export interface ItemSynergyDefinition {
 
 export const ITEM_DROP_TABLES: Record<ItemDropSource, ItemDropTable> = {
   combat: {
-    dropChance: 0.18,
+    // 0.18 → 0.10 → 0.07로 하향(2026-08-17 사용자 지시 "전투방에서 아이템이
+    // 너무 자주 나와요"). 전투방은 순수 능력치형만 나오므로 rare/legendary
+    // 가중치는 사실상 쓰이지 않는다.
+    dropChance: 0.07,
     rarityWeights: { common: 64, uncommon: 28, rare: 7, legendary: 1 },
   },
   shop: {

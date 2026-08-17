@@ -37,7 +37,16 @@ export class ItemSystem {
   ) {}
 
   pickRewardItem(collectedItemIds: readonly string[]): PassiveItemDefinition | null {
-    return this.pickItemForSource('combat', collectedItemIds);
+    // 전투방 클리어 보상은 순수 능력치형만 나온다(2026-08-17 사용자 지시). 탄
+    // 거동이 바뀌는 아이템은 보물방·상점처럼 "기대하고 여는" 자리의 몫으로 남긴다.
+    const pool = PASSIVE_ITEMS.filter(
+      (item) =>
+        item.dropSources.includes('combat') &&
+        isStatOnlyItem(item) &&
+        !isItemAtStackLimit(item, collectedItemIds),
+    );
+
+    return this.pickWeightedByRarity(pool, 'combat');
   }
 
   rollCombatRewardItem(
@@ -45,7 +54,7 @@ export class ItemSystem {
     luck: number,
   ): PassiveItemDefinition | null {
     const dropChance = Math.min(
-      0.35,
+      0.14,
       ITEM_DROP_TABLES.combat.dropChance + clamp(luck, 0, 10) * 0.01,
     );
 
@@ -70,7 +79,7 @@ export class ItemSystem {
       (item) =>
         bossRewardIds.has(item.id) &&
         item.dropSources.includes('boss') &&
-        isStatOnlyBossReward(item) &&
+        isStatOnlyItem(item) &&
         !isItemAtStackLimit(item, collectedItemIds),
     );
 
@@ -195,7 +204,9 @@ export function isItemAtStackLimit(
   return getItemStackCount(item.id, collectedItemIds) >= item.maxStacks;
 }
 
-export function isStatOnlyBossReward(item: PassiveItemDefinition): boolean {
+/** 순수 능력치형(공격 거동·능력이 없는) 아이템인가. 보스 보상과 전투방 클리어
+    보상이 공유하는 기준이다. */
+export function isStatOnlyItem(item: PassiveItemDefinition): boolean {
   return !item.attackModifiers && !item.abilityId;
 }
 

@@ -323,6 +323,19 @@ export class GameScene extends Phaser.Scene {
         // 방 상태에 남기고 바닥 자국을 그 자리에 바로 그린다.
         this.roomController.markShopNpcDestroyed(x, y, direction);
 
+        // 상인을 날린 대가 — 절반 확률의 5코인. 상인은 다시 나오지 않으므로
+        // 상점 이용을 포기한 한탕이다.
+        const coinDrop = this.rewardSystem.rollShopNpcBlastCoinDrop();
+
+        if (coinDrop) {
+          this.roomTransitions.spawnPersistentReward(
+            this.dungeon.getCurrentRoom(),
+            coinDrop,
+            Phaser.Math.Clamp(x, ROOM_RECT.left + 24, ROOM_RECT.right - 24),
+            Phaser.Math.Clamp(y, ROOM_RECT.top + 24, ROOM_RECT.bottom - 24),
+          );
+        }
+
         // 대사 중이었다면 말풍선도 함께 픽셀 조각으로 부서뜨린다.
         for (const bounds of this.roomController.consumeShopSpeechBubbleBounds()) {
           this.effects.shatterSpeechBubble(bounds, direction);

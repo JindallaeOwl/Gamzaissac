@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BOSS_REWARD_ITEM_IDS } from '../src/data/bossRewards';
 import { PASSIVE_ITEMS } from '../src/data/items';
 import { BossRewardSystem, type BossRewardRoomState } from '../src/systems/BossRewardSystem';
-import { isStatOnlyBossReward, ItemSystem } from '../src/systems/ItemSystem';
+import { isStatOnlyItem, ItemSystem } from '../src/systems/ItemSystem';
 
 describe('boss rewards', () => {
   it('does not create a reward while the boss reward pool is empty', () => {
@@ -37,7 +37,7 @@ describe('boss rewards', () => {
 
     expect(pool.map((item) => item.id)).toContain('red-mushroom');
     expect(pool).toHaveLength(BOSS_REWARD_ITEM_IDS.length);
-    expect(pool.every(isStatOnlyBossReward)).toBe(true);
+    expect(pool.every(isStatOnlyItem)).toBe(true);
   });
 
   it('rejects attack-changing passives even if their IDs are configured by mistake', () => {

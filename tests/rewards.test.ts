@@ -26,6 +26,15 @@ describe('RewardSystem', () => {
     }
   });
 
+  it('pays out five coins for bombing the shop merchant only when the roll passes', () => {
+    expect(new RewardSystem(() => 0.49).rollShopNpcBlastCoinDrop()).toMatchObject({
+      kind: 'coins',
+      amount: 5,
+      appearance: 'five-coin',
+    });
+    expect(new RewardSystem(() => 0.5).rollShopNpcBlastCoinDrop()).toBeNull();
+  });
+
   it('drops only a yellow one-coin or gray five-coin pickup', () => {
     const oneCoinRolls = [0.3, 0, 0.9];
     const fiveCoinRolls = [0.3, 0, 0.1];
