@@ -1,11 +1,17 @@
 import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
 import { BOMB_TUNING, DEPTH } from '../config/gameConfig';
-import { getRenderScale } from '../systems/GameSettings';
-import { gameFontStack } from '../i18n';
 
 type DetonateCallback = (x: number, y: number) => void;
 
+/**
+ * 설치된 폭탄.
+ *
+ * 폭발 범위 원과 남은 초 숫자는 2026-08-17 사용자 요청으로 없앴다. 임박함은
+ * 이제 폭탄 자체로만 알린다 — 심장처럼 커졌다 작아지는 박동이 점점 빨라지고,
+ * 터지기 직전에는 도화선 불꽃이 붉게 번쩍인다. 검은 몸통은 곱셈 tint에 거의
+ * 반응하지 않아 밝은 불꽃·광택만 물들기 때문에, 불꽃이 타오르는 것으로 읽힌다.
+ */
 export class Bomb extends Phaser.GameObjects.Sprite {
   private readonly plantedX: number;
   private readonly plantedY: number;
@@ -13,9 +19,6 @@ export class Bomb extends Phaser.GameObjects.Sprite {
   private readonly detonateAt: number;
   private readonly onDetonate: DetonateCallback;
   private fuseTimer?: Phaser.Time.TimerEvent;
-  private rangeIndicator?: Phaser.GameObjects.Arc;
-  private countdownText?: Phaser.GameObjects.Text;
-  private displayedSeconds = -1;
   private detonated = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, onDetonate: DetonateCallback) {
@@ -28,23 +31,6 @@ export class Bomb extends Phaser.GameObjects.Sprite {
 
     scene.add.existing(this);
     this.setDepth(DEPTH.item);
-
-    this.rangeIndicator = scene.add
-      .circle(x, y, BOMB_TUNING.radius, 0xff704d, 0.035)
-      .setStrokeStyle(2, 0xff9a66, 0.38)
-      .setDepth(DEPTH.item - 1);
-    this.countdownText = scene.add
-      .text(x, y - 20, '3', {
-        fontFamily: gameFontStack(),
-        fontSize: '8px',
-        fontStyle: 'bold',
-        color: '#fff2c7',
-        stroke: '#35130e',
-        strokeThickness: 2,
-        resolution: getRenderScale(),
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.item + 1);
 
     this.fuseTimer = scene.time.delayedCall(BOMB_TUNING.fuseMs, () => this.detonate());
   }
@@ -59,12 +45,6 @@ export class Bomb extends Phaser.GameObjects.Sprite {
     this.setPosition(this.plantedX, this.plantedY);
 
     const remainingMs = Math.max(0, this.detonateAt - time);
-    const remainingSeconds = Math.max(1, Math.ceil(remainingMs / 1000));
-
-    if (remainingSeconds !== this.displayedSeconds) {
-      this.displayedSeconds = remainingSeconds;
-      this.countdownText?.setText(String(remainingSeconds));
-    }
     const progress = Phaser.Math.Clamp((time - this.plantedAt) / BOMB_TUNING.fuseMs, 0, 1);
     const pulseSpeed = Phaser.Math.Linear(0.008, 0.028, progress);
     const pulse = (Math.sin(time * pulseSpeed) + 1) / 2;
@@ -85,10 +65,6 @@ export class Bomb extends Phaser.GameObjects.Sprite {
   override destroy(fromScene?: boolean): void {
     this.fuseTimer?.remove(false);
     this.fuseTimer = undefined;
-    this.rangeIndicator?.destroy();
-    this.countdownText?.destroy();
-    this.rangeIndicator = undefined;
-    this.countdownText = undefined;
     super.destroy(fromScene);
   }
 

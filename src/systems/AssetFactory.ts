@@ -765,17 +765,88 @@ function createBombTexture(scene: Phaser.Scene): void {
   graphics.destroy();
 }
 
+// 설치된 폭탄. 원래는 매끄러운 원 + 선으로 그려 게임의 도트 톤에서 혼자 튀었다.
+// 전형적인 만화 폭탄(둥근 검은 몸통 + 도화선 + 별 불꽃)을 22×22 격자에 한 픽셀씩
+// 찍어 다시 그렸다(2026-08-17 사용자 요청).
+//
+// k 테두리 · b 몸통 · m 몸통 밝은면 · h 광택 · w 광택 highlight
+// c 마개 어두운면 · C 마개 밝은면 · f 도화선 밝은쪽 · F 도화선 그늘
+// s 불꽃 심 · y 불꽃 노랑 · o 불꽃 주황
+const PLACED_BOMB_PALETTE: Record<string, number> = {
+  k: 0x0d0f13,
+  b: 0x1b1f26,
+  m: 0x2b313b,
+  h: 0x596475,
+  w: 0x9aa4b4,
+  c: 0x3a3f47,
+  C: 0x5a606a,
+  f: 0xe0d7b4,
+  F: 0x9c9068,
+  s: 0xfff6c0,
+  y: 0xffd63f,
+  o: 0xff9a24,
+};
+
+// 빛이 오른쪽 위에서 온다는 전제로 광택(h·w)을 그쪽에 몰아 유광 구슬처럼 보이게
+// 한다. 도화선은 왼쪽 위로 휘어 올라가고 그 끝에 별 불꽃이 붙는다.
+// 몸통은 지름 13픽셀 원판이다. 폭이 5-9-11-11-13-13-13-13-13-11-11-9-5로 좌우
+// 대칭이며, 한 줄만 튀어나오는 곳이 없어야 계란이 아니라 구슬로 읽힌다.
+const PLACED_BOMB_ROWS = [
+  '......y...............',
+  '....o.s.o.............',
+  '...ysssssy............',
+  '....o.s.o.............',
+  '......y...............',
+  '......Ff..............',
+  '........fFcCCc........',
+  '.........cCCCc........',
+  '.........kbmmk........',
+  '.......kbbbmmhmk......',
+  '......kbbbbmmhwmk.....',
+  '......kbbbbbmhwmk.....',
+  '.....kbbbbbbmhwmbk....',
+  '.....kbbbbbbbmhmbk....',
+  '.....kbbbbbbbbmmbk....',
+  '.....kbbbbbbbbbmbk....',
+  '.....kbbbbbbbbbbbk....',
+  '......kbbbbbbbbbk.....',
+  '......kbbbbbbbbbk.....',
+  '.......kbbbbbbbk......',
+  '.........kkkkk........',
+  '......................',
+];
+
+const PLACED_BOMB_SCALE = 2;
+
 function createPlacedBombTexture(scene: Phaser.Scene): void {
   const graphics = scene.add.graphics();
-  graphics.fillStyle(0x202630, 1);
-  graphics.fillCircle(20, 22, 15);
-  graphics.lineStyle(4, 0xffb35a, 1);
-  graphics.strokeCircle(20, 22, 13);
-  graphics.fillStyle(0xff6b4a, 1);
-  graphics.fillCircle(31, 5, 4);
-  graphics.lineStyle(4, 0xf7d774, 1);
-  graphics.lineBetween(25, 12, 30, 7);
-  graphics.generateTexture(TextureKeys.bombPlaced, 40, 40);
+  const size = PLACED_BOMB_ROWS.length * PLACED_BOMB_SCALE;
+
+  // 접지 그림자. 반투명이라야 바닥 흙 무늬가 비쳐 폭탄이 얹혀 있는 것으로 보인다.
+  graphics.fillStyle(0x160e09, 0.42);
+  graphics.fillEllipse(size / 2, size - 3, 26, 6);
+
+  for (let y = 0; y < PLACED_BOMB_ROWS.length; y += 1) {
+    const row = PLACED_BOMB_ROWS[y];
+
+    for (let x = 0; x < row.length; x += 1) {
+      const color = PLACED_BOMB_PALETTE[row[x]];
+
+      if (color === undefined) {
+        continue;
+      }
+
+      graphics.fillStyle(color, 1);
+      graphics.fillRect(
+        x * PLACED_BOMB_SCALE,
+        y * PLACED_BOMB_SCALE,
+        PLACED_BOMB_SCALE,
+        PLACED_BOMB_SCALE,
+      );
+    }
+  }
+
+  graphics.generateTexture(TextureKeys.bombPlaced, size, size);
   graphics.destroy();
 }
 
