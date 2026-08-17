@@ -1,16 +1,21 @@
 import Phaser from 'phaser';
-import { BOMB_TUNING } from '../config/gameConfig';
+import { BOMB_TUNING, ROOM_CENTER_X, ROOM_CENTER_Y, ROOM_RECT } from '../config/gameConfig';
 import { Bomb } from '../entities/Bomb';
 import { Bullet } from '../entities/Bullet';
 import { Obstacle } from '../entities/Obstacle';
 import type { Player } from '../entities/Player';
 import { ShopNpc } from '../entities/ShopNpc';
 import { BaseEnemy } from '../entities/enemies/BaseEnemy';
-import { normalizeVector } from '../utils/math';
+import { clampPointInsideBounds, normalizeVector } from '../utils/math';
 import type { AudioSystem } from './AudioSystem';
-import { BOMB_PUSH_BOUNCE, BOMB_PUSH_DRAG, BOMB_SEED_PUSH_SPEED } from './BombPushRules';
+import {
+  BOMB_PUSH_BOUNCE,
+  BOMB_PUSH_DRAG,
+  BOMB_RESTORE_ENTRY_CLEARANCE,
+  BOMB_SEED_PUSH_SPEED,
+} from './BombPushRules';
 import { isWithinBombRadius, resolveBombPlantAttempt, shouldDetonateBomb } from './BombRules';
-import type { DungeonManager, RoomNode } from './DungeonManager';
+import type { DungeonManager, PlantedBombState, RoomNode } from './DungeonManager';
 import type { EffectsSystem } from './EffectsSystem';
 import type { RunState } from './RunState';
 
@@ -18,6 +23,9 @@ import type { RunState } from './RunState';
 // 자기 항목만 정확히 지운다(안 지우면 방에 들어올 때마다 되살아나 무한히 늘어난다).
 const PLANTED_BOMB_ID_KEY = 'plantedBombId';
 const PLANTED_BOMB_ROOM_KEY = 'plantedBombRoomId';
+
+// 되살릴 때 벽에서 떼어 놓을 여백. 폭탄 몸 반지름(약 10)보다 넉넉히 둔다.
+const BOMB_RESTORE_WALL_MARGIN = 16;
 
 interface BombSystemConfig {
   scene: Phaser.Scene;
@@ -127,10 +135,21 @@ export class BombSystem {
   /**
    * 방에 다시 들어올 때 아직 터지지 않은 폭탄을 그 자리에 되살린다. 도화선은 처음부터
    * 새로 센다 — 저장한 것은 자리뿐이다.
+   *
+   * 입장 지점과 겹치는 폭탄은 방 안쪽으로 조금 밀어 되살린다. 문 앞에 심어 둔
+   * 폭탄은 저장된 자리가 곧 다음 입장 지점이어서, 그대로 두면 플레이어와 겹친 채
+   * 시작하고 그 상태에서는 밀 수도 없다. 밀어낸 자리는 방 상태에도 반영해,
+   * 다시 들어올 때마다 조금씩 더 밀리는 일이 없게 한다.
    */
-  restoreRoomBombs(room: RoomNode): void {
-    for (const state of room.plantedBombs) {
-      this.spawnBomb(state.x, state.y, room.id, state.id);
+  restoreRoomBombs(room: RoomNode, entryPosition?: { x: number; y: number }): void {
+    for (const state of [...room.plantedBombs]) {
+      const position = this.resolveRestorePosition(state, entryPosition);
+
+      if (position.x !== state.x || position.y !== state.y) {
+        this.dungeon.updatePlantedBomb(room.id, state.id, position.x, position.y);
+      }
+
+      this.spawnBomb(position.x, position.y, room.id, state.id);
     }
   }
 
@@ -153,6 +172,37 @@ export class BombSystem {
 
   clear(): void {
     this.plantedBombs.clear(true, true);
+  }
+
+  /** 되살릴 자리. 입장 지점과 너무 가까우면 방 안쪽으로 밀어 낸다. */
+  private resolveRestorePosition(
+    state: PlantedBombState,
+    entryPosition?: { x: number; y: number },
+  ): { x: number; y: number } {
+    if (!entryPosition) {
+      return { x: state.x, y: state.y };
+    }
+
+    const gap = Phaser.Math.Distance.Between(entryPosition.x, entryPosition.y, state.x, state.y);
+
+    if (gap >= BOMB_RESTORE_ENTRY_CLEARANCE) {
+      return { x: state.x, y: state.y };
+    }
+
+    // 입장 지점에서 폭탄 쪽으로 밀어낸다. 정확히 겹쳐 방향이 없으면 방 중심 쪽으로
+    // 밀어, 어느 문으로 들어오든 안쪽으로 비켜난다.
+    const away = normalizeVector(state.x - entryPosition.x, state.y - entryPosition.y);
+    const direction =
+      away.x === 0 && away.y === 0
+        ? normalizeVector(ROOM_CENTER_X - entryPosition.x, ROOM_CENTER_Y - entryPosition.y)
+        : away;
+
+    return clampPointInsideBounds(
+      entryPosition.x + direction.x * BOMB_RESTORE_ENTRY_CLEARANCE,
+      entryPosition.y + direction.y * BOMB_RESTORE_ENTRY_CLEARANCE,
+      ROOM_RECT,
+      BOMB_RESTORE_WALL_MARGIN,
+    );
   }
 
   private spawnBomb(x: number, y: number, roomId: string, bombId?: number): void {

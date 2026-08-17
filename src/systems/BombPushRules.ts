@@ -32,6 +32,15 @@ export const BOMB_BODY_PUSH_COOLDOWN_MS = 90;
  * 뒤부터 상호작용을 켜면 그 두 가지가 함께 사라진다.
  */
 export const BOMB_PUSH_ARM_DISTANCE = 24;
+/**
+ * 방에 다시 들어올 때 되살아난 폭탄이 입장 지점에서 최소한 떨어져 있어야 하는 거리.
+ *
+ * 문 앞에 심어 두면 저장된 자리가 곧 다음 입장 지점이라, 그대로 되살리면 플레이어와
+ * 겹친 채 시작한다 — 겹친 동안에는 상호작용이 꺼져 있어(BOMB_PUSH_ARM_DISTANCE)
+ * 밀 수도 없다. 그래서 되살릴 때만 방 안쪽으로 조금 밀어 놓는다.
+ * 이격 거리가 상호작용이 켜지는 거리보다 커야 되살아난 즉시 밀 수 있다.
+ */
+export const BOMB_RESTORE_ENTRY_CLEARANCE = 34;
 
 export interface BombPushVelocity {
   x: number;

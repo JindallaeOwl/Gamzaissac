@@ -62,7 +62,7 @@ export class RoomTransitionSystem {
     this.roomController.enterCurrentRoom(spawnPosition);
     this.restorePendingReward(room);
     this.restoreDroppedRewards(room);
-    this.bombSystem.restoreRoomBombs(room);
+    this.bombSystem.restoreRoomBombs(room, spawnPosition);
     this.restoreFloorExit(room);
   }
 
@@ -74,7 +74,7 @@ export class RoomTransitionSystem {
     this.roomController.enterCurrentRoom(spawnPosition);
     this.restorePendingReward(room);
     this.restoreDroppedRewards(room);
-    this.bombSystem.restoreRoomBombs(room);
+    this.bombSystem.restoreRoomBombs(room, spawnPosition);
     this.restoreFloorExit(room);
   }
 
