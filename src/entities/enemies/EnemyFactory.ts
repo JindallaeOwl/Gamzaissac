@@ -4,11 +4,15 @@ import { ChaserEnemy } from './ChaserEnemy';
 import { DasherEnemy } from './DasherEnemy';
 import { FaultWardenBoss } from './FaultWardenBoss';
 import { FlankerEnemy } from './FlankerEnemy';
+import { FlyQueenMiniboss } from './FlyQueenMiniboss';
 import { PitchforkFarmerBoss } from './PitchforkFarmerBoss';
+import { RootGnarlMiniboss } from './RootGnarlMiniboss';
 import { RootKernelBoss } from './RootKernelBoss';
 import { ShooterEnemy } from './ShooterEnemy';
 import { SummonerEnemy } from './SummonerEnemy';
+import { ThornTangleMiniboss } from './ThornTangleMiniboss';
 import { WormKingBoss } from './WormKingBoss';
+import { WriggleMassMiniboss } from './WriggleMassMiniboss';
 import type { BaseEnemy } from './BaseEnemy';
 
 export function createEnemy(
@@ -40,16 +44,23 @@ export function createEnemy(
       break;
     case 'splitter':
     case 'splitterling':
-    case 'rootGnarl':
-    case 'wriggleMass':
-      // All use the chaser's pursuit behavior; splitting is wired in RoomController.
+      // Both use the chaser's pursuit behavior; splitting is wired in RoomController.
       enemy = new ChaserEnemy(scene, x, y, definition, floor);
       break;
+    // I층 중간보스 4종. 원래는 위의 일반 적 AI를 그대로 재사용했지만, 각자 서명
+    // 패턴을 받아 전용 클래스가 되었다(2026-08-17). 죽을 때의 분열은 여전히
+    // RoomController가 정의를 보고 처리한다.
+    case 'rootGnarl':
+      enemy = new RootGnarlMiniboss(scene, x, y, definition, floor);
+      break;
+    case 'wriggleMass':
+      enemy = new WriggleMassMiniboss(scene, x, y, definition, floor);
+      break;
     case 'flyQueen':
-      enemy = new ShooterEnemy(scene, x, y, definition, floor);
+      enemy = new FlyQueenMiniboss(scene, x, y, definition, floor);
       break;
     case 'thornTangle':
-      enemy = new DasherEnemy(scene, x, y, definition, floor);
+      enemy = new ThornTangleMiniboss(scene, x, y, definition, floor);
       break;
     case 'wormKing':
       enemy = new WormKingBoss(scene, x, y, definition, floor);

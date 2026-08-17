@@ -30,6 +30,9 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   private nextContactAt = 0;
   private defeated = false;
   private persistentTint?: number;
+  private phaseTwoLatched = false;
+  private telegraphRing?: Phaser.GameObjects.Graphics;
+  private groundMarker?: Phaser.GameObjects.Graphics;
 
   constructor(
     scene: Phaser.Scene,
@@ -222,6 +225,101 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.setTint(this.persistentTint);
+  }
+
+  /**
+   * 페이즈2에 들어갔는지. BossHud가 이 값으로 체력바 색과 이름 색을 바꾼다.
+   * 전용 보스들은 자기 잠금 상태를 쓰도록 이것을 재정의한다.
+   */
+  isInPhaseTwo(): boolean {
+    return this.phaseTwoLatched;
+  }
+
+  /**
+   * 체력이 임계 아래로 처음 떨어지는 순간에만 true를 돌려주고 페이즈2 알림을 쏜다.
+   *
+   * 중간보스 4종이 "체력 절반에서 각성"이라는 같은 규칙을 쓰므로 여기 둔다.
+   * 전용 보스(지렁이 왕·농부 등)는 각자 잠금 시간과 연출이 달라 자기 클래스에서
+   * 직접 처리한다. 한 번만 걸리는 걸쇠라 회복 수단이 생겨도 두 번 발동하지 않는다.
+   */
+  protected tryLatchPhaseTwo(threshold: number): boolean {
+    if (
+      this.phaseTwoLatched ||
+      !this.active ||
+      !this.body ||
+      this.defeated ||
+      this.getHealthRatio() > threshold
+    ) {
+      return false;
+    }
+
+    this.phaseTwoLatched = true;
+    this.emit('boss-phase-two', this);
+    return true;
+  }
+
+  /**
+   * 공격 예고 링. 본체 주위에 원을 그리고 매 프레임 위치만 맞춘다.
+   *
+   * 로컬 좌표로 그려 두므로 피격 넉백에 본체가 밀려나도 링이 제자리에 남지 않는다
+   * (소환사 예고에서 실제로 겪은 문제다). 파괴는 destroy가 함께 처리한다.
+   */
+  protected showTelegraphRing(color: number, extraRadius = 8): void {
+    this.clearTelegraphRing();
+
+    const radius = this.effectiveBodyRadius + extraRadius;
+    const ring = this.scene.add
+      .graphics()
+      .setDepth(this.depth - 1)
+      .setPosition(this.x, this.y);
+
+    ring.lineStyle(2, color, 0.85);
+    ring.strokeCircle(0, 0, radius);
+    ring.lineStyle(5, color, 0.14);
+    ring.strokeCircle(0, 0, radius);
+    this.telegraphRing = ring;
+  }
+
+  /** 예고 링을 본체 위치에 맞춘다. 예고 중 매 프레임 부른다. */
+  protected syncTelegraphRing(): void {
+    this.telegraphRing?.setPosition(this.x, this.y);
+  }
+
+  protected clearTelegraphRing(fromScene?: boolean): void {
+    this.telegraphRing?.destroy(fromScene);
+    this.telegraphRing = undefined;
+  }
+
+  /**
+   * 바닥 예고 표식. 예고 링(본체를 따라다닌다)과 달리 지정한 자리에 고정되며,
+   * "저 자리에 떨어진다"를 알린다(뿌리 옹이의 도약 착지점).
+   */
+  protected showGroundMarker(x: number, y: number, color: number, radius: number): void {
+    this.clearGroundMarker();
+
+    const marker = this.scene.add
+      .graphics()
+      .setDepth(DEPTH.floor + 2)
+      .setPosition(x, y);
+
+    marker.lineStyle(2, color, 0.9);
+    marker.strokeCircle(0, 0, radius);
+    marker.lineStyle(6, color, 0.16);
+    marker.strokeCircle(0, 0, radius);
+    marker.fillStyle(color, 0.12);
+    marker.fillCircle(0, 0, radius);
+    this.groundMarker = marker;
+  }
+
+  protected clearGroundMarker(fromScene?: boolean): void {
+    this.groundMarker?.destroy(fromScene);
+    this.groundMarker = undefined;
+  }
+
+  override destroy(fromScene?: boolean): void {
+    this.clearTelegraphRing(fromScene);
+    this.clearGroundMarker(fromScene);
+    super.destroy(fromScene);
   }
 
   protected moveToward(x: number, y: number, speed: number): void {

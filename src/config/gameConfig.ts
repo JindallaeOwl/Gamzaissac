@@ -178,6 +178,95 @@ export const FEEDBACK_TUNING = {
   },
 };
 
+/**
+ * I층 중간보스 4종의 패턴 수치 (2026-08-17 추가).
+ *
+ * 넷은 원래 일반 적 AI를 그대로 써서 "크고 단단한 일반 적"이었다. 체력을
+ * 46~60으로 올려 13~15초를 싸우게 만든 뒤로는 패턴이 없는 것이 더 두드러져,
+ * 각자 하나씩 서명 패턴을 받았다. 넷 다 같은 각성 규칙(체력 절반)을 쓰므로
+ * 임계값은 위에 공용으로 둔다.
+ */
+export const MINIBOSS_TUNING = {
+  phaseTwoThreshold: 0.5,
+  // 뿌리 옹이: 거리에 따라 두 패턴을 골라 쓴다 — 붙어 있으면 웅크려 방사형
+  // 뿌리탄, 멀면 뿌리를 뽑아 도약해 내리찍는다. 어느 거리도 안전하지 않게 해
+  // "떨어져 있으면 된다"는 쉬운 답을 없애는 것이 목적이다(2026-08-17 플레이 판단:
+  // 방사탄만으로는 너무 쉬웠다).
+  rootGnarl: {
+    actionCooldownMs: 2600,
+    telegraphMs: 520,
+    recoveryMs: 420,
+    bulletCount: 8,
+    bulletSpeed: 108,
+    phaseTwoActionCooldownMs: 1800,
+    phaseTwoBulletCount: 12,
+    telegraphColor: 0xc08a3e,
+    phaseTwoTint: 0xffb35a,
+    // 도약: 이 거리보다 멀면 방사탄 대신 도약을 고른다.
+    leapMinDistance: 96,
+    leapTelegraphMs: 560,
+    leapSpeed: 320,
+    // 한 번에 뛸 수 있는 최대 거리. 속도 × 최대 시간(198px)보다 짧게 두어 착지점이
+    // 항상 도달 가능하게 한다 — 더 멀리 있는 플레이어를 노리면 표식만 찍고 중간에
+    // 떨어져 예고가 거짓이 된다. 멀면 표식도 그만큼 가까이 찍히고, 대신 거리를
+    // 좁히는 것이 그 도약의 성과다.
+    leapMaxDistance: 180,
+    // 도약이 목표에 닿지 못해도 이 시간이 지나면 착지한다(벽·장애물 안전장치).
+    leapMaxDurationMs: 620,
+    // 착지 지점에 닿았다고 볼 거리.
+    leapArrivalTolerance: 14,
+    landingShockBulletCount: 6,
+    landingShockBulletSpeed: 132,
+    phaseTwoLandingShockBulletCount: 10,
+    landingMarkerColor: 0xff8c42,
+  },
+  // 꿈틀대는 덩어리: 예고 후 짧게 파고드는 꿈틀 돌진. 각성하면 새끼를 뱉어
+  // 본체만 보던 시선을 흩는다(죽을 때의 4마리 분열은 그대로 남는다).
+  wriggleMass: {
+    chargeCooldownMs: 2600,
+    chargeWindupMs: 260,
+    // 이동 거리(속도 × 시간 = 111px)가 플레이어 이동 속도(130px/s)와 예고 시간을
+    // 견딜 만큼 되어야 맞을 가능성이 남는다. 처음에는 57px여서 어떤 움직이는
+    // 플레이어도 맞히지 못했다.
+    chargeDurationMs: 420,
+    chargeSpeed: 265,
+    // 이 거리 안에서만 돌진한다. 방 반대편에서 뛰면 예고만 하고 늘 빗나간다.
+    chargeMaxDistance: 130,
+    recoveryMs: 320,
+    phaseTwoChargeCooldownMs: 1700,
+    phaseTwoSpitCount: 2,
+    summonMaxAlive: 4,
+    telegraphColor: 0x5fd8a8,
+    phaseTwoTint: 0x9ce86a,
+  },
+  // 파리 여왕: 한 발이 부채꼴이 되고, 주기적으로 파리를 부른다. 여왕부터 잡을지
+  // 알부터 치울지 고르게 한다.
+  flyQueen: {
+    fanCount: 3,
+    fanSpreadDegrees: 16,
+    phaseTwoFanCount: 5,
+    summonCooldownMs: 5200,
+    summonTelegraphMs: 460,
+    summonRecoveryMs: 300,
+    phaseTwoSummonCooldownMs: 3600,
+    telegraphColor: 0xffc24d,
+    phaseTwoTint: 0xffd166,
+  },
+  // 가시넝쿨 뭉치: 돌진이 끝난 자리에서 가시가 방사된다. 돌진을 피한 뒤에도
+  // 한 번 더 피해야 한다.
+  thornTangle: {
+    thornCount: 6,
+    thornSpeed: 116,
+    phaseTwoThornCount: 10,
+    // 돌진 한 주기는 예고 260ms + 돌진 300ms = 560ms가 고정으로 들어간다. 따라서
+    // 쿨다운에서 560을 뺀 값이 실제로 숨 돌릴 틈이다: 기본 850 → 290ms,
+    // 여기 700 → 140ms. 이 관계를 모르고 620으로 두면 틈이 60ms(-79%)가 되어
+    // 표에 적힌 -27%와 전혀 다른 난이도가 된다.
+    phaseTwoDashCooldownMs: 700,
+    phaseTwoTint: 0xd9a3ff,
+  },
+} as const;
+
 // 스테이지 보스 체력은 "그 층의 평균 빌드 화력으로 22~38초"를 목표로 역산했다
 // (2026-08-17 밸런스 1차: 목표 초 × 예상 화력 ÷ 층 배율). 원래 22~34로, 중반
 // 빌드 기준 5~11초 만에 죽어 2페이즈 패턴을 볼 시간이 없었다.

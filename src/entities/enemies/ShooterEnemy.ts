@@ -8,6 +8,17 @@ export class ShooterEnemy extends BaseEnemy {
   private fireAt = 0;
   private baseScale?: number;
 
+  /**
+   * 발사 예고가 진행 중인지(노란 점등·확대 상태).
+   *
+   * 사수 행동을 가로채는 하위 클래스(파리 여왕의 소환)가 예고 중에 끼어들면
+   * 노란 tint와 확대 배율이 그대로 남고 돌아오는 순간 즉시 발사된다. 그걸
+   * 피하려면 예고가 끝날 때까지 기다려야 하므로 판단 근거를 열어 둔다.
+   */
+  protected get isTelegraphingShot(): boolean {
+    return this.fireAt > 0;
+  }
+
   updateAI(time: number, player: Player, enemyBullets: Phaser.Physics.Arcade.Group): void {
     const baseScale = (this.baseScale ??= this.scaleX);
     const body = this.body as Phaser.Physics.Arcade.Body;

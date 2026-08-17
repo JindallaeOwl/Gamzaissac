@@ -10,12 +10,9 @@ export type WormKingState =
   | 'emerging'
   | 'phaseTransition';
 
-export interface PointBounds {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-}
+import { clampPointInsideBounds, type PointBounds } from '../utils/math';
+
+export type { PointBounds };
 
 /**
  * 땅속에 있는 동안(파고들기·재등장 예고·솟아오르는 중)에는 어떤 피해도 받지 않는다.
@@ -37,12 +34,5 @@ export function clampResurfacePoint(
   bounds: PointBounds,
   margin: number,
 ): { x: number; y: number } {
-  return {
-    x: clamp(x, bounds.left + margin, bounds.right - margin),
-    y: clamp(y, bounds.top + margin, bounds.bottom - margin),
-  };
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+  return clampPointInsideBounds(x, y, bounds, margin);
 }

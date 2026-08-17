@@ -1,6 +1,7 @@
 import { TextureKeys } from '../config/assets';
 import {
   BOSS_TUNING,
+  MINIBOSS_TUNING,
   PITCHFORK_FARMER_TUNING,
   PLAYER_DAMAGE_PER_HIT,
   ROOT_KERNEL_TUNING,
@@ -199,7 +200,11 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     bodyRadius: 11,
     score: 60,
     displayScale: 1.7,
+    // 방사형 뿌리탄을 쏜다(RootGnarlMiniboss). 발수·속도는 MINIBOSS_TUNING.
+    bulletDamage: PLAYER_DAMAGE_PER_HIT,
     bossBarColor: 0x9a6d3b,
+    bossPhaseTwoBarColor: MINIBOSS_TUNING.rootGnarl.phaseTwoTint,
+    phaseTwoMessageKey: 'messages.rootGnarlPhaseTwo',
   },
   wriggleMass: {
     id: 'wriggleMass',
@@ -216,7 +221,11 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     displayScale: 1.6,
     splitChildId: 'splitterling',
     splitChildCount: 4,
+    // 각성(체력 절반)에서 새끼를 뱉는다. 죽을 때의 분열과는 별개 경로다.
+    summonChildId: 'splitterling',
     bossBarColor: 0x3fbf9a,
+    bossPhaseTwoBarColor: MINIBOSS_TUNING.wriggleMass.phaseTwoTint,
+    phaseTwoMessageKey: 'messages.wriggleMassPhaseTwo',
   },
   flyQueen: {
     id: 'flyQueen',
@@ -234,7 +243,13 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     bulletSpeed: 130,
     fireCooldownMs: 700,
     keepAwayDistance: 140,
+    // 파리를 부른다(FlyQueenMiniboss). 부채꼴 사격 수치는 MINIBOSS_TUNING.
+    summonChildId: 'chaser',
+    summonCount: 2,
+    summonMaxAlive: 3,
     bossBarColor: 0xf7bd4d,
+    bossPhaseTwoBarColor: MINIBOSS_TUNING.flyQueen.phaseTwoTint,
+    phaseTwoMessageKey: 'messages.flyQueenPhaseTwo',
   },
   thornTangle: {
     id: 'thornTangle',
@@ -252,7 +267,11 @@ export const ENEMY_DEFINITIONS: Record<EnemyId, EnemyDefinition> = {
     dashDurationMs: 300,
     dashSpeed: 185,
     wanderSpeed: 58,
+    // 돌진이 끝난 자리에서 가시를 방사한다(ThornTangleMiniboss).
+    bulletDamage: PLAYER_DAMAGE_PER_HIT,
     bossBarColor: 0xa97cff,
+    bossPhaseTwoBarColor: MINIBOSS_TUNING.thornTangle.phaseTwoTint,
+    phaseTwoMessageKey: 'messages.thornTanglePhaseTwo',
   },
   // --- II층 스테이지 보스: 전용 AI 클래스를 가진다.
   // wormKing 전용 임시 도트(마디진 지렁이+왕관). displayScale로 확대해 크기는 유지한다.

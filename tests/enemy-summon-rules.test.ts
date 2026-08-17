@@ -200,7 +200,12 @@ describe('summon target validation', () => {
     // Splitters turn one kill into more enemies, so summoning them compounds.
     expect(validateSummonTarget('splitter')).toBe('splitParent');
     expect(validateSummonTarget('summoner')).toBe('summoner');
-    expect(validateSummonTarget('wriggleMass')).toBe('splitParent');
+    // 꿈틀대는 덩어리는 2026-08-17부터 각성에서 새끼를 뱉으므로 분열·소환 둘 다
+    // 한다. 소환 검사가 먼저 걸려 이유가 'summoner'로 바뀌었을 뿐, 소환 대상으로
+    // 거부되는 사실은 그대로다(순수 분열체는 위의 'splitter'가 덮는다).
+    expect(ENEMY_DEFINITIONS.wriggleMass.summonChildId).toBeDefined();
+    expect(validateSummonTarget('wriggleMass')).toBe('summoner');
+    expect(validateSummonTarget('wriggleMass')).not.toBeNull();
     expect(validateSummonTarget('splitterling')).toBeNull();
     expect(validateSummonTarget('chaser')).toBeNull();
   });
