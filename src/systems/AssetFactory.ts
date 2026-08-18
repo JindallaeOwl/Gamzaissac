@@ -998,57 +998,96 @@ const FLOOR_EXIT_ROWS = [
 // 되어 흙 타일(설계 1픽셀 = 화면 2×2)과 픽셀 크기가 정확히 맞는다.
 const FLOOR_EXIT_SCALE = 4;
 
-function createFloorExitTexture(scene: Phaser.Scene): void {
+/**
+ * 격자 문자열을 그대로 텍스처로 찍는다. '.'은 비우고, 나머지 글자는 팔레트에서
+ * 색을 찾아 scale×scale 블록으로 채운다. 팔레트에 없는 글자는 오타이므로 던진다 —
+ * 조용히 비우면 그림에 구멍이 뚫린 채로 지나간다.
+ */
+function drawPixelGrid(
+  scene: Phaser.Scene,
+  rows: readonly string[],
+  palette: Record<string, number>,
+  scale: number,
+  textureKey: string,
+): void {
   const graphics = scene.add.graphics();
 
-  for (let y = 0; y < FLOOR_EXIT_ROWS.length; y += 1) {
-    const row = FLOOR_EXIT_ROWS[y];
+  for (let y = 0; y < rows.length; y += 1) {
+    const row = rows[y];
 
     for (let x = 0; x < row.length; x += 1) {
-      const color = FLOOR_EXIT_PALETTE[row[x]];
+      const symbol = row[x];
 
-      if (color === undefined) {
+      if (symbol === '.') {
         continue;
       }
 
+      const color = palette[symbol];
+
+      if (color === undefined) {
+        graphics.destroy();
+        throw new Error(`Unknown pixel symbol "${symbol}" in texture ${textureKey}`);
+      }
+
       graphics.fillStyle(color, 1);
-      graphics.fillRect(
-        x * FLOOR_EXIT_SCALE,
-        y * FLOOR_EXIT_SCALE,
-        FLOOR_EXIT_SCALE,
-        FLOOR_EXIT_SCALE,
-      );
+      graphics.fillRect(x * scale, y * scale, scale, scale);
     }
   }
 
-  graphics.generateTexture(TextureKeys.floorExit, 64, 40);
+  graphics.generateTexture(textureKey, rows[0].length * scale, rows.length * scale);
   graphics.destroy();
 }
 
-// 최종층 탈출구: 같은 규격(64x40)의 굴이지만 지상의 빛이 새어들어 밝게 빛난다.
-// 규격을 일반 출구와 동일하게 유지해 FloorExit의 물리 몸 설정을 공유한다.
+function createFloorExitTexture(scene: Phaser.Scene): void {
+  drawPixelGrid(
+    scene,
+    FLOOR_EXIT_ROWS,
+    FLOOR_EXIT_PALETTE,
+    FLOOR_EXIT_SCALE,
+    TextureKeys.floorExit,
+  );
+}
+
+// 최종층 탈출구. 일반 굴과 같은 16×10 격자·같은 규격(64×40)이라 FloorExit의 물리 몸
+// 설정을 그대로 쓰고, 나란히 놓아도 형제로 읽힌다. 다른 것은 빛의 방향이다 — 일반
+// 굴은 위에서 빛이 들어 입술이 밝고 안쪽이 어둡지만, 여기는 **굴 자체가 빛난다**.
+// 그래서 입술은 아래에서 올라온 빛을 받아 달아오르고, 안쪽은 중심으로 갈수록 하얗다.
+//
+// W 빛 받은 입술 · r 입술 바깥 · e 흙과 이어지는 테두리
+// o 빛의 바깥 테두리(흙빛과 빛 사이) · y 노란 빛 · l 밝은 빛 · L 빛의 심
+const FLOOR_EXIT_ESCAPE_PALETTE: Record<string, number> = {
+  W: 0xd8b070,
+  r: 0x8a6c44,
+  e: 0x4a3a26,
+  o: 0xa9803c,
+  y: 0xffd65a,
+  l: 0xffe9a0,
+  L: 0xfff7d6,
+};
+
+// 실루엣(테두리가 들쭉날쭉한 타원)은 일반 굴과 같은 자리를 쓴다. 안쪽만 어둠 대신
+// 빛의 층으로 채워, 같은 굴인데 이번에는 지상이 보인다는 것이 한눈에 읽히게 한다.
+const FLOOR_EXIT_ESCAPE_ROWS = [
+  '....WWlWrlWW....',
+  '...rWoyyyyoWr...',
+  '.eWoyyllllyyoWe.',
+  'eWoyyllLLllyyoWe',
+  'WoyyllLLLLllyyoW',
+  'WoyyllLLLLllyyoW',
+  'eWoyyllLLllyyoWe',
+  '.eWoyyllllyyoWe.',
+  '...rWoyyyyoWr...',
+  '....rWWrWWWr....',
+];
+
 function createFloorExitEscapeTexture(scene: Phaser.Scene): void {
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(0x020407, 0.55);
-  graphics.fillEllipse(32, 24, 62, 30);
-  graphics.fillStyle(0x1a1607, 1);
-  graphics.fillEllipse(32, 20, 54, 25);
-  graphics.lineStyle(4, 0x8a7d55, 1);
-  graphics.strokeEllipse(32, 20, 56, 27);
-  // 새어드는 빛: 중심으로 갈수록 밝은 노란 띠
-  graphics.fillStyle(0xffd65a, 0.55);
-  graphics.fillEllipse(32, 19, 40, 15);
-  graphics.fillStyle(0xffe9a0, 0.85);
-  graphics.fillEllipse(32, 18, 28, 10);
-  graphics.fillStyle(0xfff7d6, 1);
-  graphics.fillEllipse(32, 18, 16, 6);
-  // 빛줄기 몇 가닥
-  graphics.lineStyle(2, 0xffe9a0, 0.7);
-  graphics.lineBetween(24, 14, 20, 4);
-  graphics.lineBetween(32, 13, 32, 2);
-  graphics.lineBetween(40, 14, 44, 4);
-  graphics.generateTexture(TextureKeys.floorExitEscape, 64, 40);
-  graphics.destroy();
+  drawPixelGrid(
+    scene,
+    FLOOR_EXIT_ESCAPE_ROWS,
+    FLOOR_EXIT_ESCAPE_PALETTE,
+    FLOOR_EXIT_SCALE,
+    TextureKeys.floorExitEscape,
+  );
 }
 
 function createFloorTile(scene: Phaser.Scene): void {
