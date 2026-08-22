@@ -9,6 +9,7 @@ export type SoundCue =
   | 'playerHurt'
   | 'pickup'
   | 'synergy'
+  | 'doorSlam'
   | 'roomClear'
   | 'bossPhaseTwo'
   | 'beamCharge'
@@ -26,6 +27,7 @@ const CUE_SETTINGS: Record<
   pickup: { frequency: 720, durationMs: 90, type: 'sine' },
   // 줍기(720)보다 높고 길게 울려 "조합이 완성됐다"가 줍기 소리와 구별되게 한다
   synergy: { frequency: 880, durationMs: 230, type: 'triangle' },
+  doorSlam: { frequency: 72, durationMs: 150, type: 'square' },
   roomClear: { frequency: 440, durationMs: 180, type: 'triangle' },
   bossPhaseTwo: { frequency: 64, durationMs: 260, type: 'sawtooth' },
   beamCharge: { frequency: 310, durationMs: 95, type: 'sine' },

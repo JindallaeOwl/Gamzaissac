@@ -314,6 +314,11 @@ export class GameScene extends Phaser.Scene {
       onObstacleDestroyed: (x, y) => this.handleObstacleDestroyed(x, y),
       onBossPhaseTwo: (boss) => this.handleBossPhaseTwo(boss),
       onPlayerDamaged: () => this.queuePlayerDamagedFeedback(),
+      onPassagesChanged: (openPassages) => this.player.setOpenPassages(openPassages),
+      onDoorsSlam: () => {
+        this.effects.shake('doorSlam');
+        this.audio.play('doorSlam');
+      },
     });
     this.bombSystem = new BombSystem({
       scene: this,
@@ -1140,7 +1145,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleDoorOverlap(door: Door): void {
-    if (!door.canEnter() || this.time.now < this.nextDoorAt) {
+    if (
+      !door.canEnter(this.player.body as Phaser.Physics.Arcade.Body) ||
+      this.time.now < this.nextDoorAt
+    ) {
       return;
     }
 

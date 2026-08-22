@@ -1,6 +1,6 @@
 ﻿import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
-import { Door } from '../entities/Door';
+import { Door, DOOR_SLAM_DURATION_MS } from '../entities/Door';
 import { ItemPickup } from '../entities/ItemPickup';
 import { Obstacle } from '../entities/Obstacle';
 import { ShopOffer } from '../entities/ShopOffer';
@@ -17,6 +17,7 @@ import {
   scaleRoomTemplatePoint,
   WALL_THICKNESS,
 } from '../config/gameConfig';
+import { getDoorCenter, getDoorwayRect, getWallSegments } from './DoorwayGeometry';
 import { PASSIVE_ITEMS } from '../data/items';
 import { ENEMY_DEFINITIONS, type EnemyId } from '../data/enemies';
 import { getRoomTemplate } from '../data/rooms';
@@ -95,6 +96,8 @@ interface RoomControllerConfig {
   // 보스가 탄·접촉이 아닌 직접 피해(근접 휘두르기·부메랑)로 플레이어를 맞혔을 때,
   // 기존 공통 피격 피드백을 내기 위한 콜백.
   onPlayerDamaged?: () => void;
+  onPassagesChanged?: (openPassages: readonly Direction[]) => void;
+  onDoorsSlam?: () => void;
   random?: RandomSource;
 }
 
@@ -119,8 +122,13 @@ export class RoomController {
   private readonly onObstacleDestroyed?: (x: number, y: number) => void;
   private readonly onBossPhaseTwo?: (boss: BaseEnemy) => void;
   private readonly onPlayerDamaged?: () => void;
+  private readonly onPassagesChanged?: (openPassages: readonly Direction[]) => void;
+  private readonly onDoorsSlam?: () => void;
   private readonly random: RandomSource;
   private readonly doorSprites = new Map<Direction, Door>();
+  private readonly doorwayPlugs = new Map<Direction, Phaser.GameObjects.Rectangle>();
+  private readonly doorwayPlugVisuals = new Map<Direction, Phaser.GameObjects.TileSprite>();
+  private readonly doorwayApproachVisuals = new Map<Direction, Phaser.GameObjects.TileSprite[]>();
   private readonly floorGraphics: Phaser.GameObjects.Graphics;
   private readonly floorTileSprite: Phaser.GameObjects.TileSprite;
   private readonly floorDecorations: Phaser.GameObjects.Group;
@@ -144,6 +152,8 @@ export class RoomController {
     this.onObstacleDestroyed = config.onObstacleDestroyed;
     this.onBossPhaseTwo = config.onBossPhaseTwo;
     this.onPlayerDamaged = config.onPlayerDamaged;
+    this.onPassagesChanged = config.onPassagesChanged;
+    this.onDoorsSlam = config.onDoorsSlam;
     this.random = config.random ?? Math.random;
 
     // 바닥은 세 층으로 쌓는다: 흙 베이스 TileSprite → 장식 타일(돌·뿌리·균열·습기)
@@ -176,44 +186,120 @@ export class RoomController {
   // 물리 충돌은 createWalls의 보이지 않는 사각형이 그대로 담당한다.
   private createWallVisuals(): void {
     const depth = DEPTH.floor + 0.75;
-    const bandWidth = ROOM_RECT.width + WALL_THICKNESS * 2;
+    const bands: Record<Direction, { texture: string; flipX: boolean }> = {
+      north: { texture: TextureKeys.wallSoilFace, flipX: false },
+      south: { texture: TextureKeys.wallSoilCap, flipX: false },
+      west: { texture: TextureKeys.wallSoilSide, flipX: false },
+      east: { texture: TextureKeys.wallSoilSide, flipX: true },
+    };
 
-    this.scene.add
+    for (const direction of DIRECTIONS) {
+      const doorway = getDoorwayRect(direction);
+      const horizontal = direction === 'north' || direction === 'south';
+      const start = horizontal ? ROOM_RECT.left - WALL_THICKNESS : ROOM_RECT.top;
+      const end = horizontal ? ROOM_RECT.right + WALL_THICKNESS : ROOM_RECT.bottom;
+      const doorwayStart =
+        (horizontal ? doorway.x : doorway.y) - (horizontal ? doorway.width : doorway.height) / 2;
+      const doorwayEnd =
+        (horizontal ? doorway.x : doorway.y) + (horizontal ? doorway.width : doorway.height) / 2;
+      const band = bands[direction];
+
+      this.doorwayApproachVisuals.set(
+        direction,
+        this.createDoorwayApproachVisual(direction, depth),
+      );
+
+      this.addWallVisual(direction, band, start, doorwayStart, depth);
+      this.addWallVisual(direction, band, doorwayEnd, end, depth);
+
+      // 출구가 없는 방향은 비워진 문간에도 같은 흙 벽을 덧그려 벽이 끊기지 않는다.
+      const plug = this.scene.add
+        .tileSprite(doorway.x, doorway.y, doorway.width, doorway.height, band.texture)
+        .setFlipX(band.flipX)
+        .setDepth(depth);
+      this.doorwayPlugVisuals.set(direction, plug);
+    }
+  }
+
+  private createDoorwayApproachVisual(
+    direction: Direction,
+    wallDepth: number,
+  ): Phaser.GameObjects.TileSprite[] {
+    // 통로 외형은 벽 두께 안에서만 그린다. 화면 가장자리까지 별도 바닥을 연장하면
+    // 벽에 난 입구가 아니라 벽 밖에 붙인 갈색 판처럼 보여 이질감이 생긴다.
+    const approach = getDoorwayRect(direction);
+    const horizontal = direction === 'north' || direction === 'south';
+    const trimSize = 4;
+    const tunnel = this.scene.add
       .tileSprite(
-        ROOM_CENTER_X,
-        ROOM_RECT.top - WALL_THICKNESS / 2,
-        bandWidth,
-        WALL_THICKNESS,
-        TextureKeys.wallSoilFace,
+        approach.x,
+        approach.y,
+        approach.width,
+        approach.height,
+        TextureKeys.floorSoilBase,
       )
-      .setDepth(depth);
-    this.scene.add
-      .tileSprite(
-        ROOM_CENTER_X,
-        ROOM_RECT.bottom + WALL_THICKNESS / 2,
-        bandWidth,
-        WALL_THICKNESS,
-        TextureKeys.wallSoilCap,
+      .setTilePosition(
+        approach.x - approach.width / 2 - ROOM_RECT.left,
+        approach.y - approach.height / 2 - ROOM_RECT.top,
       )
-      .setDepth(depth);
-    this.scene.add
+      .setDepth(wallDepth - 0.15)
+      .setVisible(false);
+
+    // 통로 바닥은 방 바닥과 타일 위상을 맞춰 경계에서 무늬가 끊기지 않게 한다.
+    // 네 방향의 테두리는 모두 같은 벽 옆면 텍스처를 회전해서 사용하므로 방향에 따라
+    // 정면·윗면 팔레트가 섞이지 않는다.
+    const edgeLength = horizontal ? approach.height : approach.width;
+    const edgeOne = this.scene.add
       .tileSprite(
-        ROOM_RECT.left - WALL_THICKNESS / 2,
-        ROOM_CENTER_Y,
-        WALL_THICKNESS,
-        ROOM_RECT.height,
+        horizontal ? approach.x - approach.width / 2 + trimSize / 2 : approach.x,
+        horizontal ? approach.y : approach.y - approach.height / 2 + trimSize / 2,
+        trimSize,
+        edgeLength,
         TextureKeys.wallSoilSide,
       )
-      .setDepth(depth);
-    this.scene.add
+      .setAngle(horizontal ? 0 : 90)
+      .setDepth(wallDepth + 0.02)
+      .setVisible(false);
+    const edgeTwo = this.scene.add
       .tileSprite(
-        ROOM_RECT.right + WALL_THICKNESS / 2,
-        ROOM_CENTER_Y,
-        WALL_THICKNESS,
-        ROOM_RECT.height,
+        horizontal ? approach.x + approach.width / 2 - trimSize / 2 : approach.x,
+        horizontal ? approach.y : approach.y + approach.height / 2 - trimSize / 2,
+        trimSize,
+        edgeLength,
         TextureKeys.wallSoilSide,
       )
+      .setAngle(horizontal ? 0 : 90)
       .setFlipX(true)
+      .setDepth(wallDepth + 0.02)
+      .setVisible(false);
+
+    return [tunnel, edgeOne, edgeTwo];
+  }
+
+  private addWallVisual(
+    direction: Direction,
+    band: { texture: string; flipX: boolean },
+    start: number,
+    end: number,
+    depth: number,
+  ): void {
+    const length = end - start;
+
+    if (length <= 0) {
+      return;
+    }
+
+    const horizontal = direction === 'north' || direction === 'south';
+    const doorway = getDoorwayRect(direction);
+    this.scene.add
+      .tileSprite(
+        horizontal ? start + length / 2 : doorway.x,
+        horizontal ? doorway.y : start + length / 2,
+        horizontal ? length : WALL_THICKNESS,
+        horizontal ? WALL_THICKNESS : length,
+        band.texture,
+      )
+      .setFlipX(band.flipX)
       .setDepth(depth);
   }
 
@@ -240,7 +326,15 @@ export class RoomController {
         getStageProgress(this.runState.floor).stage.accentColor,
       ),
     );
-    this.updateDoors(room);
+    this.updateDoors(room, false, false, hasWaitingEnemies);
+    if (hasWaitingEnemies) {
+      const enteredRoomId = room.id;
+      this.scene.time.delayedCall(DOOR_SLAM_DURATION_MS, () => {
+        if (this.dungeon.getCurrentRoom().id === enteredRoomId) {
+          this.onDoorsSlam?.();
+        }
+      });
+    }
 
     if ((room.type === 'combat' || room.type === 'boss') && !room.cleared) {
       this.spawnCombatRoom(room, entryPosition);
@@ -933,57 +1027,50 @@ export class RoomController {
   }
 
   private createWalls(): void {
-    this.addWall(
-      ROOM_CENTER_X,
-      ROOM_RECT.top - WALL_THICKNESS / 2,
-      ROOM_RECT.width,
-      WALL_THICKNESS,
-    );
-    this.addWall(
-      ROOM_CENTER_X,
-      ROOM_RECT.bottom + WALL_THICKNESS / 2,
-      ROOM_RECT.width,
-      WALL_THICKNESS,
-    );
-    this.addWall(
-      ROOM_RECT.left - WALL_THICKNESS / 2,
-      ROOM_CENTER_Y,
-      WALL_THICKNESS,
-      ROOM_RECT.height,
-    );
-    this.addWall(
-      ROOM_RECT.right + WALL_THICKNESS / 2,
-      ROOM_CENTER_Y,
-      WALL_THICKNESS,
-      ROOM_RECT.height,
-    );
+    for (const direction of DIRECTIONS) {
+      for (const segment of getWallSegments(direction)) {
+        this.addWall(segment.x, segment.y, segment.width, segment.height);
+      }
+
+      const doorway = getDoorwayRect(direction);
+      this.doorwayPlugs.set(
+        direction,
+        this.addWall(doorway.x, doorway.y, doorway.width, doorway.height),
+      );
+    }
   }
 
-  private addWall(x: number, y: number, width: number, height: number): void {
+  private addWall(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): Phaser.GameObjects.Rectangle {
     // 외형은 createWallVisuals의 흙 벽 TileSprite가 담당하므로 물리 몸체만 남긴다.
     const wall = this.scene.add.rectangle(x, y, width, height, 0x000000, 0);
     wall.setVisible(false);
     this.scene.physics.add.existing(wall, true);
     this.walls.add(wall);
+    return wall;
   }
 
   private createDoors(): void {
-    const positions: Record<Direction, { x: number; y: number }> = {
-      north: { x: ROOM_CENTER_X, y: ROOM_RECT.top + 8 },
-      south: { x: ROOM_CENTER_X, y: ROOM_RECT.bottom - 8 },
-      east: { x: ROOM_RECT.right - 8, y: ROOM_CENTER_Y },
-      west: { x: ROOM_RECT.left + 8, y: ROOM_CENTER_Y },
-    };
-
     for (const direction of DIRECTIONS) {
-      const position = positions[direction];
+      const position = getDoorCenter(direction);
       const door = new Door(this.scene, position.x, position.y, direction);
       this.doors.add(door);
       this.doorSprites.set(direction, door);
     }
   }
 
-  private updateDoors(room: RoomNode, forceClosed = false, requireFreshEntry = false): void {
+  private updateDoors(
+    room: RoomNode,
+    forceClosed = false,
+    requireFreshEntry = false,
+    slamClosed = false,
+  ): void {
+    const openPassages: Direction[] = [];
+
     for (const direction of DIRECTIONS) {
       const door = this.doorSprites.get(direction);
 
@@ -992,21 +1079,46 @@ export class RoomController {
       }
 
       const hasExit = room.exits.includes(direction);
+      const isOpenPassage = hasExit && room.cleared && !forceClosed;
+      const plug = this.doorwayPlugs.get(direction);
+
+      if (plug) {
+        const plugBody = plug.body as Phaser.Physics.Arcade.StaticBody;
+
+        // 열린 통로에서는 enable 플래그만 바꾸지 않고 물리 탐색 트리에서도 완전히
+        // 제거한다. 닫힐 때만 다시 등록하므로 플레이어가 걸릴 충돌체가 남지 않는다.
+        if (isOpenPassage && plugBody.enable) {
+          this.scene.physics.world.disableBody(plugBody);
+        } else if (!isOpenPassage && !plugBody.enable) {
+          this.scene.physics.world.add(plugBody);
+        }
+      }
+
+      if (isOpenPassage) {
+        openPassages.push(direction);
+      }
+
+      this.doorwayPlugVisuals.get(direction)?.setVisible(!hasExit);
+      for (const visual of this.doorwayApproachVisuals.get(direction) ?? []) {
+        visual.setVisible(hasExit);
+      }
       const targetRoom = hasExit ? this.dungeon.getNeighbor(room, direction) : null;
       const isLockedSpecialRoom =
         (targetRoom?.type === 'shop' || targetRoom?.type === 'treasure') &&
         !targetRoom.specialRoomUnlocked;
-      door.setVisible(hasExit);
+      door.setPresent(hasExit);
       door.setActive(hasExit);
-      door.setOpen(room.cleared && !forceClosed, requireFreshEntry);
-      door.clearTint();
+      door.setDoorTint();
+      door.setOpen(isOpenPassage, requireFreshEntry, slamClosed && !isOpenPassage);
 
       if (hasExit && isLockedSpecialRoom && room.cleared) {
-        door.setTint(targetRoom.type === 'shop' ? 0xcaa64f : 0x7f6bd9);
+        door.setDoorTint(targetRoom.type === 'shop' ? 0xcaa64f : 0x7f6bd9);
       }
 
       const body = door.body as Phaser.Physics.Arcade.Body;
       body.enable = hasExit;
     }
+
+    this.onPassagesChanged?.(openPassages);
   }
 }
