@@ -5,7 +5,6 @@ import {
   COMBAT_TUNING,
   DEPTH,
   FEEDBACK_TUNING,
-  ROOM_RECT,
   PLAYER_BASE_ATTACK_PROFILE,
   type PlayerAttackProfile,
   type PlayerStats,
@@ -23,6 +22,8 @@ import {
   getEffectiveProjectileSpeed,
 } from '../systems/PlayerStatSystem';
 import { movementAxes, selectFireDirection, type PlayerControls } from '../systems/InputRules';
+import { clampToRoomBounds } from '../systems/RoomBoundary';
+import type { Direction } from '../utils/directions';
 
 // 입력 스냅샷 타입은 InputRules로 옮겼다. 기존 import 경로를 깨지 않도록 재수출한다.
 export type { PlayerControls };
@@ -96,6 +97,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private facing: PlayerFacing = 'down';
   private dead = false;
   private godMode = false;
+  private openPassages: readonly Direction[] = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -461,9 +463,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return selectFireDirection(controls);
   }
 
+  setOpenPassages(directions: readonly Direction[]): void {
+    this.openPassages = directions;
+  }
+
   private constrainToRoom(): void {
-    this.x = clamp(this.x, ROOM_RECT.left + 12, ROOM_RECT.right - 12);
-    this.y = clamp(this.y, ROOM_RECT.top + 12, ROOM_RECT.bottom - 12);
+    const body = this.body as Phaser.Physics.Arcade.Body | undefined;
+
+    if (!body) {
+      return;
+    }
+
+    // 외형 중심이 아닌 물리 몸 중심을 기준으로 경계를 잡아 상·하·좌·우 문간의
+    // 통과 폭이 똑같게 유지된다.
+    const offsetX = body.center.x - this.x;
+    const offsetY = body.center.y - this.y;
+    const bounded = clampToRoomBounds(
+      { x: this.x + offsetX, y: this.y + offsetY },
+      this.openPassages,
+    );
+    this.x = bounded.x - offsetX;
+    this.y = bounded.y - offsetY;
   }
 
   private syncCosmetics(): void {

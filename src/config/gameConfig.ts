@@ -154,6 +154,7 @@ export const FEEDBACK_TUNING = {
     beamHit: { durationMs: 45, intensity: 0.0018 },
     enemyDeath: { durationMs: 95, intensity: 0.0035 },
     playerHurt: { durationMs: 130, intensity: 0.006 },
+    doorSlam: { durationMs: 110, intensity: 0.0032 },
     roomClear: { durationMs: 130, intensity: 0.0024 },
     bossPhaseTwo: { durationMs: 230, intensity: 0.007 },
     bombUse: { durationMs: 200, intensity: 0.0065 },
