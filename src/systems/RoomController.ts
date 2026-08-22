@@ -4,6 +4,7 @@ import { Door } from '../entities/Door';
 import { ItemPickup } from '../entities/ItemPickup';
 import { Obstacle } from '../entities/Obstacle';
 import { ShopOffer } from '../entities/ShopOffer';
+import { SeedPlot } from '../entities/SeedPlot';
 import { ShopNpc } from '../entities/ShopNpc';
 import { createEnemy } from '../entities/enemies/EnemyFactory';
 import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
@@ -46,6 +47,7 @@ import { DIRECTIONS, type Direction } from '../utils/directions';
 import { createSeededRandom, randomInt, randomOf, type RandomSource } from '../utils/random';
 import { BossRewardSystem } from './BossRewardSystem';
 import { CHAMPION_TUNING, rollChampionIndex } from './ChampionRules';
+import { SEED_PLOT_POSITION } from './SeedPlotRules';
 import type { ShopSystem } from './ShopSystem';
 import { createShopNpcSpeechBubble, SHOP_SPEECH_BUBBLE_DATA_KEY } from '../ui/ShopNpcSpeechBubble';
 import { t } from '../i18n';
@@ -104,6 +106,8 @@ export class RoomController {
   readonly obstacles: Phaser.Physics.Arcade.StaticGroup;
   readonly shopOffers: Phaser.GameObjects.Group;
   readonly shopNpcs: Phaser.Physics.Arcade.Group;
+  // 시작방 텃밭. 방마다 하나뿐이라 그룹 없이 들고 있고, 방을 옮길 때 버린다.
+  private seedPlot?: SeedPlot;
 
   private readonly scene: Phaser.Scene;
   private readonly dungeon: DungeonManager;
@@ -226,6 +230,8 @@ export class RoomController {
     this.shopOffers.clear(true, true);
     this.shopNpcs.clear(true, true);
     this.shopDecorations.clear(true, true);
+    this.seedPlot?.destroy();
+    this.seedPlot = undefined;
 
     const room = this.dungeon.getCurrentRoom();
     const template = getRoomTemplate(room.templateId);
@@ -244,6 +250,10 @@ export class RoomController {
 
     if ((room.type === 'combat' || room.type === 'boss') && !room.cleared) {
       this.spawnCombatRoom(room, entryPosition);
+    }
+
+    if (room.type === 'start') {
+      this.spawnSeedPlot();
     }
 
     if (room.type === 'shop') {
@@ -806,6 +816,21 @@ export class RoomController {
     }
 
     this.shopDecorations.add(stain);
+  }
+
+  /** 시작방 텃밭. 이미 심어 둔 씨눈이 있으면 묻힌 모습으로 놓는다. */
+  private spawnSeedPlot(): void {
+    this.seedPlot = new SeedPlot(
+      this.scene,
+      SEED_PLOT_POSITION.x,
+      SEED_PLOT_POSITION.y,
+      this.runState.seedPlantedOnFloor !== undefined,
+    );
+  }
+
+  /** 텃밭 그림을 심은 상태/빈 상태로 바꾼다. 시작방 밖에서는 아무 일도 하지 않는다. */
+  setSeedPlotPlanted(planted: boolean): void {
+    this.seedPlot?.setPlanted(planted);
   }
 
   private spawnTreasure(room: RoomNode): void {

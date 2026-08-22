@@ -52,6 +52,15 @@ import { RoomTransitionSystem } from '../systems/RoomTransitionSystem';
 import { ShopSystem } from '../systems/ShopSystem';
 import { resolveFloorExit } from '../systems/RunProgressionSystem';
 import {
+  getSeedPlantRefusal,
+  isSeedReadyToHarvest,
+  rollSeedHarvest,
+  SEED_DUD_COIN_AMOUNT,
+  SEED_PLANT_COST_UNITS,
+  SEED_PLOT_INTERACTION_RADIUS,
+  SEED_PLOT_POSITION,
+} from '../systems/SeedPlotRules';
+import {
   getSecretSynergySpawnPositions,
   KONAMI_CODE,
   SecretCodeTracker,
@@ -385,7 +394,7 @@ export class GameScene extends Phaser.Scene {
       resetFloorTransition: () => {
         this.floorTransitionStarted = false;
       },
-      onRoomChanged: (room) => this.updateBackgroundMusic(room),
+      onRoomChanged: (room) => this.handleRoomEntered(room),
       getShopProductName: (product) => this.getShopProductName(product),
     });
     this.developerConsoleController.setup();
@@ -453,7 +462,13 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.interactKey && Phaser.Input.Keyboard.JustDown(this.interactKey)) {
-      this.tryPurchaseNearestShopOffer();
+      // 같은 키로 상점 구매와 씨눈 심기를 처리한다. 둘은 서로 다른 방에서만
+      // 성립하므로 겹칠 일이 없다.
+      if (this.findNearestShopOffer()) {
+        this.tryPurchaseNearestShopOffer();
+      } else {
+        this.tryPlantSeed();
+      }
     }
 
     // 스냅샷은 사용 직전에 새로 읽는다(InputSystem 주석 참고 — 캐시 금지).
@@ -1171,7 +1186,7 @@ export class GameScene extends Phaser.Scene {
 
     this.nextDoorAt = this.time.now + COMBAT_TUNING.doorCooldownMs;
     this.roomTransitions.enterRoom(moved, door.direction);
-    this.updateBackgroundMusic(moved);
+    this.handleRoomEntered(moved);
     const presentation = getRoomTransitionPresentation(moved.type);
     this.cameras.main.fadeIn(presentation.fadeInMs, 6, 9, 14);
 
@@ -1180,7 +1195,126 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * 방에 들어선 직후의 공통 처리.
+   *
+   * 문·층 이동·개발자 콘솔 이동이 모두 이 하나를 거친다 — 층 이동만 따로
+   * 처리했더니 콘솔 `floor` 명령으로 올라갔을 때 씨눈이 자라지 않았다.
+   */
+  private handleRoomEntered(room: RoomNode): void {
+    this.updateBackgroundMusic(room);
+    this.harvestSeedIfReady();
+  }
+
+  /** 텃밭 앞에 서 있는가. 상호작용 안내와 심기 판정이 같은 기준을 쓴다. */
+  private isNearSeedPlot(): boolean {
+    if (this.dungeon.getCurrentRoom().type !== 'start') {
+      return false;
+    }
+
+    return (
+      Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        SEED_PLOT_POSITION.x,
+        SEED_PLOT_POSITION.y,
+      ) <= SEED_PLOT_INTERACTION_RADIUS
+    );
+  }
+
+  /**
+   * 씨눈 심기. 최대 체력 반 칸을 값으로 치르고, 다음 층 시작방에서 수확한다.
+   * 거절 사유는 그대로 화면에 알려 준다 — 왜 안 되는지 모르면 고장으로 보인다.
+   */
+  private tryPlantSeed(): void {
+    if (!this.isNearSeedPlot()) {
+      return;
+    }
+
+    const refusal = getSeedPlantRefusal({
+      isStartRoom: true,
+      floor: this.runState.floor,
+      hasPlantedSeed: this.runState.seedPlantedOnFloor !== undefined,
+      maxHealth: this.runState.stats.maxHealth,
+    });
+
+    if (refusal) {
+      this.hud.showMessage(
+        t(
+          `messages.seedPlant${refusal === 'already-planted' ? 'Already' : refusal === 'final-floor' ? 'FinalFloor' : 'NoHealth'}`,
+        ),
+        1600,
+      );
+      return;
+    }
+
+    const stats = this.runState.stats;
+    stats.maxHealth = Math.max(SEED_PLANT_COST_UNITS, stats.maxHealth - SEED_PLANT_COST_UNITS);
+    stats.health = Math.min(stats.health, stats.maxHealth);
+    this.runState.seedPlantedOnFloor = this.runState.floor;
+    this.player.setStats(stats);
+    this.roomController.setSeedPlotPlanted(true);
+    this.effects.itemAbsorb(SEED_PLOT_POSITION.x, SEED_PLOT_POSITION.y, 0xc9a45e);
+    this.audio.play('pickup');
+    this.hud.showMessage(t('messages.seedPlanted'), 2000);
+  }
+
+  /**
+   * 심어 둔 씨눈 수확. 층에 막 들어선 시점에 부르며, 자란 것은 텃밭 자리에 놓인다.
+   * 낮은 확률로 꽝(동전 한 닢)이 나오는 것이 이 도박의 다른 쪽 면이다.
+   */
+  private harvestSeedIfReady(): void {
+    if (!isSeedReadyToHarvest(this.runState.seedPlantedOnFloor, this.runState.floor)) {
+      return;
+    }
+
+    // 자란 것은 텃밭 자리에 놓이므로 시작방에서만 거둔다. 다른 방에서 거두면
+    // 아이템이 엉뚱한 자리에 나타난다.
+    if (this.dungeon.getCurrentRoom().type !== 'start') {
+      return;
+    }
+
+    this.runState.seedPlantedOnFloor = undefined;
+    this.roomController.setSeedPlotPlanted(false);
+
+    const harvest = rollSeedHarvest(Math.random);
+    const item =
+      harvest === 'item' ? this.itemSystem.pickTreasureItem(this.runState.collectedItemIds) : null;
+
+    if (item) {
+      this.items.add(new ItemPickup(this, SEED_PLOT_POSITION.x, SEED_PLOT_POSITION.y - 18, item));
+      this.effects.itemAbsorb(SEED_PLOT_POSITION.x, SEED_PLOT_POSITION.y, 0x9dff8a);
+      this.hud.showMessage(t('messages.seedGrown'), 2400);
+      return;
+    }
+
+    // 꽝: 심은 값에 비해 초라한 동전 한 닢. 그래도 빈손은 아니다.
+    this.roomTransitions.spawnPersistentReward(
+      this.dungeon.getCurrentRoom(),
+      {
+        kind: 'coins',
+        amount: SEED_DUD_COIN_AMOUNT,
+        labelKey: 'resources.coins',
+        tint: 0xffffff,
+      },
+      SEED_PLOT_POSITION.x,
+      SEED_PLOT_POSITION.y - 18,
+    );
+    this.hud.showMessage(t('messages.seedWithered'), 2400);
+  }
+
   private updateItemHint(): void {
+    if (this.isNearSeedPlot()) {
+      this.hud.showItemHint(
+        t(
+          this.runState.seedPlantedOnFloor === undefined
+            ? 'messages.seedPlotHint'
+            : 'messages.seedPlotPlantedHint',
+        ),
+      );
+      return;
+    }
+
     const shopOffer = this.findNearestShopOffer();
 
     if (shopOffer) {
@@ -1664,7 +1798,7 @@ export class GameScene extends Phaser.Scene {
       this.runState.floor,
       this.runState.unlockedAbilityIds.includes('charge-beam'),
     );
-    this.updateBackgroundMusic(this.dungeon.getCurrentRoom());
+    this.handleRoomEntered(this.dungeon.getCurrentRoom());
     this.cameras.main.fadeIn(260, 5, 9, 14);
     this.hud.showMessage(this.formatStageFloorLabel(), 1800);
   }

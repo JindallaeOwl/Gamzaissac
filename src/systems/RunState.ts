@@ -22,6 +22,8 @@ export interface RunState {
   unlockedAbilityIds: string[];
   activatedSynergyIds: string[];
   inventory: InventoryState;
+  // 시작방 텃밭에 묻어 둔 씨눈을 심은 층. 다음 층 시작방에서 수확한다.
+  seedPlantedOnFloor?: number;
   stats: PlayerStats;
   attackProfile: PlayerAttackProfile;
 }

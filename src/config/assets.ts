@@ -67,6 +67,8 @@ export const TextureKeys = {
   wallSoilCap: 'wall-soil-cap',
   wall: 'wall',
   obstacleCrate: 'obstacle-crate',
+  seedPlotEmpty: 'seed-plot-empty',
+  seedPlotPlanted: 'seed-plot-planted',
   shopNpcIdleA: 'shop-npc-idle-a',
   shopNpcIdleB: 'shop-npc-idle-b',
   itemAnnouncementScroll: 'item-announcement-scroll',

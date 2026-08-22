@@ -62,6 +62,7 @@ export function createPlaceholderTextures(scene: Phaser.Scene): void {
   createChestTexture(scene);
   createFloorExitTexture(scene);
   createFloorExitEscapeTexture(scene);
+  createSeedPlotTextures(scene);
   createFloorTile(scene);
   createSoilFloorTextures(scene);
   createWallTexture(scene);
@@ -1087,6 +1088,69 @@ function createFloorExitEscapeTexture(scene: Phaser.Scene): void {
     FLOOR_EXIT_ESCAPE_PALETTE,
     FLOOR_EXIT_SCALE,
     TextureKeys.floorExitEscape,
+  );
+}
+
+// 시작방 텃밭. 갈아 놓은 흙 두둑이라 "여기 뭘 심을 수 있다"가 한눈에 읽혀야 한다.
+// 굴·폭탄과 같은 도트 톤이고 색은 흙 팔레트를 그대로 쓴다.
+//
+// s 이랑 밝은면 · e 흙 · d 고랑 그늘 · o 두둑 테두리 · n 심어 놓은 씨눈 · N 씨눈 밝은면
+const SEED_PLOT_PALETTE: Record<string, number> = {
+  s: 0x5a462d,
+  e: 0x3c2e1f,
+  d: 0x241a10,
+  o: 0x2f2415,
+  n: 0xc9a45e,
+  N: 0xe8cf94,
+};
+
+// 빈 밭: 갈아 놓은 흙. 이랑(밝은 s)과 고랑(그늘 d)이 **가로줄로** 번갈아야
+// 쟁기가 지나간 밭으로 읽힌다 — 칸을 번갈아 찍으면 체스판이 된다.
+const SEED_PLOT_EMPTY_ROWS = [
+  '..oooooooooo..',
+
+  '.osssssssssso.',
+
+  'oddddddddddddo',
+
+  'osssssssssssso',
+
+  '.oddddddddddo.',
+
+  '..oooooooooo..',
+];
+
+// 심은 밭: 가운데 이랑에 씨눈이 묻혀 흙이 살짝 봉긋하다.
+const SEED_PLOT_PLANTED_ROWS = [
+  '..oooooooooo..',
+
+  '.osssssssssso.',
+
+  'odddddNndddddo',
+
+  'osssssnnssssso',
+
+  '.oddddddddddo.',
+
+  '..oooooooooo..',
+];
+
+const SEED_PLOT_SCALE = 3;
+
+function createSeedPlotTextures(scene: Phaser.Scene): void {
+  drawPixelGrid(
+    scene,
+    SEED_PLOT_EMPTY_ROWS,
+    SEED_PLOT_PALETTE,
+    SEED_PLOT_SCALE,
+    TextureKeys.seedPlotEmpty,
+  );
+  drawPixelGrid(
+    scene,
+    SEED_PLOT_PLANTED_ROWS,
+    SEED_PLOT_PALETTE,
+    SEED_PLOT_SCALE,
+    TextureKeys.seedPlotPlanted,
   );
 }
 
