@@ -43,15 +43,25 @@ function isHorizontalPassage(direction: Direction): boolean {
   return direction === 'north' || direction === 'south';
 }
 
-/** 열린 문간에서만 플레이어 몸 중심이 벽 띠 안으로 들어갈 수 있게 한다. */
+/**
+ * 열린 문간에서만 플레이어 몸 중심이 벽 띠 안으로 들어갈 수 있게 한다.
+ *
+ * 열린 문마다 경계를 **누적해서 넓힌 뒤 마지막에 한 번만 가둔다.** 문 하나를 볼
+ * 때마다 x·y를 다시 계산해 덮어쓰면, 앞 문이 열어 준 통로를 뒤 문이 도로 닫는다 —
+ * 북·남 문간은 가로 범위가, 동·서 문간은 세로 범위가 서로 같아서 가운데 줄에 서면
+ * 두 문이 동시에 걸리고, 나중에 도는 쪽(DIRECTIONS 순서상 남·서)이 항상 이겼다.
+ * 그래서 마주보는 문이 함께 열린 방에서 북문과 동문이 투명벽처럼 막혔다.
+ */
 export function clampToRoomBounds(
   point: Point,
   openPassages: readonly Direction[],
   margin = PLAYER_BOUNDS_MARGIN,
 ): Point {
   const room = shrink(ROOM_INTERIOR, margin, margin);
-  let x = clamp(point.x, room.minX, room.maxX);
-  let y = clamp(point.y, room.minY, room.maxY);
+  const bounds: Bounds = { ...room };
+  // 지금 위치가 실제로 걸쳐 있는 문간들. 벽 띠 안으로 들어갔을 때 통로 폭으로
+  // 좁히는 데 쓴다.
+  const enteredPassages: { horizontal: boolean; passage: Bounds }[] = [];
 
   for (const direction of openPassages) {
     const horizontal = isHorizontalPassage(direction);
@@ -67,19 +77,31 @@ export function clampToRoomBounds(
         continue;
       }
 
-      y = clamp(point.y, Math.min(room.minY, passage.minY), Math.max(room.maxY, passage.maxY));
-      if (y < room.minY || y > room.maxY) {
-        x = clamp(point.x, passage.minX, passage.maxX);
-      }
+      // 북쪽 문간은 방 위, 남쪽 문간은 방 아래에 있으므로 각자 자기 방향으로만 넓힌다.
+      bounds.minY = Math.min(bounds.minY, passage.minY);
+      bounds.maxY = Math.max(bounds.maxY, passage.maxY);
     } else {
       if (point.y < passage.minY || point.y > passage.maxY) {
         continue;
       }
 
-      x = clamp(point.x, Math.min(room.minX, passage.minX), Math.max(room.maxX, passage.maxX));
-      if (x < room.minX || x > room.maxX) {
-        y = clamp(point.y, passage.minY, passage.maxY);
+      bounds.minX = Math.min(bounds.minX, passage.minX);
+      bounds.maxX = Math.max(bounds.maxX, passage.maxX);
+    }
+
+    enteredPassages.push({ horizontal, passage });
+  }
+
+  let x = clamp(point.x, bounds.minX, bounds.maxX);
+  let y = clamp(point.y, bounds.minY, bounds.maxY);
+
+  for (const { horizontal, passage } of enteredPassages) {
+    if (horizontal) {
+      if (y < room.minY || y > room.maxY) {
+        x = clamp(x, passage.minX, passage.maxX);
       }
+    } else if (x < room.minX || x > room.maxX) {
+      y = clamp(y, passage.minY, passage.maxY);
     }
   }
 
