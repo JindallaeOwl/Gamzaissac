@@ -5,7 +5,14 @@ import { ItemPickup } from '../entities/ItemPickup';
 import type { Player } from '../entities/Player';
 import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import { ENEMY_DEFINITIONS, type EnemyId } from '../data/enemies';
-import { findItemByReference, formatItemNumber, PASSIVE_ITEMS } from '../data/items';
+import { formatItemNumber } from '../data/items';
+import {
+  catalogEntryId,
+  catalogEntryNameKey,
+  catalogEntryNumber,
+  findCatalogEntry,
+  ITEM_CATALOG,
+} from '../data/itemCatalog';
 import { ROOM_CLEAR_REWARDS } from '../data/rewards';
 import { getShopProduct, type ShopProductDefinition } from '../data/shop';
 import { t } from '../i18n';
@@ -61,13 +68,15 @@ export class DeveloperConsoleController {
         scene.scene.isActive(),
       onOpenChanged: (open) => this.handleOpenChanged(open),
       onCommand: (input) => this.execute(input),
+      // 패시브와 액티브를 한 목록으로 보여 준다. 두 종류를 따로 훑으면 한쪽만
+      // 빠뜨리기 쉬우므로 ITEM_CATALOG 하나만 본다.
       getItemOptions: () =>
-        PASSIVE_ITEMS.map((item) => ({
-          id: item.id,
-          itemNumber: item.itemNumber,
-          name: t(item.nameKey),
+        ITEM_CATALOG.map((entry) => ({
+          id: catalogEntryId(entry),
+          itemNumber: catalogEntryNumber(entry),
+          name: t(catalogEntryNameKey(entry)),
           imageSource: scene.textures
-            .get(itemIconKey(item.id))
+            .get(itemIconKey(catalogEntryId(entry)))
             .getSourceImage() as CanvasImageSource,
         })),
     });
@@ -272,23 +281,26 @@ export class DeveloperConsoleController {
       return this.spawnHeart();
     }
 
-    const item = findItemByReference(itemId);
+    const entry = findCatalogEntry(itemId);
 
-    if (!item) {
+    if (!entry) {
       return {
         lines: [
           `아이템을 찾을 수 없습니다: ${itemId}`,
-          `사용 가능: chest, coin, five-coin, heart, ${PASSIVE_ITEMS.map((candidate) => candidate.id).join(', ')}`,
+          `사용 가능: chest, coin, five-coin, heart, ${ITEM_CATALOG.map(catalogEntryId).join(', ')}`,
         ],
       };
     }
 
     const position = this.getSpawnPosition();
     this.config.items.add(
-      new ItemPickup(this.config.scene, position.x, position.y, item, 'secret'),
+      new ItemPickup(this.config.scene, position.x, position.y, entry, 'secret'),
     );
     this.config.effects.pickup(position.x, position.y);
-    return { lines: [`아이템 생성: ${formatItemNumber(item.itemNumber)} ${item.id}`] };
+    const label = entry.kind === 'active' ? '액티브 아이템 생성' : '아이템 생성';
+    return {
+      lines: [`${label}: ${formatItemNumber(catalogEntryNumber(entry))} ${catalogEntryId(entry)}`],
+    };
   }
 
   private spawnChest(): DeveloperConsoleCommandResult {

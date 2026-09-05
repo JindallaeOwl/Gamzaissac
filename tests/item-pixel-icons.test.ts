@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ITEM_IMAGE_ASSETS, itemIconKey } from '../src/config/assets';
+import { ACTIVE_ITEMS } from '../src/data/activeItems';
 import { PASSIVE_ITEMS } from '../src/data/items';
 import {
   buildItemIconSprite,
@@ -45,7 +46,12 @@ describe('item pixel icons', () => {
   });
 
   it('belongs to a real item and never duplicates another silhouette', () => {
-    const itemIds = new Set(PASSIVE_ITEMS.map((item) => item.id));
+    // 패시브와 액티브가 같은 아이콘 목록을 공유한다. 어느 쪽에도 없는 id가 남으면
+    // 아이템을 지웠는데 그림만 남은 것이므로 실패시킨다.
+    const itemIds = new Set([
+      ...PASSIVE_ITEMS.map((item) => item.id),
+      ...ACTIVE_ITEMS.map((item) => item.id),
+    ]);
 
     for (const [id] of iconEntries) {
       expect(itemIds.has(id), `${id} has an icon but no item definition`).toBe(true);

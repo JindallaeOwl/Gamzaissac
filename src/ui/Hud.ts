@@ -3,6 +3,8 @@ import { TextureKeys } from '../config/assets';
 import { DEPTH, FEEDBACK_TUNING, GAME_WIDTH } from '../config/gameConfig';
 import { UI_GOLD, UI_THEME } from '../config/uiTheme';
 import { getStageProgress, stageFloorRoman } from '../data/stages';
+import { itemIconKey } from '../config/assets';
+import { getActiveItemChargeRatio, getSlotDefinition } from '../systems/ActiveItemRules';
 import { getRenderScale } from '../systems/GameSettings';
 import { formatRunElapsedTime } from '../systems/MinimapExpansionController';
 import { gameFontStack, t } from '../i18n';
@@ -36,6 +38,17 @@ const STAT_ICON_SIZE = 12;
 const STAT_ALPHA = 0.72;
 // 생성 시와 강조 해제 시가 같은 값을 봐야 한다. 흩어 적으면 해제가 다른 색으로 되돌린다.
 const STAT_BASE_COLOR = '#ffffff';
+// 액티브 아이템 슬롯. 하트는 줄바꿈 없이 오른쪽으로 계속 늘어나므로, 슬롯을 고정
+// 좌표에 두면 최대 체력이 오른 런에서 하트에 깔린다. 그래서 마지막 하트 뒤에
+// 붙여 두고 하트 수가 바뀔 때만 다시 배치한다.
+const ACTIVE_SLOT_GAP_X = 8;
+const ACTIVE_SLOT_ICON_SIZE = 20;
+const ACTIVE_SLOT_GAUGE_HEIGHT = 5;
+const ACTIVE_SLOT_GAUGE_GAP_Y = 3;
+const ACTIVE_SLOT_GAUGE_EMPTY_COLOR = 0x2c3a2a;
+const ACTIVE_SLOT_GAUGE_FILL_COLOR = 0x5fd76a;
+const ACTIVE_SLOT_GAUGE_READY_COLOR = 0x9dff8a;
+
 const MINIMAP_PANEL_WIDTH = 64;
 const MINIMAP_PANEL_HEIGHT = 48;
 const EXPANDED_MINIMAP_PANEL_WIDTH = 118;
@@ -69,6 +82,11 @@ export class Hud {
   private readonly itemHintText: Phaser.GameObjects.Text;
   private readonly debugText: Phaser.GameObjects.Text;
   private readonly adminText: Phaser.GameObjects.Text;
+  private readonly activeSlotIcon: Phaser.GameObjects.Image;
+  private readonly activeSlotGaugeBack: Phaser.GameObjects.Rectangle;
+  private readonly activeSlotGaugeFill: Phaser.GameObjects.Rectangle;
+  private activeSlotTextureKey?: string;
+  private activeSlotX = HEART_START_X;
   private readonly minimap: Phaser.GameObjects.Graphics;
   private readonly minimapPanel: Phaser.GameObjects.Rectangle;
   private readonly runInfoText: Phaser.GameObjects.Text;
@@ -137,6 +155,38 @@ export class Hud {
     for (const key of Object.keys(this.statValueTexts) as (keyof HudStatValues)[]) {
       this.statBaseY.set(key, this.statValueTexts[key].y);
     }
+    this.activeSlotIcon = this.registerUiObject(
+      this.scene.add.image(0, HEART_TOP, TextureKeys.hudHeart),
+    )
+      .setOrigin(0)
+      .setDisplaySize(ACTIVE_SLOT_ICON_SIZE, ACTIVE_SLOT_ICON_SIZE)
+      .setDepth(DEPTH.ui)
+      .setVisible(false);
+    this.activeSlotGaugeBack = this.registerUiObject(
+      this.scene.add.rectangle(
+        0,
+        HEART_TOP + ACTIVE_SLOT_ICON_SIZE + ACTIVE_SLOT_GAUGE_GAP_Y,
+        ACTIVE_SLOT_ICON_SIZE,
+        ACTIVE_SLOT_GAUGE_HEIGHT,
+        ACTIVE_SLOT_GAUGE_EMPTY_COLOR,
+      ),
+    )
+      .setOrigin(0)
+      .setDepth(DEPTH.ui)
+      .setVisible(false);
+    this.activeSlotGaugeFill = this.registerUiObject(
+      this.scene.add.rectangle(
+        0,
+        HEART_TOP + ACTIVE_SLOT_ICON_SIZE + ACTIVE_SLOT_GAUGE_GAP_Y,
+        ACTIVE_SLOT_ICON_SIZE,
+        ACTIVE_SLOT_GAUGE_HEIGHT,
+        ACTIVE_SLOT_GAUGE_FILL_COLOR,
+      ),
+    )
+      .setOrigin(0)
+      .setDepth(DEPTH.ui + 1)
+      .setVisible(false);
+
     this.messageText = this.createText(GAME_WIDTH / 2, 250, 8)
       .setOrigin(0.5)
       .setFontStyle('bold');
@@ -239,7 +289,10 @@ export class Hud {
       this.updateHealthHearts(stats.health, stats.maxHealth);
       this.lastHealth = stats.health;
       this.lastMaxHealth = stats.maxHealth;
+      this.layoutActiveItemSlot();
     }
+
+    this.updateActiveItemSlot(runState);
     this.keyCountText.setText(this.formatInventoryCount(runState.inventory.keys));
     this.bombCountText.setText(this.formatInventoryCount(runState.inventory.bombs));
     this.coinCountText.setText(this.formatInventoryCount(runState.inventory.coins));
@@ -544,6 +597,72 @@ export class Hud {
         resolution: getRenderScale(),
       }),
     ).setDepth(DEPTH.ui);
+  }
+
+  /**
+   * 액티브 슬롯을 마지막 하트 뒤에 붙인다. 하트는 줄바꿈 없이 오른쪽으로 늘어나므로
+   * 고정 좌표에 두면 최대 체력이 오른 런에서 하트에 깔린다.
+   */
+  private layoutActiveItemSlot(): void {
+    const heartCount = Math.max(1, this.healthHearts.length);
+    const x = HEART_START_X + heartCount * HEART_STEP_X + ACTIVE_SLOT_GAP_X;
+    this.activeSlotX = x;
+    this.activeSlotIcon.setPosition(x, HEART_TOP);
+    this.activeSlotGaugeBack.setPosition(
+      x,
+      HEART_TOP + ACTIVE_SLOT_ICON_SIZE + ACTIVE_SLOT_GAUGE_GAP_Y,
+    );
+    this.activeSlotGaugeFill.setPosition(
+      x,
+      HEART_TOP + ACTIVE_SLOT_ICON_SIZE + ACTIVE_SLOT_GAUGE_GAP_Y,
+    );
+  }
+
+  /** 슬롯 아이콘과 초록 충전 게이지. 아이템이 없으면 통째로 숨긴다. */
+  private updateActiveItemSlot(runState: RunState): void {
+    const definition = getSlotDefinition(runState.activeItem);
+
+    if (!definition) {
+      this.activeSlotIcon.setVisible(false);
+      this.activeSlotGaugeBack.setVisible(false);
+      this.activeSlotGaugeFill.setVisible(false);
+      this.activeSlotTextureKey = undefined;
+      return;
+    }
+
+    const textureKey = itemIconKey(definition.id);
+
+    // 텍스처 교체는 바뀔 때만 한다. 매 프레임 setTexture를 부르면 프레임 캐시가
+    // 계속 무효화된다.
+    if (this.activeSlotTextureKey !== textureKey) {
+      if (this.scene.textures.exists(textureKey)) {
+        this.activeSlotIcon.setTexture(textureKey);
+      }
+
+      this.activeSlotTextureKey = textureKey;
+      this.activeSlotIcon.setDisplaySize(ACTIVE_SLOT_ICON_SIZE, ACTIVE_SLOT_ICON_SIZE);
+      this.layoutActiveItemSlot();
+    }
+
+    const ratio = getActiveItemChargeRatio(runState.activeItem);
+    const ready = ratio >= 1;
+
+    this.activeSlotIcon.setVisible(true);
+    this.activeSlotIcon.setAlpha(ready ? 1 : 0.62);
+    this.activeSlotGaugeBack.setVisible(true);
+    // 폭이 0이면 Phaser가 사각형을 그대로 그려 한 픽셀이 남으므로 아예 숨긴다.
+    this.activeSlotGaugeFill.setVisible(ratio > 0);
+    this.activeSlotGaugeFill.setSize(
+      Math.max(1, Math.round(ACTIVE_SLOT_ICON_SIZE * ratio)),
+      ACTIVE_SLOT_GAUGE_HEIGHT,
+    );
+    this.activeSlotGaugeFill.setPosition(
+      this.activeSlotX,
+      HEART_TOP + ACTIVE_SLOT_ICON_SIZE + ACTIVE_SLOT_GAUGE_GAP_Y,
+    );
+    this.activeSlotGaugeFill.setFillStyle(
+      ready ? ACTIVE_SLOT_GAUGE_READY_COLOR : ACTIVE_SLOT_GAUGE_FILL_COLOR,
+    );
   }
 
   private updateHealthHearts(health: number, maxHealth: number): void {

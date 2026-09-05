@@ -927,6 +927,141 @@ const BURST_POD: ItemIconArt = {
   ],
 };
 
+// --- 액티브 아이템 아이콘 (37~42). 기존 팔레트 상수를 그대로 재사용해 패시브
+//     아이콘들과 같은 흙·감자 색조로 읽히게 한다.
+
+const POTATO_SPROUT: ItemIconArt = {
+  palette: { a: TUBER_LIGHT, b: ROOT_SHADE, c: CLOVER_STEM, d: CLOVER_LEAF },
+  rows: [
+    '................',
+    '.......c........',
+    '....dd.c.dd.....',
+    '...dddd.dddd....',
+    '....dd.c.dd.....',
+    '.......c........',
+    '....aaaaaaaa....',
+    '...aaaaaaaaaa...',
+    '..aaaaaabbaaaa..',
+    '..aaaabbaaaaaa..',
+    '..aaaaaaaaaabb..',
+    '...aaaaaaaaaa...',
+    '....aaaaaaaa....',
+    '................',
+    '................',
+    '................',
+  ],
+};
+
+const WATER_CANNON: ItemIconArt = {
+  palette: { c: CASING_LIGHT, d: CASING_SHADE, w: DEW_LIGHT, e: DEW_BASE },
+  rows: [
+    '................',
+    '................',
+    '................',
+    '...ccc..........',
+    '..cdddc.........',
+    '..cdddddccc.w...',
+    '..cddddddddcww..',
+    '..cdddddddddwew.',
+    '..cddddddddcww..',
+    '..cdddddccc.w...',
+    '..cdddc.........',
+    '...ccc..........',
+    '................',
+    '................',
+    '................',
+    '................',
+  ],
+};
+
+const SEEDLING_ALLIES: ItemIconArt = {
+  palette: { a: TUBER_LIGHT, b: ROOT_SHADE, c: CLOVER_STEM },
+  rows: [
+    '................',
+    '................',
+    '................',
+    '..aaaa....aaaa..',
+    '.aaaaaa..aaaaaa.',
+    '.abbaaa..abbaaa.',
+    '.aaaaaa..aaaaaa.',
+    '.aaaaaa..aaaaaa.',
+    '..aaaa....aaaa..',
+    '...c.c....c.c...',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+  ],
+};
+
+const ROOT_WHIP: ItemIconArt = {
+  palette: { r: ROOT_SHADE, R: TUBER_BASE },
+  rows: [
+    '................',
+    '.......rr.......',
+    '...r...rr...r...',
+    '....r..rr..r....',
+    '.....r.rr.r.....',
+    '......rrrr......',
+    '..rrrrRRRRrrrr..',
+    '..rrrrRRRRrrrr..',
+    '......rrrr......',
+    '.....r.rr.r.....',
+    '....r..rr..r....',
+    '...r...rr...r...',
+    '.......rr.......',
+    '................',
+    '................',
+    '................',
+  ],
+};
+
+const DUST_SACK: ItemIconArt = {
+  palette: { a: LEATHER_BASE, b: LEATHER_CUFF, c: WOOD_SHADE, d: PEEL_LIGHT },
+  rows: [
+    '................',
+    '..d..........d..',
+    '................',
+    '.......cc.......',
+    '.......cc.......',
+    '......baab......',
+    '.....baaaab.....',
+    '....baaaaaab....',
+    '...baaaaaaaab...',
+    '...baaaaaaaab...',
+    '...baaaaaaaab...',
+    '...bbaaaaaabb...',
+    '....bbbbbbbb....',
+    '................',
+    '..d..........d..',
+    '................',
+  ],
+};
+
+const LUCKY_EYE: ItemIconArt = {
+  palette: { a: TUBER_LIGHT, g: SPARK_CORE, s: DEW_LIGHT },
+  rows: [
+    '................',
+    '................',
+    '.......s........',
+    '....aaaaaaaa....',
+    '...aaaaaaaaaa...',
+    '..aaaaggggaaaa..',
+    '..aaaggggggaaa..',
+    '..aaaggggggaaa..',
+    '..aaaaggggaaaa..',
+    '...aaaaaaaaaa...',
+    '....aaaaaaaa....',
+    '.......s........',
+    '................',
+    '................',
+    '................',
+    '................',
+  ],
+};
+
 export const ITEM_PIXEL_ICONS: Readonly<Record<string, ItemIconArt>> = {
   'quad-shot': QUAD_SHOT,
   'mega-seed': MEGA_SEED,
@@ -963,6 +1098,12 @@ export const ITEM_PIXEL_ICONS: Readonly<Record<string, ItemIconArt>> = {
   'back-pocket-seed': BACK_POCKET_SEED,
   'wavy-seed': WAVY_SEED,
   'burst-pod': BURST_POD,
+  'potato-sprout': POTATO_SPROUT,
+  'water-cannon': WATER_CANNON,
+  'seedling-allies': SEEDLING_ALLIES,
+  'root-whip': ROOT_WHIP,
+  'dust-sack': DUST_SACK,
+  'lucky-eye': LUCKY_EYE,
 };
 
 export function hasItemPixelIcon(itemId: string): boolean {

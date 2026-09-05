@@ -34,6 +34,20 @@ export interface PlantedBombState {
   y: number;
 }
 
+/**
+ * 슬롯 교체로 바닥에 남은 액티브 아이템. 방을 나가도 사라지지 않는다.
+ *
+ * 모아 둔 충전까지 함께 보관한다 — 잘못 바꿨다가 되돌릴 수 있어야 "주워 볼까"라는
+ * 선택이 성립하는데, 나갔다 오면 없어지면 그 선택이 도박이 된다.
+ */
+export interface DroppedActiveItemState {
+  id: number;
+  itemId: string;
+  charge: number;
+  x: number;
+  y: number;
+}
+
 export interface GridCoord {
   x: number;
   y: number;
@@ -65,6 +79,7 @@ export interface RoomNode {
   pendingReward?: PendingRoomReward;
   droppedRewards: PendingDroppedReward[];
   plantedBombs: PlantedBombState[];
+  droppedActiveItems: DroppedActiveItemState[];
 }
 
 export interface ShopNpcBlastState {
@@ -79,6 +94,7 @@ export class DungeonManager {
   private currentKey = '0,0';
   private nextDroppedRewardId = 1;
   private nextPlantedBombId = 1;
+  private nextDroppedActiveItemId = 1;
 
   floor = 1;
 
@@ -96,6 +112,7 @@ export class DungeonManager {
     this.rooms.clear();
     this.nextDroppedRewardId = 1;
     this.nextPlantedBombId = 1;
+    this.nextDroppedActiveItemId = 1;
     // 층을 새로 만들 때마다 초기화한다. 이전 층의 마지막 방이 다음 층 첫 방의
     // 중복 제외에 걸리는 것은 의미가 없다.
     this.lastCombatTemplateId = null;
@@ -340,6 +357,38 @@ export class DungeonManager {
     plantedBomb.y = y;
   }
 
+  /** 교체로 밀려난 액티브 아이템을 방에 남긴다. */
+  addDroppedActiveItem(
+    roomId: string,
+    itemId: string,
+    charge: number,
+    x: number,
+    y: number,
+  ): DroppedActiveItemState | null {
+    const room = this.rooms.get(roomId);
+
+    if (!room) {
+      return null;
+    }
+
+    const dropped = { id: this.nextDroppedActiveItemId, itemId, charge, x, y };
+    this.nextDroppedActiveItemId += 1;
+    room.droppedActiveItems.push(dropped);
+    return dropped;
+  }
+
+  /**
+   * 다시 주운 아이템을 방에서 지운다. 빠뜨리면 방에 들어올 때마다 되살아나
+   * 무한히 늘어난다 — 심은 폭탄에서 이미 겪은 함정이다.
+   */
+  clearDroppedActiveItem(roomId: string, droppedId: number): void {
+    const room = this.rooms.get(roomId);
+
+    if (room) {
+      room.droppedActiveItems = room.droppedActiveItems.filter((entry) => entry.id !== droppedId);
+    }
+  }
+
   unlockRoom(roomId: string): void {
     const room = this.rooms.get(roomId);
 
@@ -377,6 +426,7 @@ export class DungeonManager {
       combatItemRewardRolled: false,
       droppedRewards: [],
       plantedBombs: [],
+      droppedActiveItems: [],
     };
 
     this.rooms.set(key, node);

@@ -1,5 +1,7 @@
 ﻿import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
+import { findCatalogEntry, passiveEntry } from '../data/itemCatalog';
+import { rollTreasureActiveItem } from './ActiveItemRules';
 import { Door, DOOR_SLAM_DURATION_MS } from '../entities/Door';
 import { ItemPickup } from '../entities/ItemPickup';
 import { Obstacle } from '../entities/Obstacle';
@@ -423,7 +425,9 @@ export class RoomController {
       return;
     }
 
-    this.items.add(new ItemPickup(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y + 40, item, 'boss'));
+    this.items.add(
+      new ItemPickup(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y + 40, passiveEntry(item), 'boss'),
+    );
   }
 
   spawnCombatItemReward(room: RoomNode): void {
@@ -442,7 +446,9 @@ export class RoomController {
     const item = PASSIVE_ITEMS.find((candidate) => candidate.id === room.combatItemRewardId);
 
     if (item) {
-      this.items.add(new ItemPickup(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y - 26, item));
+      this.items.add(
+        new ItemPickup(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y - 26, passiveEntry(item)),
+      );
     }
   }
 
@@ -933,13 +939,17 @@ export class RoomController {
     }
 
     if (!room.treasureItemId) {
-      room.treasureItemId = this.itemSystem.pickTreasureItem(this.runState.collectedItemIds)?.id;
+      // 먼저 액티브를 굴리고, 뽑히지 않으면 기존 패시브 추첨으로 넘어간다.
+      const active = rollTreasureActiveItem(this.random, this.runState.activeItem?.id);
+      room.treasureItemId =
+        active?.id ?? this.itemSystem.pickTreasureItem(this.runState.collectedItemIds)?.id;
     }
 
-    const item = PASSIVE_ITEMS.find((candidate) => candidate.id === room.treasureItemId);
+    // 저장된 id는 패시브일 수도 액티브일 수도 있으므로 카탈로그로 되찾는다.
+    const entry = room.treasureItemId ? findCatalogEntry(room.treasureItemId) : undefined;
 
-    if (item) {
-      this.items.add(new ItemPickup(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y, item));
+    if (entry) {
+      this.items.add(new ItemPickup(this.scene, ROOM_CENTER_X, ROOM_CENTER_Y, entry));
     }
   }
 

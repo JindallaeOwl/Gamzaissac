@@ -197,3 +197,47 @@ function getReachableRoomIds(dungeon: DungeonManager): Set<string> {
 
   return visited;
 }
+
+describe('dropped active items survive leaving the room', () => {
+  function floorWithRoom() {
+    const dungeon = new DungeonManager(() => 0.5);
+    dungeon.generateFloor(1);
+    return { dungeon, room: dungeon.getCurrentRoom() };
+  }
+
+  it('keeps a swapped-out item in the room, charge included', () => {
+    const { dungeon, room } = floorWithRoom();
+
+    const dropped = dungeon.addDroppedActiveItem(room.id, 'root-whip', 2, 120, 90);
+
+    expect(dropped).not.toBeNull();
+    expect(room.droppedActiveItems).toEqual([
+      { id: dropped!.id, itemId: 'root-whip', charge: 2, x: 120, y: 90 },
+    ]);
+  });
+
+  it('removes it once picked back up, so it cannot multiply', () => {
+    // 폭탄에서 이미 겪은 함정이다 — 지우지 않으면 방에 들어올 때마다 되살아난다.
+    const { dungeon, room } = floorWithRoom();
+    const dropped = dungeon.addDroppedActiveItem(room.id, 'dust-sack', 1, 60, 60);
+
+    dungeon.clearDroppedActiveItem(room.id, dropped!.id);
+
+    expect(room.droppedActiveItems).toEqual([]);
+  });
+
+  it('starts every room with an empty list', () => {
+    const { dungeon } = floorWithRoom();
+
+    for (const room of dungeon.getRooms()) {
+      expect(room.droppedActiveItems).toEqual([]);
+    }
+  });
+
+  it('ignores an unknown room instead of throwing', () => {
+    const { dungeon } = floorWithRoom();
+
+    expect(dungeon.addDroppedActiveItem('999,999', 'root-whip', 0, 0, 0)).toBeNull();
+    expect(() => dungeon.clearDroppedActiveItem('999,999', 1)).not.toThrow();
+  });
+});

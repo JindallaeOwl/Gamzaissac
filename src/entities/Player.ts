@@ -403,6 +403,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  /**
+   * 사방으로 씨앗을 한 바퀴 뿌린다 (뿌리 채찍 액티브).
+   *
+   * 일반 사격과 **같은 `spawnSeedFan`**을 방향만 바꿔 여러 번 부른다. 그래서 지금
+   * 든 아이템의 씨앗 크기·관통·물결·붉은 씨앗이 그대로 얹히고, 앞으로 씨앗에
+   * 무엇이 추가되든 이 발사에도 저절로 따라온다.
+   */
+  fireRadialVolley(count: number, bulletGroup: Phaser.Physics.Arcade.Group): void {
+    const total = Math.max(1, Math.round(count));
+
+    for (let index = 0; index < total; index += 1) {
+      const angle = (Math.PI * 2 * index) / total;
+
+      this.spawnSeedFan({ x: Math.cos(angle), y: Math.sin(angle) }, 1, bulletGroup, index);
+    }
+
+    // 총구 연출·효과음은 한 번만. 방향마다 부르면 12번 겹쳐 터진다.
+    this.emit('player-shot', { x: this.x, y: this.y, direction: { x: 0, y: -1 } });
+  }
+
   private updateBeamCharge(time: number, controls: PlayerControls): void {
     const direction = this.getFireDirection(controls);
 

@@ -7,6 +7,9 @@ import type { Direction } from '../utils/directions';
 import type { BombSystem } from './BombSystem';
 import type { DungeonManager, PendingDroppedReward, RoomNode } from './DungeonManager';
 import { floorExitKindForFloor, restoredFloorExitKind, type FloorExitKind } from './FloorExitRules';
+import { ACTIVE_ITEM_SWAP_ARM_DISTANCE, findActiveItem } from '../data/activeItems';
+import { activeEntry } from '../data/itemCatalog';
+import { ItemPickup } from '../entities/ItemPickup';
 import type { RewardDrop } from './RewardSystem';
 import type { RoomController } from './RoomController';
 
@@ -62,6 +65,7 @@ export class RoomTransitionSystem {
     this.roomController.enterCurrentRoom(spawnPosition);
     this.restorePendingReward(room);
     this.restoreDroppedRewards(room);
+    this.restoreDroppedActiveItems(room);
     this.bombSystem.restoreRoomBombs(room, spawnPosition);
     this.restoreFloorExit(room);
   }
@@ -74,6 +78,7 @@ export class RoomTransitionSystem {
     this.roomController.enterCurrentRoom(spawnPosition);
     this.restorePendingReward(room);
     this.restoreDroppedRewards(room);
+    this.restoreDroppedActiveItems(room);
     this.bombSystem.restoreRoomBombs(room, spawnPosition);
     this.restoreFloorExit(room);
   }
@@ -222,6 +227,35 @@ export class RoomTransitionSystem {
   private restoreDroppedRewards(room: RoomNode): void {
     for (const droppedReward of room.droppedRewards) {
       this.spawnDroppedReward(room, droppedReward);
+    }
+  }
+
+  /**
+   * 교체로 바닥에 남겨 둔 액티브 아이템을 되살린다.
+   *
+   * 방을 새로 그릴 때 `items` 그룹을 통째로 비우므로, 남긴 것을 여기서 다시 만들지
+   * 않으면 나갔다 온 사이에 영영 사라진다. 보상·폭탄과 같은 취급이다.
+   */
+  private restoreDroppedActiveItems(room: RoomNode): void {
+    for (const dropped of room.droppedActiveItems) {
+      const definition = findActiveItem(dropped.itemId);
+
+      if (!definition) {
+        continue;
+      }
+
+      const pickup = new ItemPickup(
+        this.scene,
+        dropped.x,
+        dropped.y,
+        activeEntry(definition),
+        'secret',
+        dropped.charge,
+      );
+      pickup.setDroppedActiveItemId(dropped.id);
+      // 입장 지점과 겹칠 수 있으므로 되살릴 때도 한 번 벗어나야 주울 수 있게 둔다.
+      pickup.armAfterDistance(ACTIVE_ITEM_SWAP_ARM_DISTANCE);
+      this.items.add(pickup);
     }
   }
 

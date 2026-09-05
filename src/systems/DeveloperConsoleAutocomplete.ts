@@ -1,5 +1,6 @@
 import { ENEMY_DEFINITIONS } from '../data/enemies';
-import { formatItemNumber, PASSIVE_ITEMS } from '../data/items';
+import { formatItemNumber } from '../data/items';
+import { catalogEntryId, catalogEntryNumber, ITEM_CATALOG } from '../data/itemCatalog';
 import { TOTAL_FLOORS } from '../data/stages';
 
 export interface DeveloperConsoleSuggestion {
@@ -70,17 +71,20 @@ export function getDeveloperConsoleSuggestions(
   }
 
   const argument = argumentParts.join(' ');
-  const itemSuggestions = PASSIVE_ITEMS.flatMap((item) => {
-    const number = item.itemNumber.toString().padStart(3, '0');
-    const label = `${formatItemNumber(item.itemNumber)}  ${item.id}`;
+  // 패시브와 액티브를 함께 제안한다 (ITEM_CATALOG는 번호순으로 정렬되어 있다).
+  const itemSuggestions = ITEM_CATALOG.flatMap((entry) => {
+    const itemNumber = catalogEntryNumber(entry);
+    const id = catalogEntryId(entry);
+    const number = itemNumber.toString().padStart(3, '0');
+    const label = `${formatItemNumber(itemNumber)}  ${id}`;
     const suggestions: DeveloperConsoleSuggestion[] = [];
 
-    if (!argument || number.startsWith(argument) || item.itemNumber.toString() === argument) {
+    if (!argument || number.startsWith(argument) || itemNumber.toString() === argument) {
       suggestions.push({ completion: `spawn ${number}`, label });
     }
 
-    if (argument && item.id.startsWith(argument)) {
-      suggestions.push({ completion: `spawn ${item.id}`, label });
+    if (argument && id.startsWith(argument)) {
+      suggestions.push({ completion: `spawn ${id}`, label });
     }
 
     return suggestions;

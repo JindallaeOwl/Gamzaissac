@@ -135,6 +135,11 @@ export const en: TranslationTree = {
     chestHealed: 'Chest: healed {amount}',
     chestConsumable: 'Chest: +{amount} {resource}',
     itemPreview: '[{rarity} · {category}] {name}: {description}',
+    activeItemPreview: '{name} — {description} (Space to use)',
+    activeItemEmpty: 'No active item in the slot.',
+    activeItemCharging: 'Still charging. Clear more rooms.',
+    activeItemHealthFull: 'Health is already full.',
+    activeItemNotReady: 'This item is not built yet.',
     secretItemSpawned: 'Secret input detected: Prism Lance + Quad Shot spawned',
     // Scroll title. The announcement UI appends a trailing '!' automatically.
     synergyActivated: '{name} Synergy',
@@ -345,6 +350,34 @@ export const en: TranslationTree = {
     defense: 'Defense',
     utility: 'Utility',
     resource: 'Resource',
+  },
+  activeItems: {
+    potatoSprout: {
+      name: 'Potato Sprout',
+      description: 'Swallow the sprout on your skin to win back one full heart. (6 rooms)',
+    },
+    waterCannon: {
+      name: 'Water Cannon',
+      description: 'Loads a water blast. Hold an arrow key and release to fire the jet. (4 rooms)',
+    },
+    seedlingAllies: {
+      name: 'Seedling Allies',
+      description: 'Wakes two little potatoes. They fight beside you, but fall easily. (4 rooms)',
+    },
+    rootWhip: {
+      name: 'Root Whip',
+      description:
+        'Scatters seeds in every direction, using whatever seeds you fire now. (2 rooms)',
+    },
+    dustSack: {
+      name: 'Dust Sack',
+      description:
+        'Bursts into dust, wiping incoming shots and leaving you briefly untouchable. (3 rooms)',
+    },
+    luckyEye: {
+      name: 'Lucky Eye',
+      description: 'Sprouts a single treasure chest at your feet. (4 rooms)',
+    },
   },
   synergies: {
     prismArray: {

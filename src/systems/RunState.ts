@@ -5,6 +5,7 @@ import {
   type PlayerStats,
 } from '../config/gameConfig';
 import type { ConsumableType } from '../data/rewards';
+import type { ActiveItemSlot } from './ActiveItemRules';
 
 export type InventoryState = Record<ConsumableType, number>;
 
@@ -24,6 +25,11 @@ export interface RunState {
   inventory: InventoryState;
   // 시작방 텃밭에 묻어 둔 씨눈을 심은 층. 다음 층 시작방에서 수확한다.
   seedPlantedOnFloor?: number;
+  // 들고 있는 액티브 아이템과 충전. 슬롯은 하나뿐이며 비어 있을 수 있다.
+  activeItem?: ActiveItemSlot;
+  // 이번 런에서 한 번이라도 주운 액티브 아이템. 처음 줍는 것만 만충으로 주므로,
+  // 둘을 번갈아 주웠다 떨어뜨려 만충을 반복하는 우회를 이 목록이 막는다.
+  seenActiveItemIds: string[];
   stats: PlayerStats;
   attackProfile: PlayerAttackProfile;
 }
@@ -36,6 +42,7 @@ export function createInitialRunState(): RunState {
     clearedRooms: 0,
     score: 0,
     collectedItemIds: [],
+    seenActiveItemIds: [],
     unlockedAbilityIds: [],
     activatedSynergyIds: [],
     inventory: {

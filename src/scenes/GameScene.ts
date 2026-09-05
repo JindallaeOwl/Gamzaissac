@@ -1,5 +1,22 @@
 ﻿import Phaser from 'phaser';
 import { MusicKeys } from '../config/assets';
+import { activeEntry, passiveEntry } from '../data/itemCatalog';
+import {
+  ACTIVE_ITEM_SWAP_ARM_DISTANCE,
+  DUST_SACK_INVULNERABLE_MS,
+  findActiveItem,
+  POTATO_SPROUT_HEAL_UNITS,
+  ROOT_WHIP_SEED_COUNT,
+  type ActiveItemDefinition,
+} from '../data/activeItems';
+import {
+  chargeOnRoomCleared,
+  consumeActiveItemCharge,
+  getActiveItemUseRefusal,
+  getSlotDefinition,
+  pickUpActiveItem,
+  resolvePickupCharge,
+} from '../systems/ActiveItemRules';
 import { BeamAttack } from '../entities/BeamAttack';
 import { Bomb } from '../entities/Bomb';
 import { Bullet } from '../entities/Bullet';
@@ -76,7 +93,13 @@ import { isPauseCode } from '../ui/PauseMenuRules';
 import { TouchControls } from '../ui/TouchControls';
 import { UiCameraSystem } from '../ui/UiCameraSystem';
 import { applyRenderScale } from '../utils/render';
-import { bindCaptureKeydown, shouldConfirmRunEnd } from '../utils/runEndInput';
+import { clamp } from '../utils/math';
+import {
+  RunEndConfirmGate,
+  bindCaptureKeydown,
+  bindCaptureKeyup,
+  resolveRunEndKeyAction,
+} from '../utils/runEndInput';
 import { resetRunEndOverlayElements } from '../utils/runEndOverlays';
 import { TITLE_TRANSITION_SCENE_KEY } from './TitleTransitionScene';
 
@@ -114,6 +137,8 @@ export class GameScene extends Phaser.Scene {
   private debugKey?: Phaser.Input.Keyboard.Key;
   private localeKey?: Phaser.Input.Keyboard.Key;
   private bombKey?: Phaser.Input.Keyboard.Key;
+  private activeItemKey?: Phaser.Input.Keyboard.Key;
+  private readonly runEndConfirmGate = new RunEndConfirmGate();
   private interactKey?: Phaser.Input.Keyboard.Key;
   private minimapKey?: Phaser.Input.Keyboard.Key;
   private minimapExpansion = new MinimapExpansionController();
@@ -128,21 +153,37 @@ export class GameScene extends Phaser.Scene {
   private gameOverSummary!: HTMLElement;
   private gameOverRestartButton!: HTMLButtonElement;
   private gameOverTransitionStarted = false;
+  // 결과 화면의 Space 걸쇠를 푸는 곳. keydown만 보면 "죽기 전부터 누르고 있던
+  // Space"와 "결과를 보고 새로 누른 Space"를 구별할 수 없다.
+  private readonly handleRunEndKeyUp = (event: KeyboardEvent): void => {
+    this.runEndConfirmGate.noteKeyUp(event.code);
+  };
+
   private readonly handleGameOverKeyDown = (event: KeyboardEvent): void => {
-    if (
-      !shouldConfirmRunEnd({
+    const keyAction = resolveRunEndKeyAction(
+      {
         overlayShown: this.gameOverStarted,
         transitionStarted: this.gameOverTransitionStarted,
         outcome: this.runState.outcome,
         expectedOutcome: 'defeated',
         code: event.code,
-      })
-    ) {
+      },
+      this.runEndConfirmGate.accepts(event.code),
+    );
+
+    if (keyAction === 'ignore') {
       return;
     }
 
+    // suppress일 때도 기본 동작을 반드시 취소한다 — 결과 화면 버튼이 포커스를
+    // 갖고 있어서, 그냥 return하면 브라우저가 Space로 그 버튼을 눌러 버린다.
     event.preventDefault();
     event.stopPropagation();
+
+    if (keyAction === 'suppress') {
+      return;
+    }
+
     this.restartAfterGameOver();
   };
   private introOverlay?: HTMLElement;
@@ -176,20 +217,30 @@ export class GameScene extends Phaser.Scene {
   private escapeReturnButton!: HTMLButtonElement;
   private escapeTransitionStarted = false;
   private readonly handleEscapeKeyDown = (event: KeyboardEvent): void => {
-    if (
-      !shouldConfirmRunEnd({
+    const keyAction = resolveRunEndKeyAction(
+      {
         overlayShown: this.escapeStarted,
         transitionStarted: this.escapeTransitionStarted,
         outcome: this.runState.outcome,
         expectedOutcome: 'escaped',
         code: event.code,
-      })
-    ) {
+      },
+      this.runEndConfirmGate.accepts(event.code),
+    );
+
+    if (keyAction === 'ignore') {
       return;
     }
 
+    // suppress일 때도 기본 동작을 반드시 취소한다 — 결과 화면 버튼이 포커스를
+    // 갖고 있어서, 그냥 return하면 브라우저가 Space로 그 버튼을 눌러 버린다.
     event.preventDefault();
     event.stopPropagation();
+
+    if (keyAction === 'suppress') {
+      return;
+    }
+
     this.returnToTitleAfterEscape();
   };
   private floorTransitionStarted = false;
@@ -210,6 +261,9 @@ export class GameScene extends Phaser.Scene {
   };
   private readonly handleGameSceneResume = (): void => {
     this.pauseTransitionStarted = false;
+    // 일시정지 메뉴도 Space로 항목을 고른다. 그 Space를 누른 채 재개되면 눌림
+    // 전환이 게임 쪽에서 다시 잡혀 액티브 아이템이 저절로 발동한다.
+    this.input.keyboard?.resetKeys();
     this.minimapExpansion.cancelHold();
     this.hud.setMapExpanded(this.minimapExpansion.expanded);
     this.refreshTouchControlsEnabled();
@@ -466,6 +520,10 @@ export class GameScene extends Phaser.Scene {
       this.tryUseBomb();
     }
 
+    if (this.activeItemKey && Phaser.Input.Keyboard.JustDown(this.activeItemKey)) {
+      this.tryUseActiveItem();
+    }
+
     if (this.interactKey && Phaser.Input.Keyboard.JustDown(this.interactKey)) {
       // 같은 키로 상점 구매와 씨눈 심기를 처리한다. 둘은 서로 다른 방에서만
       // 성립하므로 겹칠 일이 없다.
@@ -507,6 +565,10 @@ export class GameScene extends Phaser.Scene {
       beam.update(time);
     }
 
+    for (const pickup of this.items.getChildren() as ItemPickup[]) {
+      pickup.updateArming(this.player.x, this.player.y);
+    }
+
     this.roomController.updateDoorEntryGates(this.player.body as Phaser.Physics.Arcade.Body);
     this.roomController.update();
     this.bossHud.update();
@@ -542,6 +604,7 @@ export class GameScene extends Phaser.Scene {
     this.debugKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F3);
     this.localeKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L);
     this.bombKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    this.activeItemKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.interactKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
     this.minimapKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TAB);
     keyboard.on('keydown', this.handleSecretCodeKey, this);
@@ -586,10 +649,22 @@ export class GameScene extends Phaser.Scene {
 
     const positions = getSecretSynergySpawnPositions(this.player.x, this.player.y);
     this.items.add(
-      new ItemPickup(this, positions.prismLance.x, positions.prismLance.y, prismLance, 'secret'),
+      new ItemPickup(
+        this,
+        positions.prismLance.x,
+        positions.prismLance.y,
+        passiveEntry(prismLance),
+        'secret',
+      ),
     );
     this.items.add(
-      new ItemPickup(this, positions.quadShot.x, positions.quadShot.y, quadShot, 'secret'),
+      new ItemPickup(
+        this,
+        positions.quadShot.x,
+        positions.quadShot.y,
+        passiveEntry(quadShot),
+        'secret',
+      ),
     );
     this.effects.pickup(positions.prismLance.x, positions.prismLance.y);
     this.effects.pickup(positions.quadShot.x, positions.quadShot.y);
@@ -609,9 +684,15 @@ export class GameScene extends Phaser.Scene {
       },
     );
 
-    this.physics.add.overlap(this.player, this.items, (_playerObject, itemObject) => {
-      this.collectItem(itemObject as ItemPickup);
-    });
+    this.physics.add.overlap(
+      this.player,
+      this.items,
+      (_playerObject, itemObject) => {
+        this.collectItem(itemObject as ItemPickup);
+      },
+      // 교체로 발밑에 떨어진 아이템은 플레이어가 벗어난 뒤에야 주울 수 있다.
+      (_playerObject, itemObject) => (itemObject as ItemPickup).isCollectable,
+    );
 
     this.physics.add.overlap(
       this.player,
@@ -790,13 +871,16 @@ export class GameScene extends Phaser.Scene {
     this.gameOverRestartButton.disabled = false;
     this.gameOverRestartButton.onclick = () => this.restartAfterGameOver();
     const removeListener = bindCaptureKeydown(document, this.handleGameOverKeyDown);
+    const removeKeyUpListener = bindCaptureKeyup(document, this.handleRunEndKeyUp);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       removeListener();
+      removeKeyUpListener();
       this.resetGameOverOverlay();
     });
   }
 
   private showGameOverOverlay(data: GameOverData): void {
+    this.runEndConfirmGate.open();
     this.gameOverTitle.textContent = t('gameOver.title');
     this.gameOverSummary.textContent = t('gameOver.summary', {
       rooms: data.clearedRooms,
@@ -1004,6 +1088,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showEscapeOverlay(): void {
+    this.runEndConfirmGate.open();
     this.escapeTitle.textContent = t('escape.title');
     this.escapeSummary.textContent = t('escape.summary', {
       rooms: this.runState.clearedRooms,
@@ -1290,7 +1375,9 @@ export class GameScene extends Phaser.Scene {
       harvest === 'item' ? this.itemSystem.pickTreasureItem(this.runState.collectedItemIds) : null;
 
     if (item) {
-      this.items.add(new ItemPickup(this, SEED_PLOT_POSITION.x, SEED_PLOT_POSITION.y - 18, item));
+      this.items.add(
+        new ItemPickup(this, SEED_PLOT_POSITION.x, SEED_PLOT_POSITION.y - 18, passiveEntry(item)),
+      );
       this.effects.itemAbsorb(SEED_PLOT_POSITION.x, SEED_PLOT_POSITION.y, 0x9dff8a);
       this.hud.showMessage(t('messages.seedGrown'), 2400);
       return;
@@ -1362,13 +1449,20 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    const nearestPassive = nearest.passiveItem;
+
     this.hud.showItemHint(
-      t('messages.itemPreview', {
-        name: t(nearest.item.nameKey),
-        description: t(nearest.item.descriptionKey),
-        rarity: t(`rarities.${nearest.item.rarity}`),
-        category: t(`itemCategories.${nearest.item.category}`),
-      }),
+      nearestPassive
+        ? t('messages.itemPreview', {
+            name: t(nearest.nameKey),
+            description: t(nearest.descriptionKey),
+            rarity: t(`rarities.${nearestPassive.rarity}`),
+            category: t(`itemCategories.${nearestPassive.category}`),
+          })
+        : t('messages.activeItemPreview', {
+            name: t(nearest.nameKey),
+            description: t(nearest.descriptionKey),
+          }),
     );
   }
 
@@ -1418,13 +1512,26 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const acquisition = this.itemSystem.acquireItem(this.runState, pickup.item);
+    const activeItem = pickup.activeItem;
+
+    if (activeItem) {
+      this.collectActiveItem(pickup, activeItem);
+      return;
+    }
+
+    const passive = pickup.passiveItem;
+
+    if (!passive) {
+      return;
+    }
+
+    const acquisition = this.itemSystem.acquireItem(this.runState, passive);
 
     if (!acquisition.acquired) {
       this.hud.showMessage(
         t('messages.itemMaxStacks', {
-          name: t(pickup.item.nameKey),
-          max: pickup.item.maxStacks,
+          name: t(passive.nameKey),
+          max: passive.maxStacks,
         }),
         1400,
       );
@@ -1434,10 +1541,10 @@ export class GameScene extends Phaser.Scene {
     // 아이템 알림을 먼저 큐에 넣는다. applyPassiveAcquisition이 시너지 알림을
     // 이어 붙이므로, 순서가 뒤집히면 시너지가 아이템보다 먼저 표시된다.
     this.itemPickupAnnouncement.show({
-      title: t(pickup.item.nameKey),
-      description: t(pickup.item.descriptionKey),
+      title: t(passive.nameKey),
+      description: t(passive.descriptionKey),
     });
-    this.applyPassiveAcquisition(pickup.item, acquisition);
+    this.applyPassiveAcquisition(passive, acquisition);
     const currentRoom = this.dungeon.getCurrentRoom();
 
     if (pickup.source === 'room' && currentRoom.type === 'treasure') {
@@ -1450,6 +1557,92 @@ export class GameScene extends Phaser.Scene {
 
     this.audio.play('pickup');
     pickup.destroy();
+  }
+
+  /**
+   * 액티브 아이템 줍기.
+   *
+   * 슬롯은 하나뿐이라 이미 들고 있으면 교체하고, **밀려난 아이템은 충전을 그대로
+   * 안은 채 그 자리에 남는다** — 버리면 잘못 바꿨을 때 되돌릴 수 없어 "주워 볼까"
+   * 라는 선택 자체가 위험해진다. 떨어진 아이템은 플레이어가 벗어나기 전까지
+   * 잠겨 있어, 발밑에서 둘이 끝없이 자리를 바꾸는 일이 없다.
+   */
+  private collectActiveItem(pickup: ItemPickup, definition: ActiveItemDefinition): void {
+    const startingCharge = resolvePickupCharge(
+      definition,
+      pickup.carriedCharge,
+      this.runState.seenActiveItemIds,
+    );
+
+    if (!this.runState.seenActiveItemIds.includes(definition.id)) {
+      this.runState.seenActiveItemIds.push(definition.id);
+    }
+
+    const result = pickUpActiveItem(this.runState.activeItem, definition.id, startingCharge);
+    this.runState.activeItem = result.slot;
+
+    this.itemPickupAnnouncement.show({
+      title: t(definition.nameKey),
+      description: t(definition.descriptionKey),
+    });
+
+    const droppedX = pickup.x;
+    const droppedY = pickup.y;
+    const currentRoom = this.dungeon.getCurrentRoom();
+
+    if (pickup.source === 'room' && currentRoom.type === 'treasure') {
+      this.dungeon.markCurrentTreasureClaimed();
+    } else if (pickup.source === 'room' && currentRoom.type === 'combat') {
+      this.dungeon.markCurrentCombatItemRewardClaimed();
+    }
+
+    // 바닥에 남겨 뒀던 것을 다시 주웠다면 방 상태에서도 지운다. 빠뜨리면 방에
+    // 들어올 때마다 되살아나 무한히 늘어난다.
+    const restoredId = pickup.roomDroppedActiveItemId;
+
+    if (restoredId !== undefined) {
+      this.dungeon.clearDroppedActiveItem(currentRoom.id, restoredId);
+    }
+
+    this.audio.play('pickup');
+    this.effects.pickup(droppedX, droppedY);
+    pickup.destroy();
+
+    if (!result.displacedId) {
+      return;
+    }
+
+    const displaced = findActiveItem(result.displacedId);
+
+    if (!displaced) {
+      return;
+    }
+
+    const charge = result.displacedCharge ?? 0;
+    const dropped = new ItemPickup(
+      this,
+      droppedX,
+      droppedY,
+      activeEntry(displaced),
+      'secret',
+      charge,
+    );
+    dropped.armAfterDistance(ACTIVE_ITEM_SWAP_ARM_DISTANCE);
+
+    // 방을 나가도 남아 있도록 등록한다. 보상·폭탄과 같은 취급이다.
+    const registered = this.dungeon.addDroppedActiveItem(
+      currentRoom.id,
+      displaced.id,
+      charge,
+      droppedX,
+      droppedY,
+    );
+
+    if (registered) {
+      dropped.setDroppedActiveItemId(registered.id);
+    }
+
+    this.items.add(dropped);
   }
 
   private findNearestShopOffer(): ShopOffer | null {
@@ -1656,6 +1849,8 @@ export class GameScene extends Phaser.Scene {
 
   private handleRoomCleared(room: RoomNode): void {
     this.runState.clearedRooms += 1;
+    // 액티브 충전은 방을 깬 대가다. 보스방도 방이므로 함께 센다.
+    this.runState.activeItem = chargeOnRoomCleared(this.runState.activeItem);
     this.dropRoomClearReward(room);
     this.roomController.spawnCombatItemReward(room);
     this.hud.showMessage(
@@ -1726,6 +1921,106 @@ export class GameScene extends Phaser.Scene {
     this.effects.shake('bossPhaseTwo');
     this.cameras.main.flash(160, 255, 88, 125, false);
     this.audio.play('bossPhaseTwo');
+  }
+
+  /**
+   * Space로 액티브 아이템 발동.
+   *
+   * 효과가 "지금은 쓸 상황이 아니다"라고 답하면(체력이 가득 찬 회복 아이템 등)
+   * 충전을 비우지 않는다 — 눌렀는데 아무 일도 없이 충전만 날아가면 손해가 크다.
+   */
+  private tryUseActiveItem(): void {
+    const refusal = getActiveItemUseRefusal({
+      slot: this.runState.activeItem,
+      runEnded: isRunEnded(this.runState),
+    });
+
+    if (refusal === 'run-ended') {
+      return;
+    }
+
+    if (refusal === 'no-item') {
+      this.hud.showMessage(t('messages.activeItemEmpty'), 1200);
+      return;
+    }
+
+    if (refusal === 'not-charged') {
+      this.hud.showMessage(t('messages.activeItemCharging'), 1200);
+      return;
+    }
+
+    const slot = this.runState.activeItem;
+    const definition = getSlotDefinition(slot);
+
+    if (!slot || !definition) {
+      return;
+    }
+
+    if (!this.runActiveItemEffect(definition)) {
+      return;
+    }
+
+    this.runState.activeItem = consumeActiveItemCharge(slot);
+    this.audio.play('pickup');
+  }
+
+  /**
+   * 액티브 아이템별 실제 효과. 쓰였으면 true, 지금은 쓸 상황이 아니면 false.
+   *
+   * 여기 한 곳에서만 id로 갈라진다. 효과는 아이템마다 다를 수밖에 없으므로 분기
+   * 자체는 피할 수 없지만, 씬 곳곳에 흩어지지 않게 이 표 하나로 묶어 둔다.
+   * `armed`(물총포)·`summon`(씨알 동료)은 아직 구현 전이라 여기서 걸러진다.
+   */
+  private runActiveItemEffect(definition: ActiveItemDefinition): boolean {
+    switch (definition.id) {
+      case 'potato-sprout': {
+        const stats = this.runState.stats;
+
+        if (stats.health >= stats.maxHealth) {
+          this.hud.showMessage(t('messages.activeItemHealthFull'), 1200);
+          return false;
+        }
+
+        stats.health = Math.min(stats.maxHealth, stats.health + POTATO_SPROUT_HEAL_UNITS);
+        this.effects.pickup(this.player.x, this.player.y);
+        return true;
+      }
+
+      case 'root-whip':
+        this.player.fireRadialVolley(ROOT_WHIP_SEED_COUNT, this.playerBullets);
+        this.effects.shake('beamFire');
+        return true;
+
+      case 'dust-sack': {
+        for (const bullet of this.enemyBullets.getChildren() as Bullet[]) {
+          bullet.consume();
+        }
+
+        this.player.grantInvulnerability(DUST_SACK_INVULNERABLE_MS);
+        this.effects.pickup(this.player.x, this.player.y);
+        this.effects.shake('roomClear');
+        return true;
+      }
+
+      case 'lucky-eye': {
+        // 상자는 몸으로 밀리고 닿으면 열린다. 발밑에 놓으면 생기자마자 열리므로
+        // 한 걸음 아래에 두고 방 안으로 물린다.
+        const x = clamp(this.player.x, ROOM_RECT.left + 24, ROOM_RECT.right - 24);
+        const y = clamp(this.player.y + 26, ROOM_RECT.top + 24, ROOM_RECT.bottom - 24);
+        this.roomTransitions.spawnPersistentReward(
+          this.dungeon.getCurrentRoom(),
+          this.rewardSystem.championChestDrop(),
+          x,
+          y,
+        );
+        this.effects.pickup(x, y);
+        return true;
+      }
+
+      default:
+        this.hud.showMessage(t('messages.activeItemNotReady'), 1200);
+        return false;
+    }
   }
 
   private tryUseBomb(): void {

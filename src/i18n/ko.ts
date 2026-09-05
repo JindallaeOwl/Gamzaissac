@@ -135,6 +135,11 @@ export const ko: TranslationTree = {
     chestHealed: '상자: 체력 {amount} 회복',
     chestConsumable: '상자: +{amount} {resource}',
     itemPreview: '[{rarity} · {category}] {name}: {description}',
+    activeItemPreview: '{name} — {description} (Space로 발동)',
+    activeItemEmpty: '들고 있는 액티브 아이템이 없습니다.',
+    activeItemCharging: '아직 충전 중입니다. 방을 더 깨세요.',
+    activeItemHealthFull: '체력이 가득 차 있습니다.',
+    activeItemNotReady: '아직 만들어지지 않은 아이템입니다.',
     secretItemSpawned: '비밀 입력 감지: 프리즘 창 + 쿼드샷 생성',
     // 스크롤 알림 제목. 알림 UI가 끝에 !를 자동으로 붙이므로 문장 안에 !를 넣지 않는다
     synergyActivated: '{name} 시너지 발동',
@@ -344,6 +349,33 @@ export const ko: TranslationTree = {
     defense: '방어',
     utility: '기동',
     resource: '자원',
+  },
+  activeItems: {
+    potatoSprout: {
+      name: '감자 새싹',
+      description: '몸에서 돋은 새싹을 삼켜 하트 한 칸을 되찾습니다. (방 6개 충전)',
+    },
+    waterCannon: {
+      name: '물총포',
+      description:
+        '물대포를 장전합니다. 방향키를 꾹 눌렀다 떼면 물줄기가 뻗어 나갑니다. (방 4개 충전)',
+    },
+    seedlingAllies: {
+      name: '씨알 동료',
+      description: '작은 감자 둘을 깨웁니다. 함께 싸우지만 쉽게 쓰러집니다. (방 4개 충전)',
+    },
+    rootWhip: {
+      name: '뿌리 채찍',
+      description: '사방으로 씨앗을 흩뿌립니다. 지금 쓰는 씨앗 그대로 나갑니다. (방 2개 충전)',
+    },
+    dustSack: {
+      name: '흙먼지 자루',
+      description: '흙먼지를 터뜨려 날아오는 탄을 지우고 잠시 무적이 됩니다. (방 3개 충전)',
+    },
+    luckyEye: {
+      name: '행운의 감자눈',
+      description: '발밑에 보물 상자 하나를 틔웁니다. (방 4개 충전)',
+    },
   },
   synergies: {
     prismArray: {

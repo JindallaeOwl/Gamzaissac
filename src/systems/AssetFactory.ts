@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { AnimationKeys, itemIconKey, PLAYER_DIRECTION_ROWS, TextureKeys } from '../config/assets';
+import { ACTIVE_ITEMS } from '../data/activeItems';
 import { PASSIVE_ITEMS, type ItemCategory } from '../data/items';
 import {
   buildChaser,
@@ -545,6 +546,16 @@ function createDoorTexture(scene: Phaser.Scene, key: string, width: number, heig
 // replaces them (only tint currently distinguishes them, which is hard to
 // tell apart at a glance).
 function createPassiveItemIcons(scene: Phaser.Scene): void {
+  // 액티브 아이템도 바닥에 놓이고 F2 목록에 뜨므로 같은 자리에서 아이콘을 만든다.
+  for (const item of ACTIVE_ITEMS) {
+    const key = itemIconKey(item.id);
+
+    if (!scene.textures.exists(key) && !createItemPixelIcon(scene, item.id, key)) {
+      // 손도트가 반드시 있어야 한다(테스트가 강제). 없으면 배지로라도 구분되게 둔다.
+      createItemIcon(scene, item.id, item.tint, 'utility');
+    }
+  }
+
   for (const item of PASSIVE_ITEMS) {
     const key = itemIconKey(item.id);
 
