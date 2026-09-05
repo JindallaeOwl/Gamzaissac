@@ -22,6 +22,7 @@
 | [09. 개발자 도구와 검사](09-devtools-testing.md) | [#11](https://github.com/JindallaeOwl/Gamzaissac/issues/11) | 개발자 콘솔, 아이템 선택기, 테스트·빌드 검사 절차                   |
 | [10. 에셋과 아트](10-assets-art.md)              | [#12](https://github.com/JindallaeOwl/Gamzaissac/issues/12) | 픽셀 규격, 적용된 에셋, 아직 임시(placeholder)인 것, 도트 제작 규칙 |
 | [11. 로드맵과 남은 작업](11-roadmap.md)          | [#13](https://github.com/JindallaeOwl/Gamzaissac/issues/13) | v1.0 남은 항목, v1.1 이후 후보, 확인 대기 중인 것, 협업 방식        |
+| [12. 검수 워크플로](12-review-workflow.md)       | 아직 없음                                                   | **Codex에게 그대로 건네는 안내글** — 검수 순서·판정 형식·승인 기준  |
 | 이 문서 (문서 지도)                              | [#1](https://github.com/JindallaeOwl/Gamzaissac/issues/1)   | 문서 목록과 갱신 규칙                                               |
 
 ## 이 문서를 고치는 방법
