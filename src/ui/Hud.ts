@@ -10,7 +10,7 @@ import { formatRunElapsedTime } from '../systems/MinimapExpansionController';
 import { gameFontStack, t } from '../i18n';
 import type { DungeonManager } from '../systems/DungeonManager';
 import type { RunState } from '../systems/RunState';
-import { getHeartFillUnits } from '../utils/healthHearts';
+import { getHeartSlots } from '../utils/healthHearts';
 import { getHudStatValues, type HudStatValues } from './HudStatPresentation';
 import {
   calculateExpandedMinimapCellLayout,
@@ -64,6 +64,9 @@ export class Hud {
   private readonly scene: Phaser.Scene;
   private readonly registerUiObject: UiObjectRegistrar;
   private readonly healthHearts: HealthHeartImages[] = [];
+  // healthHearts는 재사용 풀이라 늘어나기만 하고 줄지 않는다. 최대 체력이 줄어 하트 칸이
+  // 사라졌을 때도 배열 길이는 그대로이므로, 실제로 보이는 칸 수는 따로 기억해 둔다.
+  private visibleHeartCount = 0;
   private readonly keyCountText: Phaser.GameObjects.Text;
   private readonly bombCountText: Phaser.GameObjects.Text;
   private readonly coinCountText: Phaser.GameObjects.Text;
@@ -604,7 +607,7 @@ export class Hud {
    * 고정 좌표에 두면 최대 체력이 오른 런에서 하트에 깔린다.
    */
   private layoutActiveItemSlot(): void {
-    const heartCount = Math.max(1, this.healthHearts.length);
+    const heartCount = Math.max(1, this.visibleHeartCount);
     const x = HEART_START_X + heartCount * HEART_STEP_X + ACTIVE_SLOT_GAP_X;
     this.activeSlotX = x;
     this.activeSlotIcon.setPosition(x, HEART_TOP);
@@ -666,9 +669,10 @@ export class Hud {
   }
 
   private updateHealthHearts(health: number, maxHealth: number): void {
-    const fillUnits = getHeartFillUnits(health, maxHealth);
+    const slots = getHeartSlots(health, maxHealth);
+    this.visibleHeartCount = slots.length;
 
-    while (this.healthHearts.length < fillUnits.length) {
+    while (this.healthHearts.length < slots.length) {
       const index = this.healthHearts.length;
       const x = HEART_START_X + index * HEART_STEP_X;
       const y = HEART_TOP;
@@ -686,16 +690,19 @@ export class Hud {
     }
 
     this.healthHearts.forEach((heart, index) => {
-      const units = fillUnits[index];
-      const visible = units !== undefined;
+      const slot = slots[index];
+      const visible = slot !== undefined;
       heart.empty.setVisible(visible);
-      heart.fill.setVisible(visible && units > 0);
+      heart.fill.setVisible(visible && slot !== undefined && slot.fillUnits > 0);
 
-      if (units === 1) {
-        heart.fill.setCrop(0, 0, 8, 16);
-      } else if (units === 2) {
-        heart.fill.setCrop(0, 0, 16, 16);
+      if (!slot) {
+        return;
       }
+
+      // 그릇(빈 하트)도 최대 체력을 따라 잘라 준다. 이게 없으면 최대 체력이 반 칸 줄어도
+      // 온전한 그릇에 반만 찬 모습이 되어 그냥 피해를 입은 것처럼 보인다.
+      heart.empty.setCrop(0, 0, slot.capacityUnits === 1 ? 8 : 16, 16);
+      heart.fill.setCrop(0, 0, slot.fillUnits === 1 ? 8 : 16, 16);
     });
   }
 
