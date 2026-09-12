@@ -62,6 +62,7 @@ export const ko: TranslationTree = {
     movement: '이동 스틱',
     fire: '사격 스틱',
     bomb: '폭탄 사용',
+    activeItem: '사용',
     purchase: '구매',
     pause: '일시정지',
     rotate: '기기를 가로로 돌려 주세요',

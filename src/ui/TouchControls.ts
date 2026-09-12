@@ -10,6 +10,7 @@ export interface TouchControlLabels {
   movement: string;
   fire: string;
   bomb: string;
+  activeItem: string;
   purchase: string;
   pause: string;
   rotate: string;
@@ -18,12 +19,17 @@ export interface TouchControlLabels {
 export interface TouchControlCallbacks {
   onInteraction(): void;
   onBomb(): void;
+  onActiveItem(): void;
   onPurchase(): void;
   onPause(): void;
 }
 
 export interface TouchControlPresentation {
   bombCount: number;
+  // 액티브 아이템 버튼은 슬롯이 비면 아예 숨기고, 들고 있지만 충전이 덜 찼으면
+  // 흐리게 둔다. 폭탄(개수 0이면 흐림)·구매(근처에 상품 없으면 숨김) 규칙을 합친 것이다.
+  hasActiveItem: boolean;
+  canUseActiveItem: boolean;
   canPurchase: boolean;
 }
 
@@ -42,6 +48,8 @@ interface TouchControlElements {
   fireKnob: HTMLElement;
   bombButton: HTMLButtonElement;
   bombCount: HTMLElement;
+  activeItemButton: HTMLButtonElement;
+  activeItemLabel: HTMLElement;
   purchaseButton: HTMLButtonElement;
   purchaseLabel: HTMLElement;
   pauseButton: HTMLButtonElement;
@@ -102,6 +110,7 @@ export class TouchControls {
     this.bindStick(this.movement);
     this.bindStick(this.fire);
     this.bindAction(elements.bombButton, () => callbacks.onBomb());
+    this.bindAction(elements.activeItemButton, () => callbacks.onActiveItem());
     this.bindAction(elements.purchaseButton, () => callbacks.onPurchase());
     this.bindAction(elements.pauseButton, () => {
       // 일시정지 직전 모든 방향을 놓아 해제 후 이동이 남지 않게 한다.
@@ -157,6 +166,8 @@ export class TouchControls {
     this.elements.movementStick.setAttribute('aria-label', labels.movement);
     this.elements.fireStick.setAttribute('aria-label', labels.fire);
     this.elements.bombButton.setAttribute('aria-label', labels.bomb);
+    this.elements.activeItemButton.setAttribute('aria-label', labels.activeItem);
+    this.elements.activeItemLabel.textContent = labels.activeItem;
     this.elements.purchaseButton.setAttribute('aria-label', labels.purchase);
     this.elements.pauseButton.setAttribute('aria-label', labels.pause);
     this.elements.purchaseLabel.textContent = labels.purchase;
@@ -166,6 +177,8 @@ export class TouchControls {
   updatePresentation(presentation: TouchControlPresentation): void {
     this.elements.bombCount.textContent = String(Math.max(0, presentation.bombCount));
     this.elements.bombButton.classList.toggle('is-empty', presentation.bombCount <= 0);
+    this.elements.activeItemButton.hidden = !presentation.hasActiveItem;
+    this.elements.activeItemButton.classList.toggle('is-empty', !presentation.canUseActiveItem);
     this.elements.purchaseButton.hidden = !presentation.canPurchase;
   }
 
@@ -311,6 +324,8 @@ function findTouchControlElements(): TouchControlElements | null {
   const fireKnob = document.querySelector<HTMLElement>('#touch-fire-knob');
   const bombButton = document.querySelector<HTMLButtonElement>('#touch-bomb');
   const bombCount = document.querySelector<HTMLElement>('#touch-bomb-count');
+  const activeItemButton = document.querySelector<HTMLButtonElement>('#touch-active-item');
+  const activeItemLabel = document.querySelector<HTMLElement>('#touch-active-item-label');
   const purchaseButton = document.querySelector<HTMLButtonElement>('#touch-purchase');
   const purchaseLabel = document.querySelector<HTMLElement>('#touch-purchase-label');
   const pauseButton = document.querySelector<HTMLButtonElement>('#touch-pause');
@@ -324,6 +339,8 @@ function findTouchControlElements(): TouchControlElements | null {
     !fireKnob ||
     !bombButton ||
     !bombCount ||
+    !activeItemButton ||
+    !activeItemLabel ||
     !purchaseButton ||
     !purchaseLabel ||
     !pauseButton ||
@@ -340,6 +357,8 @@ function findTouchControlElements(): TouchControlElements | null {
     fireKnob,
     bombButton,
     bombCount,
+    activeItemButton,
+    activeItemLabel,
     purchaseButton,
     purchaseLabel,
     pauseButton,

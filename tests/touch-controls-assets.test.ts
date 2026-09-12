@@ -3,6 +3,17 @@ import { describe, expect, it } from 'vitest';
 
 const index = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
+const touchControlsSource = readFileSync(
+  new URL('../src/ui/TouchControls.ts', import.meta.url),
+  'utf8',
+);
+
+// TouchControls가 실제로 찾는 id를 소스에서 뽑아낸다. 목록을 손으로 적어 두면 새 버튼을
+// 추가할 때 빼먹어도 검사가 통과한다. findTouchControlElements는 하나라도 없으면 null을
+// 돌려주고, 그러면 터치 조작 전체가 조용히 사라진다 — 반드시 막아야 하는 실패다.
+const wiredIds = [
+  ...touchControlsSource.matchAll(/querySelector<[^>]+>\(\s*'#([\w-]+)'\s*\)/g),
+].map((match) => match[1]);
 const stickPng = readFileSync(
   new URL('../public/assets/ui/vryell/touch-stick.png', import.meta.url),
 );
@@ -15,20 +26,19 @@ describe('mobile touch control assets', () => {
     expect(index.match(/\/assets\/ui\/vryell\/touch-stick\.png/g)).toHaveLength(2);
   });
 
+  it('extracts every querySelector call, so none can slip past the coverage check', () => {
+    // 정규식이 호출 하나를 놓치면 그 요소는 아래 검사에서 그대로 빠진다. 임의의 최소
+    // 개수로는 그걸 못 잡으므로(줄바꿈 하나로 조용히 줄어든다), 서식과 무관한 단순
+    // 등장 횟수와 뽑아낸 개수가 정확히 같은지를 본다.
+    const callCount = (touchControlsSource.match(/querySelector/g) ?? []).length;
+
+    expect(wiredIds.length).toBe(callCount);
+    expect(wiredIds).toContain('touch-controls');
+    expect(wiredIds).toContain('touch-active-item');
+  });
+
   it('contains every DOM control that TouchControls wires', () => {
-    for (const id of [
-      'touch-controls',
-      'touch-movement-stick',
-      'touch-movement-knob',
-      'touch-fire-stick',
-      'touch-fire-knob',
-      'touch-bomb',
-      'touch-bomb-count',
-      'touch-purchase',
-      'touch-purchase-label',
-      'touch-pause',
-      'touch-rotate-label',
-    ]) {
+    for (const id of wiredIds) {
       expect(
         index.match(new RegExp(`id="${id}"`, 'g')),
         `${id} must exist exactly once`,

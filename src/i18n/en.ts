@@ -62,6 +62,7 @@ export const en: TranslationTree = {
     movement: 'Movement stick',
     fire: 'Fire stick',
     bomb: 'Use bomb',
+    activeItem: 'Use',
     purchase: 'BUY',
     pause: 'Pause',
     rotate: 'Rotate your device to landscape',

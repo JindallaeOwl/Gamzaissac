@@ -12,6 +12,7 @@ import {
 import {
   chargeOnRoomCleared,
   consumeActiveItemCharge,
+  canUseActiveItem,
   getActiveItemUseRefusal,
   getSlotDefinition,
   pickUpActiveItem,
@@ -1134,6 +1135,14 @@ export class GameScene extends Phaser.Scene {
         this.tryUseBomb();
         this.updateTouchControlPresentation();
       },
+      onActiveItem: () => {
+        if (!this.canAcceptTouchGameplayInput()) {
+          return;
+        }
+
+        this.tryUseActiveItem();
+        this.updateTouchControlPresentation();
+      },
       onPurchase: () => {
         if (!this.canAcceptTouchGameplayInput()) {
           return;
@@ -1185,6 +1194,7 @@ export class GameScene extends Phaser.Scene {
       movement: t('touch.movement'),
       fire: t('touch.fire'),
       bomb: t('touch.bomb'),
+      activeItem: t('touch.activeItem'),
       purchase: t('touch.purchase'),
       pause: t('touch.pause'),
       rotate: t('touch.rotate'),
@@ -1192,8 +1202,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateTouchControlPresentation(): void {
+    const activeItem = this.runState.activeItem;
+
     this.touchControls?.updatePresentation({
       bombCount: this.runState.inventory.bombs,
+      // HUD 슬롯·사용 경로와 같은 기준으로 본다. 셋이 어긋나면 화면에는 없는데
+      // 버튼만 떠 있고, 눌러도 "아이템 없음"만 나오는 상태가 생긴다.
+      hasActiveItem: getSlotDefinition(activeItem) !== undefined,
+      // 키보드의 Space와 같은 판정을 쓴다. 버튼만 따로 계산하면 눌리는데 안 나가는
+      // (또는 그 반대) 상태가 생긴다.
+      canUseActiveItem: canUseActiveItem({
+        slot: activeItem,
+        runEnded: isRunEnded(this.runState),
+      }),
       canPurchase: this.findNearestShopOffer() !== null,
     });
   }
