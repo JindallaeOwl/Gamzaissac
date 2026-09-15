@@ -140,6 +140,7 @@ export const en: TranslationTree = {
     activeItemEmpty: 'No active item in the slot.',
     activeItemCharging: 'Still charging. Clear more rooms.',
     activeItemHealthFull: 'Health is already full.',
+    activeItemNoEnemies: 'There are no enemies to fight in this room.',
     activeItemNotReady: 'This item is not built yet.',
     secretItemSpawned: 'Secret input detected: Prism Lance + Quad Shot spawned',
     // Scroll title. The announcement UI appends a trailing '!' automatically.
@@ -363,7 +364,8 @@ export const en: TranslationTree = {
     },
     seedlingAllies: {
       name: 'Seedling Allies',
-      description: 'Wakes two little potatoes. They fight beside you, but fall easily. (4 rooms)',
+      description:
+        'Wakes two little potatoes in a room with enemies. They wander nearby, follow you, and fire seeds at enemies. They fall easily and vanish when you leave the room. (4 rooms)',
     },
     rootWhip: {
       name: 'Root Whip',

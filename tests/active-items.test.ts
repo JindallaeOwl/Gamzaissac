@@ -277,7 +277,7 @@ describe('treasure room active drops', () => {
 describe('unimplemented active items stay out of drops', () => {
   // 효과가 없는 아이템이 보물방에서 나오면 열쇠를 쓰고 아무것도 못 하는 것을
   // 받는 데다, 슬롯에 있던 멀쩡한 아이템까지 밀려난다.
-  const NOT_BUILT_YET = ['water-cannon', 'seedling-allies'];
+  const NOT_BUILT_YET = ['water-cannon'];
 
   it('gives them no drop sources at all', () => {
     for (const id of NOT_BUILT_YET) {

@@ -140,6 +140,7 @@ export const ko: TranslationTree = {
     activeItemEmpty: '들고 있는 액티브 아이템이 없습니다.',
     activeItemCharging: '아직 충전 중입니다. 방을 더 깨세요.',
     activeItemHealthFull: '체력이 가득 차 있습니다.',
+    activeItemNoEnemies: '현재 방에 싸울 적이 없습니다.',
     activeItemNotReady: '아직 만들어지지 않은 아이템입니다.',
     secretItemSpawned: '비밀 입력 감지: 프리즘 창 + 쿼드샷 생성',
     // 스크롤 알림 제목. 알림 UI가 끝에 !를 자동으로 붙이므로 문장 안에 !를 넣지 않는다
@@ -363,7 +364,8 @@ export const ko: TranslationTree = {
     },
     seedlingAllies: {
       name: '씨알 동료',
-      description: '작은 감자 둘을 깨웁니다. 함께 싸우지만 쉽게 쓰러집니다. (방 4개 충전)',
+      description:
+        '적이 있는 방에서 작은 감자 둘을 깨웁니다. 주변을 돌아다니며 따라오고 적에게 씨앗을 쏩니다. 쉽게 쓰러지며 방을 떠나면 사라집니다. (방 4개 충전)',
     },
     rootWhip: {
       name: '뿌리 채찍',

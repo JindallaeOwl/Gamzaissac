@@ -53,6 +53,7 @@ import { t, toggleLocale } from '../i18n';
 import { AudioSystem } from '../systems/AudioSystem';
 import { BombSystem } from '../systems/BombSystem';
 import { CombatCollisionSystem } from '../systems/CombatCollisionSystem';
+import { AllySystem } from '../systems/AllySystem';
 import { DeveloperConsoleController } from '../systems/DeveloperConsoleController';
 import { DungeonManager, type RoomNode } from '../systems/DungeonManager';
 import { EffectsSystem } from '../systems/EffectsSystem';
@@ -131,6 +132,7 @@ export class GameScene extends Phaser.Scene {
   private music!: MusicSystem;
   private bombSystem!: BombSystem;
   private combatCollisions!: CombatCollisionSystem;
+  private allySystem!: AllySystem;
   private roomController!: RoomController;
   private player!: Player;
   private inputSystem!: InputSystem;
@@ -420,11 +422,23 @@ export class GameScene extends Phaser.Scene {
         }
       },
     });
+    this.allySystem = new AllySystem({
+      scene: this,
+      player: this.player,
+      enemies: this.enemies,
+      enemyBullets: this.enemyBullets,
+      playerBullets: this.playerBullets,
+      walls: this.roomController.walls,
+      obstacles: this.roomController.obstacles,
+      getEffectiveDamage: () => getEffectiveDamage(this.runState.stats),
+      isRunEnded: () => isRunEnded(this.runState),
+    });
     this.roomTransitions = new RoomTransitionSystem({
       scene: this,
       dungeon: this.dungeon,
       roomController: this.roomController,
       bombSystem: this.bombSystem,
+      allySystem: this.allySystem,
       player: this.player,
       enemies: this.enemies,
       playerBullets: this.playerBullets,
@@ -558,6 +572,8 @@ export class GameScene extends Phaser.Scene {
       bullet.update(time);
     }
 
+    // 동료가 막은 적 탄을 먼저 소비해야 같은 탄이 플레이어까지 관통하지 않는다.
+    this.allySystem.update(time, delta);
     this.combatCollisions.update();
     // 심은 폭탄이 밀 수 있는 물체가 되는 시점을 판정한다(플레이어가 발밑에서 벗어났는지).
     this.bombSystem.update();
@@ -1990,10 +2006,17 @@ export class GameScene extends Phaser.Scene {
    *
    * 여기 한 곳에서만 id로 갈라진다. 효과는 아이템마다 다를 수밖에 없으므로 분기
    * 자체는 피할 수 없지만, 씬 곳곳에 흩어지지 않게 이 표 하나로 묶어 둔다.
-   * `armed`(물총포)·`summon`(씨알 동료)은 아직 구현 전이라 여기서 걸러진다.
+   * 씨알 동료는 방 안에서 유지되며, 아직 구현 전인 물총포는 여기서 걸러진다.
    */
   private runActiveItemEffect(definition: ActiveItemDefinition): boolean {
     switch (definition.id) {
+      case 'seedling-allies':
+        if (!this.allySystem.summon()) {
+          this.hud.showMessage(t('messages.activeItemNoEnemies'), 1200);
+          return false;
+        }
+        return true;
+
       case 'potato-sprout': {
         const stats = this.runState.stats;
 

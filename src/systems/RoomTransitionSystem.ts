@@ -5,6 +5,7 @@ import { RewardPickup } from '../entities/RewardPickup';
 import { ROOM_CENTER_X, ROOM_CENTER_Y, ROOM_ENTRY_PROTECTION_MS } from '../config/gameConfig';
 import type { Direction } from '../utils/directions';
 import type { BombSystem } from './BombSystem';
+import type { AllySystem } from './AllySystem';
 import type { DungeonManager, PendingDroppedReward, RoomNode } from './DungeonManager';
 import { floorExitKindForFloor, restoredFloorExitKind, type FloorExitKind } from './FloorExitRules';
 import { ACTIVE_ITEM_SWAP_ARM_DISTANCE, findActiveItem } from '../data/activeItems';
@@ -18,6 +19,7 @@ interface RoomTransitionSystemConfig {
   dungeon: DungeonManager;
   roomController: RoomController;
   bombSystem: BombSystem;
+  allySystem: AllySystem;
   player: Player;
   enemies: Phaser.Physics.Arcade.Group;
   playerBullets: Phaser.Physics.Arcade.Group;
@@ -33,6 +35,7 @@ export class RoomTransitionSystem {
   private readonly dungeon: DungeonManager;
   private readonly roomController: RoomController;
   private readonly bombSystem: BombSystem;
+  private readonly allySystem: AllySystem;
   private readonly player: Player;
   private readonly enemies: Phaser.Physics.Arcade.Group;
   private readonly playerBullets: Phaser.Physics.Arcade.Group;
@@ -47,6 +50,7 @@ export class RoomTransitionSystem {
     this.dungeon = config.dungeon;
     this.roomController = config.roomController;
     this.bombSystem = config.bombSystem;
+    this.allySystem = config.allySystem;
     this.player = config.player;
     this.enemies = config.enemies;
     this.playerBullets = config.playerBullets;
@@ -171,6 +175,7 @@ export class RoomTransitionSystem {
   }
 
   private clearTransientObjects(includeRoomEntities: boolean): void {
+    this.allySystem.clear();
     this.savePendingRewardPositions();
     // 폭탄은 방을 나가도 남는다(다시 들어오면 도화선만 새로 센다). 화면에서 지우기
     // 전에 굴러가 있는 마지막 자리를 방 상태에 적어 둔다.

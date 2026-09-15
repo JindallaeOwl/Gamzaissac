@@ -46,6 +46,34 @@ export function scaleRoomTemplatePoint(x: number, y: number): { x: number; y: nu
 
 export const WALL_THICKNESS = 16;
 
+export const ALLY_TUNING = {
+  maxAllies: 2,
+  maxHealth: 2,
+  contactInvulnMs: 500,
+  moveSpeed: 110,
+  detectionRange: 140,
+  disengageMargin: 24,
+  preferredMinDistance: 56,
+  preferredMaxDistance: 96,
+  attackRange: 120,
+  fireIntervalMs: 700,
+  seedSpeed: 240,
+  seedLifeMs: 700,
+  damageMultiplier: 0.5,
+  damageFloor: 0.3,
+  followOffset: 22,
+  followStopDistance: 6,
+  wanderSpeed: 38,
+  wanderIntervalMs: 1500,
+  wanderPhaseMs: 650,
+  catchUpDistance: 70,
+  followSlowDistance: 20,
+  motionResponseMs: 90,
+  displaySize: 20,
+  bodyRadius: 6,
+  roomPadding: 2,
+} as const;
+
 export interface PlayerStats {
   health: number;
   maxHealth: number;

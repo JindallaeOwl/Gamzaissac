@@ -70,9 +70,7 @@ export const ACTIVE_ITEMS: readonly ActiveItemDefinition[] = [
     descriptionKey: 'activeItems.seedlingAllies.description',
     tint: 0xd8a765,
     chargeCost: 4,
-    // 효과는 2단계에서 만든다. 그 전까지 떨어지면 열쇠를 쓰고 아무것도
-    // 못 하는 아이템을 받는 데다, 슬롯의 멀쩡한 아이템까지 밀려난다.
-    dropSources: [],
+    dropSources: ['treasure', 'shop'],
   },
   {
     itemNumber: 40,
