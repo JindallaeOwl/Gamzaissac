@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { MusicKeys, TextureKeys } from '../config/assets';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, TITLE_TRANSITION_MS } from '../config/gameConfig';
+import { MusicKeys } from '../config/assets';
+import { DEPTH, GAME_WIDTH, TITLE_TRANSITION_MS } from '../config/gameConfig';
 import { gameFontStack, t } from '../i18n';
 import { AudioSystem } from '../systems/AudioSystem';
 import { getGameSettings, getRenderScale } from '../systems/GameSettings';
@@ -19,6 +19,7 @@ import {
 } from '../ui/TitleMenuRules';
 import { applyCurrentRenderScaleToGame, applyRenderScale } from '../utils/render';
 import { stopScenesSafely } from '../utils/sceneLifecycle';
+import { AutumnTitleBackground } from '../ui/AutumnTitleBackground';
 
 type MenuAction = 'start' | 'settings' | 'quit' | SettingsMenuAction;
 
@@ -44,6 +45,7 @@ export class TitleScene extends Phaser.Scene {
   private music?: MusicSystem;
   private suppressNextFullscreenLeaveNavigation = false;
   private startTransitionStarted = false;
+  private autumnBackground?: AutumnTitleBackground;
 
   private upKeys: Phaser.Input.Keyboard.Key[] = [];
   private downKeys: Phaser.Input.Keyboard.Key[] = [];
@@ -96,23 +98,13 @@ export class TitleScene extends Phaser.Scene {
     this.input.once('pointerdown', () => this.audio?.unlock());
     this.input.keyboard?.once('keydown', () => this.audio?.unlock());
 
-    this.add.tileSprite(
-      GAME_WIDTH / 2,
-      GAME_HEIGHT / 2,
-      GAME_WIDTH,
-      GAME_HEIGHT,
-      TextureKeys.floorTile,
-    );
-    this.add
-      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH - 32, GAME_HEIGHT - 24, 0x060a10, 0.28)
-      .setStrokeStyle(2, 0x33434f, 0.75)
-      .setDepth(DEPTH.floor + 1);
-    this.createOrbitDecoration();
+    this.autumnBackground = new AutumnTitleBackground(this);
     this.createTitle();
     this.createControls();
     document.addEventListener('keydown', this.handleEscapeKeyDown, true);
     this.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, this.handleLeaveFullscreen);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.autumnBackground = undefined;
       document.removeEventListener('keydown', this.handleEscapeKeyDown, true);
       this.scale.off(Phaser.Scale.Events.LEAVE_FULLSCREEN, this.handleLeaveFullscreen);
     });
@@ -121,7 +113,8 @@ export class TitleScene extends Phaser.Scene {
     this.cameras.main.fadeIn(TITLE_TRANSITION_MS, 5, 9, 14);
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
+    this.autumnBackground?.update(delta);
     if (this.upKeys.some((key) => Phaser.Input.Keyboard.JustDown(key))) {
       this.moveSelection(-1);
     }
@@ -135,38 +128,14 @@ export class TitleScene extends Phaser.Scene {
     }
   }
 
-  private createOrbitDecoration(): void {
-    const orbit = this.add.container(GAME_WIDTH / 2, 105);
-    orbit.setDepth(DEPTH.actor);
-
-    for (let i = 0; i < 11; i += 1) {
-      const angle = (Math.PI * 2 * i) / 11;
-      const mote = this.add.image(
-        Math.cos(angle) * 82,
-        Math.sin(angle) * 28,
-        i % 2 === 0 ? TextureKeys.enemyBullet : TextureKeys.playerSeed,
-      );
-      mote.setAlpha(0.36);
-      orbit.add(mote);
-    }
-
-    this.tweens.add({
-      targets: orbit,
-      angle: 360,
-      duration: 11000,
-      repeat: -1,
-      ease: 'Linear',
-    });
-  }
-
   private createTitle(): void {
     const titleGroup = this.add.container(GAME_WIDTH / 2, 39).setDepth(DEPTH.ui);
     const title = this.add
       .text(0, 0, t('title.name'), {
         fontFamily: gameFontStack(),
         fontSize: '50px',
-        color: '#f7f3e8',
-        stroke: '#421f2e',
+        color: '#fff1d3',
+        stroke: '#281a16',
         strokeThickness: 4,
         resolution: getRenderScale(),
       })
@@ -249,6 +218,7 @@ export class TitleScene extends Phaser.Scene {
 
   private renderMenu(mode: TitleMenuMode): void {
     this.mode = mode;
+    this.autumnBackground?.setMenuMode(mode);
     this.selectedIndex = 0;
     this.menuContainer?.destroy(true);
     this.menuContainer = this.add.container(GAME_WIDTH / 2, mode === 'main' ? 150 : 80);

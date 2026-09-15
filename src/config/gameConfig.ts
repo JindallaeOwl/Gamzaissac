@@ -46,6 +46,14 @@ export function scaleRoomTemplatePoint(x: number, y: number): { x: number; y: nu
 
 export const WALL_THICKNESS = 16;
 
+export const AUTUMN_TITLE_TUNING = {
+  leafCount: 22,
+  leafMinSpeed: 9,
+  leafSpeedRange: 12,
+  leafSway: 15,
+  leafMargin: 16,
+} as const;
+
 export const ALLY_TUNING = {
   maxAllies: 2,
   maxHealth: 2,
