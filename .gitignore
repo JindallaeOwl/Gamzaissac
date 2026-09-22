@@ -8,3 +8,4 @@ tmp/
 .env.*
 !.env.example
 npm-debug.log*
+.npm-cache/
