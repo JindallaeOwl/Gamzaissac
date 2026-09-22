@@ -6,12 +6,15 @@ export interface AutumnPixel {
   width: number;
   height: number;
   color: number;
+  canopyId?: number;
 }
 
 /** 고정 시드로 숲을 그려 타이틀로 돌아올 때마다 풍경이 바뀌지 않게 한다. */
 export function buildAutumnForest(): AutumnPixel[] {
   const pixels: AutumnPixel[] = [];
   const random = createSeededRandom(202609);
+  let canopyId: number | undefined;
+  let nextCanopyId = 0;
   const rect = (x: number, y: number, width: number, height: number, color: number) => {
     pixels.push({
       x: Math.round(x),
@@ -19,6 +22,7 @@ export function buildAutumnForest(): AutumnPixel[] {
       width: Math.ceil(width),
       height: Math.ceil(height),
       color,
+      ...(canopyId === undefined ? {} : { canopyId }),
     });
   };
   const mix = (a: number, b: number, fraction: number) => {
@@ -33,6 +37,8 @@ export function buildAutumnForest(): AutumnPixel[] {
   rect(229, 87, 22, 24, 0xffe8ad);
 
   const crown = (x: number, y: number, radius: number, colors: number[], cell: number) => {
+    // 가까운 나무의 잎만 분리한다. 먼 숲은 고정해 작은 화면이 산만해지지 않게 한다.
+    canopyId = radius >= 40 ? nextCanopyId++ : undefined;
     for (let row = -radius; row <= radius; row += cell) {
       for (let col = -radius; col <= radius; col += cell) {
         const distance = (col * col) / (radius * radius) + (row * row) / (radius * radius * 0.62);
@@ -42,6 +48,7 @@ export function buildAutumnForest(): AutumnPixel[] {
         rect(x + col, y + row, cell + 1, cell + 1, color);
       }
     }
+    canopyId = undefined;
   };
 
   for (let layer = 0; layer < 3; layer += 1) {
@@ -123,6 +130,41 @@ export function buildAutumnForest(): AutumnPixel[] {
     rect(x - 2, y, 6, 2, [0x9d642b, 0xc38936, 0x79472a][i % 3]);
   }
   return pixels;
+}
+
+export interface AutumnForestLayer {
+  canopyId?: number;
+  pixels: AutumnPixel[];
+}
+
+export function splitAutumnForestLayers(pixels: readonly AutumnPixel[]): AutumnForestLayer[] {
+  const layers: AutumnForestLayer[] = [];
+  for (const pixel of pixels) {
+    const previous = layers[layers.length - 1];
+    // 그리기 순서를 보존해야 앞 나무줄기가 뒤 나무의 잎에 가려지지 않는다.
+    if (previous && previous.canopyId === pixel.canopyId) {
+      previous.pixels.push(pixel);
+    } else {
+      layers.push({ canopyId: pixel.canopyId, pixels: [pixel] });
+    }
+  }
+  return layers;
+}
+
+export function getAutumnCanopyOffset(
+  canopyId: number,
+  worldY: number,
+  elapsedMs: number,
+  tuning: { canopySway: number; canopyWaveMs: number; canopyWaveLength: number },
+): number {
+  const phase =
+    (Math.max(0, elapsedMs) / tuning.canopyWaveMs) * Math.PI * 2 -
+    (worldY / tuning.canopyWaveLength) * Math.PI * 2 +
+    canopyId * 0.85;
+  // 높이에 따라 바람이 늦게 도착하게 해 나무 전체가 통째로 움직이는 느낌을 피한다.
+  // 로고에 가까운 윗부분은 진폭을 더 줄여 글자 주변이 잔잔하게 남도록 한다.
+  const strength = worldY < 80 ? 0.6 : 1;
+  return Math.sin(phase) * tuning.canopySway * strength;
 }
 
 export interface AutumnLeafTuning {

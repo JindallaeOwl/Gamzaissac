@@ -46,7 +46,31 @@ export function scaleRoomTemplatePoint(x: number, y: number): { x: number; y: nu
 
 export const WALL_THICKNESS = 16;
 
+export const TITLE_SIGN_TUNING = {
+  delayMs: 1000,
+  dropMs: 440,
+  dropHeight: 255,
+  initialAngle: -7,
+  settleFrames: [
+    { time: 0, x: 0, y: 0, angle: -4 },
+    { time: 32, x: 1.5, y: 2, angle: 5.5, easing: 'out' },
+    { time: 82, x: -1, y: -4.5, angle: 3.8, easing: 'out' },
+    { time: 146, x: -2.4, y: 0.8, angle: -3.2, easing: 'in' },
+    { time: 171, x: -2.7, y: -0.7, angle: -4.2, easing: 'out' },
+    { time: 278, x: 1.1, y: -2.2, angle: 1.8, easing: 'out' },
+    { time: 398, x: 0.4, y: 0.35, angle: -0.9, easing: 'in' },
+    { time: 437, x: -0.5, y: -0.5, angle: -1.3, easing: 'out' },
+    { time: 640, x: 0.35, y: -0.8, angle: 0.45, easing: 'smooth' },
+    { time: 865, x: -0.1, y: 0.1, angle: -0.22, easing: 'in' },
+    { time: 1150, x: 0, y: 0, angle: 0, easing: 'smooth' },
+  ],
+} as const;
+
 export const AUTUMN_TITLE_TUNING = {
+  canopySway: 1.4,
+  canopyWaveMs: 5600,
+  canopyWaveLength: 95,
+  canopyBandHeight: 12,
   leafCount: 22,
   leafMinSpeed: 9,
   leafSpeedRange: 12,

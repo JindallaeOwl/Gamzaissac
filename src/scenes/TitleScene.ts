@@ -20,6 +20,7 @@ import {
 import { applyCurrentRenderScaleToGame, applyRenderScale } from '../utils/render';
 import { stopScenesSafely } from '../utils/sceneLifecycle';
 import { AutumnTitleBackground } from '../ui/AutumnTitleBackground';
+import { HangingTitleSign } from '../ui/HangingTitleSign';
 
 type MenuAction = 'start' | 'settings' | 'quit' | SettingsMenuAction;
 
@@ -46,6 +47,7 @@ export class TitleScene extends Phaser.Scene {
   private suppressNextFullscreenLeaveNavigation = false;
   private startTransitionStarted = false;
   private autumnBackground?: AutumnTitleBackground;
+  private hangingSign?: HangingTitleSign;
 
   private upKeys: Phaser.Input.Keyboard.Key[] = [];
   private downKeys: Phaser.Input.Keyboard.Key[] = [];
@@ -99,12 +101,14 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown', () => this.audio?.unlock());
 
     this.autumnBackground = new AutumnTitleBackground(this);
+    this.hangingSign = new HangingTitleSign(this);
     this.createTitle();
     this.createControls();
     document.addEventListener('keydown', this.handleEscapeKeyDown, true);
     this.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, this.handleLeaveFullscreen);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.autumnBackground = undefined;
+      this.hangingSign = undefined;
       document.removeEventListener('keydown', this.handleEscapeKeyDown, true);
       this.scale.off(Phaser.Scale.Events.LEAVE_FULLSCREEN, this.handleLeaveFullscreen);
     });
@@ -115,6 +119,7 @@ export class TitleScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     this.autumnBackground?.update(delta);
+    this.hangingSign?.update(delta);
     if (this.upKeys.some((key) => Phaser.Input.Keyboard.JustDown(key))) {
       this.moveSelection(-1);
     }
@@ -218,11 +223,10 @@ export class TitleScene extends Phaser.Scene {
 
   private renderMenu(mode: TitleMenuMode): void {
     this.mode = mode;
-    this.autumnBackground?.setMenuMode(mode);
     this.selectedIndex = 0;
     this.menuContainer?.destroy(true);
-    this.menuContainer = this.add.container(GAME_WIDTH / 2, mode === 'main' ? 150 : 80);
-    this.menuContainer.setDepth(DEPTH.ui);
+    this.menuContainer = this.add.container(0, 0);
+    this.hangingSign?.attachMenu(this.menuContainer, mode);
     this.menuTexts = [];
     this.menuItems = this.buildMenuItems(mode);
     this.subtitleText?.setText(getTitleSubtitle(mode));
@@ -268,11 +272,13 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private moveSelection(direction: number): void {
+    if (!this.hangingSign?.isReady) return;
     this.selectIndex(Phaser.Math.Wrap(this.selectedIndex + direction, 0, this.menuItems.length));
     this.playCue('pickup');
   }
 
   private selectIndex(index: number): void {
+    if (!this.hangingSign?.isReady) return;
     if (index === this.selectedIndex) {
       return;
     }
@@ -282,7 +288,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private activateSelection(): void {
-    if (this.startTransitionStarted) {
+    if (this.startTransitionStarted || !this.hangingSign?.isReady) {
       return;
     }
 

@@ -6,4 +6,5 @@ tmp/
 .vercel/
 .env
 .env.*
+!.env.example
 npm-debug.log*
