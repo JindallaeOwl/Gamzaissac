@@ -209,15 +209,15 @@ export const BEAM_TUNING = {
 
 export const FEEDBACK_TUNING = {
   cameraShake: {
-    bulletHit: { durationMs: 42, intensity: 0.0014 },
-    beamFire: { durationMs: 90, intensity: 0.0022 },
-    beamHit: { durationMs: 45, intensity: 0.0018 },
-    enemyDeath: { durationMs: 95, intensity: 0.0035 },
-    playerHurt: { durationMs: 130, intensity: 0.006 },
-    doorSlam: { durationMs: 110, intensity: 0.0032 },
-    roomClear: { durationMs: 130, intensity: 0.0024 },
-    bossPhaseTwo: { durationMs: 230, intensity: 0.007 },
-    bombUse: { durationMs: 200, intensity: 0.0065 },
+    bulletHit: { durationMs: 42, intensity: 0.0007 },
+    beamFire: { durationMs: 90, intensity: 0.0011 },
+    beamHit: { durationMs: 45, intensity: 0.0009 },
+    enemyDeath: { durationMs: 95, intensity: 0.00175 },
+    playerHurt: { durationMs: 130, intensity: 0.003 },
+    doorSlam: { durationMs: 110, intensity: 0.0016 },
+    roomClear: { durationMs: 130, intensity: 0.0012 },
+    bossPhaseTwo: { durationMs: 230, intensity: 0.0035 },
+    bombUse: { durationMs: 200, intensity: 0.00325 },
   },
   effects: {
     enemyHitFlashMs: 28,
