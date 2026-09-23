@@ -62,7 +62,8 @@ export class MusicSystem {
   }
 
   setEnabled(enabled: boolean): void {
-    this.scene.sound.mute = !enabled;
+    // Phaser carries BGM only; AudioSystem generates effects separately.
+    this.scene.sound.mute = !enabled || !getGameSettings().musicEnabled;
   }
 
   private getActiveState(): ActiveMusicState | undefined {

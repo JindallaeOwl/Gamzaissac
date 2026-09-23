@@ -2,6 +2,7 @@ export type RenderQuality = 'low' | 'balanced' | 'high';
 
 export interface GameSettings {
   soundEnabled: boolean;
+  musicEnabled: boolean;
   effectsVolume: number;
   screenShake: number;
   renderQuality: RenderQuality;
@@ -10,6 +11,7 @@ export interface GameSettings {
 const STORAGE_KEY = 'die-al-and-error-settings-v1';
 const DEFAULT_SETTINGS: GameSettings = {
   soundEnabled: true,
+  musicEnabled: true,
   effectsVolume: 0.75,
   screenShake: 0.5,
   renderQuality: 'high',
@@ -90,6 +92,7 @@ function sanitizeSettings(candidate: GameSettings): GameSettings {
 
   return {
     soundEnabled: Boolean(candidate.soundEnabled),
+    musicEnabled: Boolean(candidate.musicEnabled),
     effectsVolume: clamp(Number(candidate.effectsVolume), 0, 1),
     screenShake: clamp(Number(candidate.screenShake), 0, 1),
     renderQuality,

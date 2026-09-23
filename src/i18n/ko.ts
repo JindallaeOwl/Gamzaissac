@@ -14,6 +14,7 @@ export const ko: TranslationTree = {
     title: '설정',
     language: '언어',
     sound: '사운드',
+    music: '배경음악',
     soundOn: '켜기',
     soundOff: '끄기',
     volume: '효과음 볼륨',

@@ -14,6 +14,7 @@ export const en: TranslationTree = {
     title: 'Settings',
     language: 'Language',
     sound: 'Sound',
+    music: 'Music',
     soundOn: 'On',
     soundOff: 'Off',
     volume: 'Effects volume',

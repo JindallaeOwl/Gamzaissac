@@ -9,7 +9,7 @@ import {
 } from '../systems/GameSettings';
 
 export type SettingsMenuAction =
-  'language' | 'sound' | 'volume' | 'shake' | 'quality' | 'fullscreen' | 'back';
+  'language' | 'sound' | 'music' | 'volume' | 'shake' | 'quality' | 'fullscreen' | 'back';
 
 export interface SettingsMenuItem {
   label: string;
@@ -32,6 +32,10 @@ export function buildSettingsMenuItems(includeFullscreen = false): SettingsMenuI
     {
       label: `${t('settings.sound')}: ${t(settings.soundEnabled ? 'settings.soundOn' : 'settings.soundOff')}`,
       action: 'sound',
+    },
+    {
+      label: `${t('settings.music')}: ${t(settings.musicEnabled ? 'settings.soundOn' : 'settings.soundOff')}`,
+      action: 'music',
     },
     {
       label: `${t('settings.volume')}: ${Math.round(settings.effectsVolume * 100)}%`,
@@ -89,6 +93,10 @@ export function getSettingsPatch(
 
   if (action === 'volume') {
     return { effectsVolume: nextEffectsVolume(settings.effectsVolume) };
+  }
+
+  if (action === 'music') {
+    return { musicEnabled: !settings.musicEnabled };
   }
 
   if (action === 'shake') {

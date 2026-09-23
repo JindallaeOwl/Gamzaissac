@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { getGameSettings, updateGameSettings } from '../src/systems/GameSettings';
 import { MusicKeys } from '../src/config/assets';
 import { getRoomMusicKey, MusicSystem } from '../src/systems/MusicSystem';
 
@@ -37,6 +38,26 @@ function createMusicScene(activeKey?: string) {
 }
 
 describe('background music rules', () => {
+  afterEach(() => {
+    updateGameSettings({ soundEnabled: true, musicEnabled: true });
+  });
+
+  it('keeps music muted across room changes without disabling effects', () => {
+    updateGameSettings({ musicEnabled: false });
+    const { scene } = createMusicScene(MusicKeys.journey);
+    const music = new MusicSystem(scene as never);
+    music.play(MusicKeys.boss);
+    expect(scene.sound.mute).toBe(true);
+    expect(getGameSettings().soundEnabled).toBe(true);
+    music.setEnabled(true);
+    expect(scene.sound.mute).toBe(true);
+    updateGameSettings({ musicEnabled: true });
+    music.setEnabled(true);
+    expect(scene.sound.mute).toBe(false);
+    music.setEnabled(false);
+    expect(scene.sound.mute).toBe(true);
+  });
+
   it('uses dedicated music for shop and boss rooms', () => {
     expect(getRoomMusicKey('shop')).toBe(MusicKeys.shop);
     expect(getRoomMusicKey('boss')).toBe(MusicKeys.boss);

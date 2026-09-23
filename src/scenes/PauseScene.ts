@@ -168,7 +168,7 @@ export class PauseScene extends Phaser.Scene {
 
     this.items.forEach((item, index) => {
       const text = this.add
-        .text(0, index * (mode === 'main' ? 32 : 27), item.label, {
+        .text(0, index * (mode === 'main' ? 32 : 23), item.label, {
           fontFamily: gameFontStack(),
           fontSize: mode === 'main' ? '13px' : '10px',
           fontStyle: 'bold',
