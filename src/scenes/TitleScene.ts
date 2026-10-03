@@ -234,7 +234,7 @@ export class TitleScene extends Phaser.Scene {
 
     this.menuItems.forEach((item, index) => {
       const text = this.add
-        .text(0, index * (mode === 'main' ? 30 : 24), item.label, {
+        .text(0, index * (mode === 'main' ? 30 : 21), item.label, {
           fontFamily: gameFontStack(),
           fontSize: mode === 'main' ? '15px' : '10px',
           fontStyle: 'bold',

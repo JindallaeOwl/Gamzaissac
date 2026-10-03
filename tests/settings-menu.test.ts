@@ -9,6 +9,7 @@ import { getSettingsPatch, preserveMenuSelection } from '../src/ui/SettingsMenu'
 
 const settings: GameSettings = {
   soundEnabled: true,
+  musicEnabled: true,
   effectsVolume: 0.75,
   screenShake: 1,
   renderQuality: 'balanced',
@@ -29,6 +30,13 @@ describe('SettingsMenu rules', () => {
 
   it('toggles sound without changing unrelated settings', () => {
     expect(getSettingsPatch('sound', settings)).toEqual({ soundEnabled: false });
+  });
+
+  it('toggles music without changing master sound or effects volume', () => {
+    expect(getSettingsPatch('music', settings)).toEqual({ musicEnabled: false });
+    expect(getSettingsPatch('music', { ...settings, musicEnabled: false })).toEqual({
+      musicEnabled: true,
+    });
   });
 
   it('moves volume, screen shake, and render quality to their next values', () => {
