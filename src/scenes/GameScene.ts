@@ -492,6 +492,7 @@ export class GameScene extends Phaser.Scene {
     this.bossHud = new BossHud(this, this.enemies, this.uiCameraSystem.register);
     this.setupAudioUnlock();
     this.roomController.enterCurrentRoom();
+    this.effects.enterRoom(this.dungeon.getCurrentRoom(), this.dungeon.floor);
     this.updateBackgroundMusic(this.dungeon.getCurrentRoom());
     this.setupPhysics();
     this.setupPlayerEvents();
@@ -516,6 +517,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.runElapsedMs += Math.max(0, delta);
+    this.effects.update(delta, this.enemyBullets.getChildren() as Bullet[]);
     this.updateMinimapExpansionInput(time);
 
     if (this.debugKey && Phaser.Input.Keyboard.JustDown(this.debugKey)) {
@@ -1332,6 +1334,7 @@ export class GameScene extends Phaser.Scene {
    * 처리했더니 콘솔 `floor` 명령으로 올라갔을 때 씨눈이 자라지 않았다.
    */
   private handleRoomEntered(room: RoomNode): void {
+    this.effects.enterRoom(room, this.dungeon.floor);
     this.updateBackgroundMusic(room);
     this.harvestSeedIfReady();
   }

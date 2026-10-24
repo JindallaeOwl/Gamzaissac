@@ -1,15 +1,88 @@
 import Phaser from 'phaser';
-import { DEPTH, FEEDBACK_TUNING, GAME_HEIGHT, GAME_WIDTH } from '../config/gameConfig';
+import { DEPTH, FEEDBACK_TUNING, GAME_HEIGHT, GAME_WIDTH, ROOM_RECT } from '../config/gameConfig';
 import { gameFontStack, t } from '../i18n';
 import { getGameSettings, getRenderScale } from './GameSettings';
+import { PixelDebris } from './PixelDebris';
+import { ENEMY_PIXEL_FRAGMENTS, fragmentImpulse, type ColoredFragment } from './EnemyDamagePixels';
+import { EnemyDamageVisual } from './EnemyDamageVisual';
+import type { RoomNode } from './DungeonManager';
+import { CaveAtmosphere, type LightProjectile } from './CaveAtmosphere';
+import { CAVE_PALETTE } from './CaveArt';
 
 type ShakeKind = keyof typeof FEEDBACK_TUNING.cameraShake;
 
 export class EffectsSystem {
   private readonly scene: Phaser.Scene;
+  private readonly debris = new PixelDebris(ROOM_RECT);
+  private readonly debrisGraphics: Phaser.GameObjects.Graphics;
+  private readonly atmosphere: CaveAtmosphere;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
+    this.atmosphere = new CaveAtmosphere(scene);
+    // Keep debris below projectiles, pickups and actors so combat stays readable.
+    this.debrisGraphics = scene.add.graphics().setDepth(DEPTH.floor + 1);
+    scene.events.on(ENEMY_PIXEL_FRAGMENTS, this.enemyFragments, this);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.debris.clear();
+      scene.events.off(ENEMY_PIXEL_FRAGMENTS, this.enemyFragments, this);
+    });
+  }
+
+  private enemyFragments(fragments: ColoredFragment[], defeated: boolean): void {
+    for (const fragment of fragments) {
+      const impulse = fragmentImpulse(fragment.impact);
+      this.debris.emit(
+        fragment.x,
+        fragment.y,
+        fragment.color,
+        1,
+        fragment.impact ? impulse.power : defeated ? 1.1 : 0.65,
+        true,
+      );
+      const piece = this.debris.pieces[this.debris.pieces.length - 1];
+      piece.size = fragment.size;
+      piece.y += piece.z; // The initial rendered pixel matches the removed sprite pixel.
+      piece.vx = fragment.impact
+        ? piece.vx * 0.35 + impulse.x
+        : piece.vx + fragment.dx * (defeated ? 38 : 24);
+      piece.vy = fragment.impact
+        ? piece.vy * 0.35 + impulse.y
+        : piece.vy + fragment.dy * (defeated ? 28 : 18);
+    }
+  }
+
+  update(deltaMs: number, projectiles: readonly LightProjectile[] = []): void {
+    this.atmosphere.update(deltaMs, projectiles);
+    this.debris.update(deltaMs);
+    const graphics = this.debrisGraphics.clear();
+    for (const p of this.debris.ground) {
+      graphics.fillStyle(p.color, 0.58);
+      graphics.fillRect(p.x, p.y, p.size, p.size);
+    }
+    for (const p of this.debris.pieces) {
+      const alpha = p.retain ? 1 : Math.min(1, (p.lifetime - p.age) / 0.45);
+      const x = Math.round(p.x - p.size / 2);
+      const floorY = Math.round(p.y);
+      if (p.z > 1) {
+        graphics.fillStyle(0x211b18, 0.22 * alpha);
+        graphics.fillRect(x, floorY, p.size, 1);
+      }
+      graphics.fillStyle(p.color, alpha * (p.z > 0 ? 1 : 0.7));
+      graphics.fillRect(x, Math.round(p.y - p.z - p.size / 2), p.size, p.size);
+    }
+  }
+
+  clearDebris(): void {
+    this.debris.clear();
+    this.debrisGraphics.clear();
+  }
+
+  enterRoom(room: RoomNode, floor: number): void {
+    this.atmosphere.enterRoom(room, floor);
+    room.groundDebris ??= [];
+    this.debris.enterRoom(room.groundDebris);
+    this.update(0);
   }
 
   shake(kind: ShakeKind): void {
@@ -40,22 +113,10 @@ export class EffectsSystem {
   }
 
   impact(x: number, y: number, color = 0xf7f3e8): void {
-    const ring = this.scene.add.circle(x, y, 3, color, 0.2);
-    ring.setDepth(DEPTH.effect);
-    ring.setStrokeStyle(2, color, 0.9);
-    this.scene.tweens.add({
-      targets: ring,
-      scale: 2.2,
-      alpha: 0,
-      duration: FEEDBACK_TUNING.effects.impactMs,
-      ease: 'Quad.easeOut',
-      onComplete: () => ring.destroy(),
-    });
+    this.debris.emit(x, y, color, 4, 0.7);
   }
 
   enemyDeath(x: number, y: number, score: number): void {
-    this.burst(x, y, 0xff8aa3, FEEDBACK_TUNING.effects.deathParticleCount);
-    this.expandingRing(x, y, 0xffd166, 10, 290);
     this.floatingText(x, y - 9, `+${score}`, 0xffd166);
   }
 
@@ -105,10 +166,18 @@ export class EffectsSystem {
   }
 
   beamChargePulse(x: number, y: number, ready: boolean): void {
+    this.atmosphere.pulse({
+      x,
+      y,
+      color: ready ? CAVE_PALETTE.prism : CAVE_PALETTE.blue,
+      radius: ready ? 48 : 28,
+      duration: 180,
+    });
     this.expandingRing(x, y, ready ? 0xff7af2 : 0x8beeff, ready ? 10 : 6, 180);
   }
 
   beamFire(x: number, y: number): void {
+    this.atmosphere.pulse({ x, y, color: CAVE_PALETTE.prism, radius: 90, duration: 320 });
     this.burst(x, y, 0xff7af2, 12);
     this.expandingRing(x, y, 0xff7af2, 15, 240);
   }
@@ -123,9 +192,10 @@ export class EffectsSystem {
   }
 
   bombBlast(x: number, y: number): void {
-    this.burst(x, y, 0xffb35a, 16);
+    this.debris.emitBomb(x, y);
+    this.atmosphere.pulse({ x, y, color: CAVE_PALETTE.fire, radius: 155, duration: 480 });
+    this.atmosphere.blast(x, y);
     this.expandingRing(x, y, 0xffd166, 20, 320);
-    this.expandingRing(x, y, 0xff8f4d, 12, 260);
   }
 
   floatingText(x: number, y: number, text: string, color: number): void {
@@ -151,76 +221,16 @@ export class EffectsSystem {
     });
   }
 
-  /**
-   * 폭탄에 상인이 날아가는 연출. 폭발 반대 방향으로 조각과 잔해가 쏟아진다.
-   *
-   * 사방으로 흩어지는 burst와 달리 방향을 가진 부채꼴이라, 어느 쪽에서 터졌는지가
-   * 그림으로 읽힌다. 조각은 살짝 떠올랐다 떨어지고(무게감), 회전하며, 크기·속도·수명을
-   * 조금씩 흩뜨려 기계적으로 보이지 않게 한다.
-   */
-  shopNpcBlast(x: number, y: number, direction: { x: number; y: number }): void {
-    const baseAngle = Math.atan2(direction.y, direction.x);
-
-    this.expandingRing(x, y, 0xffb35a, 12, 260);
-
-    // 큰 조각: 상인 몸에서 떨어져 나간 덩어리. 회전하며 포물선을 그린다.
-    for (let i = 0; i < 9; i += 1) {
-      const angle = baseAngle + Phaser.Math.FloatBetween(-0.85, 0.85);
-      const distance = Phaser.Math.Between(26, 74);
-      const width = Phaser.Math.Between(2, 5);
-      const height = Phaser.Math.Between(2, 5);
-      const color = Phaser.Utils.Array.GetRandom([0xb5834a, 0x8a5f38, 0xd8b07a, 0x6f4a2c]);
-      const piece = this.scene.add.rectangle(x, y, width, height, color, 1);
-      piece.setDepth(DEPTH.effect);
-
-      const targetX = x + Math.cos(angle) * distance;
-      const targetY = y + Math.sin(angle) * distance;
-      const duration = Phaser.Math.Between(420, 700);
-
-      // 가로 이동은 일정하게, 세로는 떠올랐다 떨어지게 나눠 포물선을 만든다.
-      this.scene.tweens.add({
-        targets: piece,
-        x: targetX,
-        angle: Phaser.Math.Between(-540, 540),
-        duration,
-        ease: 'Quad.easeOut',
-      });
-      this.scene.tweens.add({
-        targets: piece,
-        y: targetY - Phaser.Math.Between(6, 16),
-        duration: duration * 0.4,
-        ease: 'Quad.easeOut',
-        onComplete: () => {
-          this.scene.tweens.add({
-            targets: piece,
-            y: targetY,
-            alpha: 0,
-            duration: duration * 0.6,
-            ease: 'Quad.easeIn',
-            onComplete: () => piece.destroy(),
-          });
-        },
-      });
-    }
-
-    // 작은 잔해: 더 빠르고 짧게 튀어 조각보다 먼저 사라진다.
-    for (let i = 0; i < 14; i += 1) {
-      const angle = baseAngle + Phaser.Math.FloatBetween(-0.6, 0.6);
-      const distance = Phaser.Math.Between(18, 56);
-      const particle = this.scene.add.circle(x, y, Phaser.Math.Between(1, 2), 0x7a4a2a, 0.95);
-      particle.setDepth(DEPTH.effect);
-
-      this.scene.tweens.add({
-        targets: particle,
-        x: x + Math.cos(angle) * distance,
-        y: y + Math.sin(angle) * distance,
-        alpha: 0,
-        scale: 0.3,
-        duration: Phaser.Math.Between(220, 420),
-        ease: 'Quad.easeOut',
-        onComplete: () => particle.destroy(),
-      });
-    }
+  /** 상인의 현재 프레임에서 색을 뽑아 폭발 반대 방향으로 튀기고 작은 잔해를 남긴다. */
+  shopNpcBlast(npc: Phaser.GameObjects.Sprite, sourceX: number, sourceY: number): void {
+    const visual = new EnemyDamageVisual(npc);
+    visual.hit(sourceX, sourceY, 0xffffff, true, {
+      kind: 'explosion',
+      x: npc.x - sourceX,
+      y: npc.y - sourceY,
+    });
+    visual.destroy();
+    this.expandingRing(npc.x, npc.y, 0xffb35a, 12, 260);
   }
 
   /**

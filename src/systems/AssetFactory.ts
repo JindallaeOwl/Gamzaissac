@@ -17,6 +17,7 @@ import {
   PixelSprite,
 } from './enemyPixelSprites';
 import { createItemPixelIcon } from './itemPixelIcons';
+import { buildCaveChest, buildCaveCrate, buildCaveDoor, type PropPixels } from './propPixelSprites';
 import {
   buildSoilBase,
   buildSoilCracks,
@@ -479,66 +480,19 @@ function createRootKernelTexture(scene: Phaser.Scene): void {
   graphics.destroy();
 }
 
-// 굵은 픽셀(설계 1픽셀 = 2×2 블록)의 나무 문짝. 흙벽에 어울리는 두 짝짜리 판자 문으로,
-// 가로문은 24×8 설계 격자, 세로문은 같은 디자인을 전치해 그린다. 열림/잠김 상태 표시는
-// Door 엔티티의 tint(초록/빨강)가 이 갈색 위에 곱해져 유지된다.
+// Canvas textures preserve one-pixel fibers and allow damage to sample the same colors.
+function createPropTexture(scene: Phaser.Scene, key: string, pixels: PropPixels): void {
+  if (scene.textures.exists(key)) return;
+  const texture = scene.textures.createCanvas(key, pixels.width, pixels.height)!;
+  const context = texture.getContext();
+  const image = context.createImageData(pixels.width, pixels.height);
+  image.data.set(pixels.data);
+  context.putImageData(image, 0, 0);
+  texture.refresh();
+}
+
 function createDoorTexture(scene: Phaser.Scene, key: string, width: number, height: number): void {
-  const graphics = scene.add.graphics();
-  const horizontal = width > height;
-  const columns = (horizontal ? width : height) / 2;
-  const rows = (horizontal ? height : width) / 2;
-
-  const put = (x: number, y: number, color: number): void => {
-    graphics.fillStyle(color, 1);
-
-    if (horizontal) {
-      graphics.fillRect(x * 2, y * 2, 2, 2);
-    } else {
-      graphics.fillRect(y * 2, x * 2, 2, 2);
-    }
-  };
-
-  const FRAME = 0x2a1a0e;
-  const PLANK = 0xa87848;
-  const PLANK_LIGHT = 0xc09058;
-  const PLANK_SHADE = 0x8a5f38;
-  const SEAM = 0x6a4826;
-  const KNOB = 0xf0d080;
-
-  for (let y = 0; y < rows; y += 1) {
-    for (let x = 0; x < columns; x += 1) {
-      let color = PLANK;
-
-      if (y === 0 || y === rows - 1 || x === 0 || x === columns - 1) {
-        color = FRAME;
-      } else if (y === 1) {
-        color = PLANK_LIGHT;
-      } else if (y === rows - 2) {
-        color = PLANK_SHADE;
-      }
-
-      put(x, y, color);
-    }
-  }
-
-  // 세로 판자 이음선. 중앙 두 줄은 두 짝이 갈라지는 문틈이다.
-  for (const seamX of [4, 8, Math.floor(columns / 2) - 1, Math.floor(columns / 2), 15, 19]) {
-    if (seamX <= 0 || seamX >= columns - 1) {
-      continue;
-    }
-
-    for (let y = 1; y < rows - 1; y += 1) {
-      put(seamX, y, SEAM);
-    }
-  }
-
-  // 문 손잡이: 문틈 양옆에 하나씩.
-  const knobY = Math.floor(rows / 2);
-  put(Math.floor(columns / 2) - 3, knobY, KNOB);
-  put(Math.floor(columns / 2) + 2, knobY, KNOB);
-
-  graphics.generateTexture(key, width, height);
-  graphics.destroy();
+  createPropTexture(scene, key, buildCaveDoor(width < height));
 }
 
 // Placeholder icons: a tinted badge circle plus a shape hinting at the
@@ -895,71 +849,8 @@ function createFiveCoinTexture(scene: Phaser.Scene): void {
 }
 
 function createChestTexture(scene: Phaser.Scene): void {
-  if (scene.textures.exists(TextureKeys.chestPickup)) {
-    return;
-  }
-
-  const closed = scene.add.graphics();
-  closed.fillStyle(0x05090e, 0.48);
-  closed.fillRect(5, 29, 22, 2);
-  closed.fillStyle(0x28140f, 1);
-  closed.fillRect(5, 6, 22, 22);
-  closed.fillRect(3, 10, 26, 15);
-  closed.fillStyle(0xe6a61f, 1);
-  closed.fillRect(6, 7, 20, 19);
-  closed.fillStyle(0x6e3025, 1);
-  closed.fillRect(8, 9, 16, 7);
-  closed.fillRect(8, 19, 16, 5);
-  closed.fillStyle(0x39191a, 1);
-  closed.fillRect(8, 14, 16, 4);
-  closed.fillStyle(0xffd65a, 1);
-  closed.fillRect(8, 7, 3, 19);
-  closed.fillRect(21, 7, 3, 19);
-  closed.fillRect(4, 16, 24, 3);
-  closed.fillStyle(0xffefb0, 1);
-  closed.fillRect(14, 15, 4, 7);
-  closed.fillStyle(0x55301c, 1);
-  closed.fillRect(15, 18, 2, 3);
-  closed.fillStyle(0xe6a61f, 1);
-  closed.fillRect(5, 26, 4, 3);
-  closed.fillRect(23, 26, 4, 3);
-  closed.generateTexture(TextureKeys.chestPickup, 32, 32);
-  closed.destroy();
-
-  const opened = scene.add.graphics();
-  opened.fillStyle(0x05090e, 0.48);
-  opened.fillRect(4, 29, 24, 2);
-  opened.fillStyle(0x28140f, 1);
-  opened.fillRect(7, 2, 18, 3);
-  opened.fillRect(5, 5, 22, 10);
-  opened.fillStyle(0xe6a61f, 1);
-  opened.fillRect(8, 3, 16, 2);
-  opened.fillRect(6, 6, 20, 7);
-  opened.fillStyle(0x6e3025, 1);
-  opened.fillRect(8, 7, 16, 4);
-  opened.fillStyle(0xffd65a, 1);
-  opened.fillRect(10, 5, 3, 9);
-  opened.fillRect(20, 5, 3, 9);
-  opened.fillStyle(0x28140f, 1);
-  opened.fillRect(4, 15, 24, 14);
-  opened.fillRect(2, 18, 28, 8);
-  opened.fillStyle(0xe6a61f, 1);
-  opened.fillRect(5, 17, 22, 10);
-  opened.fillStyle(0x130c0d, 1);
-  opened.fillRect(7, 17, 18, 5);
-  opened.fillStyle(0x6e3025, 1);
-  opened.fillRect(7, 23, 18, 3);
-  opened.fillStyle(0xffd65a, 1);
-  opened.fillRect(5, 21, 22, 3);
-  opened.fillStyle(0xffefb0, 1);
-  opened.fillRect(14, 20, 4, 6);
-  opened.fillStyle(0x55301c, 1);
-  opened.fillRect(15, 22, 2, 3);
-  opened.fillStyle(0xe6a61f, 1);
-  opened.fillRect(4, 27, 4, 3);
-  opened.fillRect(24, 27, 4, 3);
-  opened.generateTexture(TextureKeys.chestOpenPickup, 32, 32);
-  opened.destroy();
+  createPropTexture(scene, TextureKeys.chestPickup, buildCaveChest(false));
+  createPropTexture(scene, TextureKeys.chestOpenPickup, buildCaveChest(true));
 }
 
 // 위로 뚫린 뿌리 굴. 원래는 매끄러운 타원에 회청색 테두리라, 따뜻한 갈색 도트인
@@ -1222,75 +1113,6 @@ function createWallTexture(scene: Phaser.Scene): void {
   graphics.destroy();
 }
 
-// 나무 상자. 40×40 텍스처를 20×20 격자 × 2배로 찍어, 도트로 바꾼 적·아이템·바닥과
-// 같은 결을 갖게 한다(이전에는 둥근 사각형과 대각선이라 혼자 매끄러웠다).
-// 바닥 그림자만 알파가 필요해 격자 밖에서 따로 그린다.
-//
-// d 테두리 · s 이음매/그늘 · b 판재 · l 판재 밝은면 · h 윗면 하이라이트 · n 못
-const OBSTACLE_CRATE_PALETTE: Record<string, number> = {
-  d: 0x2a1a0e,
-  s: 0x4a2e18,
-  b: 0x7d5531,
-  l: 0xa3763f,
-  h: 0xc59355,
-  n: 0xdcc189,
-};
-
-// 빛이 위에서 온다는 전제로 윗줄만 밝고 아랫줄은 그늘진다. 세로 이음매를 같은
-// 열에 맞춰 판자 세 장을 붙인 것처럼 보이게 한다.
-const OBSTACLE_CRATE_ROWS = [
-  '....................',
-  '.dddddddddddddddddd.',
-  '.dhhhhhhhhhhhhhhhhd.',
-  '.dnbbbbsbbbbsbbbbnd.',
-  '.dbbbbbsbbbbsbbbbbd.',
-  '.dbbbbbsbbbbsbbbbbd.',
-  '.dbbbbbsbbbbsbbbbbd.',
-  '.dbbbbbsbbbbsbbbbbd.',
-  '.dlllllllllllllllld.',
-  '.dssssssssssssssssd.',
-  '.dbbbbbsbbbbsbbbbbd.',
-  '.dbbbbbsbbbbsbbbbbd.',
-  '.dbbbbbsbbbbsbbbbbd.',
-  '.dbbbbbsbbbbsbbbbbd.',
-  '.dbbbbbsbbbbsbbbbbd.',
-  '.dnbbbbsbbbbsbbbbnd.',
-  '.dssssssssssssssssd.',
-  '.dddddddddddddddddd.',
-  '....................',
-  '....................',
-];
-
-const OBSTACLE_CRATE_SCALE = 2;
-
 function createObstacleTexture(scene: Phaser.Scene): void {
-  const graphics = scene.add.graphics();
-  const size = OBSTACLE_CRATE_ROWS.length * OBSTACLE_CRATE_SCALE;
-
-  // 접지 그림자. 반투명이라야 바닥 흙 무늬가 비쳐 상자가 얹혀 있는 것으로 보인다.
-  graphics.fillStyle(0x160e09, 0.45);
-  graphics.fillEllipse(size / 2, size - 3, 34, 6);
-
-  for (let y = 0; y < OBSTACLE_CRATE_ROWS.length; y += 1) {
-    const row = OBSTACLE_CRATE_ROWS[y];
-
-    for (let x = 0; x < row.length; x += 1) {
-      const color = OBSTACLE_CRATE_PALETTE[row[x]];
-
-      if (color === undefined) {
-        continue;
-      }
-
-      graphics.fillStyle(color, 1);
-      graphics.fillRect(
-        x * OBSTACLE_CRATE_SCALE,
-        y * OBSTACLE_CRATE_SCALE,
-        OBSTACLE_CRATE_SCALE,
-        OBSTACLE_CRATE_SCALE,
-      );
-    }
-  }
-
-  graphics.generateTexture(TextureKeys.obstacleCrate, size, size);
-  graphics.destroy();
+  createPropTexture(scene, TextureKeys.obstacleCrate, buildCaveCrate());
 }

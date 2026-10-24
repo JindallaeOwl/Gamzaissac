@@ -234,7 +234,11 @@ export class BombSystem {
 
       const enemyX = enemy.x;
       const enemyY = enemy.y;
-      const defeated = enemy.takeDamage(BOMB_TUNING.damage, originX, originY);
+      const defeated = enemy.takeImpactDamage(BOMB_TUNING.damage, originX, originY, {
+        kind: 'explosion',
+        x: enemyX - originX,
+        y: enemyY - originY,
+      });
 
       if (defeated) {
         this.effects.enemyDeath(enemyX, enemyY, enemy.scoreValue);
@@ -261,7 +265,7 @@ export class BombSystem {
         continue;
       }
 
-      obstacle.destroyByBomb();
+      obstacle.destroyByBomb(originX, originY);
     }
 
     // 상점 상인은 전투 대상이 아니라 폭발에 날아가는 연출 전용이다. 물건을 사는 판정은
@@ -277,7 +281,7 @@ export class BombSystem {
       const away = normalizeVector(npc.x - originX, npc.y - originY);
       const direction = away.x === 0 && away.y === 0 ? { x: 0, y: -1 } : away;
 
-      this.effects.shopNpcBlast(npc.x, npc.y, direction);
+      this.effects.shopNpcBlast(npc, originX, originY);
       this.onShopNpcDestroyed?.(npc.x, npc.y, direction);
       npc.destroy();
     }
