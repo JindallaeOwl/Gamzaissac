@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createCavePixels, caveThemeForFloor, lightFalloff } from '../src/systems/CaveArt';
 import { WORLD_HEIGHT, WORLD_WIDTH } from '../src/config/gameConfig';
+import { CAVE_THEMES } from '../src/systems/CaveThemes';
 
 const colorAt = (pixels: Uint8ClampedArray, x: number, y: number) =>
   Array.from(pixels.slice((y * WORLD_WIDTH + x) * 4, (y * WORLD_WIDTH + x) * 4 + 3));
@@ -9,13 +10,13 @@ describe('cave visual foundation', () => {
   it('produces opaque stable room art without consuming gameplay randomness', () => {
     const first = createCavePixels(['north', 'east']);
     const second = createCavePixels(['north', 'east']);
-    expect(first).toEqual(second);
+    expect(first.every((value, i) => value === second[i])).toBe(true);
     expect(first.length).toBe(WORLD_WIDTH * WORLD_HEIGHT * 4);
     expect(first.filter((_, i) => i % 4 === 3).every((alpha) => alpha === 255)).toBe(true);
     expect(createCavePixels(['north', 'east'], 12)).not.toEqual(first);
   });
 
-  it.each(['burrow', 'ruins'] as const)(
+  it.each(CAVE_THEMES.map((theme) => theme.id))(
     'keeps actual exit openings distinct from solid walls in %s',
     (theme) => {
       const closed = createCavePixels([], 7041, theme);
@@ -40,11 +41,27 @@ describe('cave visual foundation', () => {
     }
     expect(caveThemeForFloor(1)).toBe('burrow');
     expect(caveThemeForFloor(2)).toBe('ruins');
-    expect(caveThemeForFloor(3)).toBeNull();
+    expect(caveThemeForFloor(3)).toBe('wetClay');
+    expect(caveThemeForFloor(8)).toBe('cellar');
+    expect(caveThemeForFloor(9)).toBeNull();
+    expect(caveThemeForFloor(1.5)).toBeNull();
     expect(caveThemeForFloor(0)).toBeNull();
     expect(createCavePixels(['north'], 7041, 'burrow')).not.toEqual(
       createCavePixels(['north'], 7041, 'ruins'),
     );
+  });
+
+  it('gives all eight floors distinct, reproducible material art', () => {
+    const signatures = CAVE_THEMES.map((theme, i) => {
+      expect(caveThemeForFloor(i + 1)).toBe(theme.id);
+      const pixels = createCavePixels(['north', 'south'], 31, theme.id);
+      const repeated = createCavePixels(['north', 'south'], 31, theme.id);
+      expect(pixels.every((value, p) => value === repeated[p])).toBe(true);
+      let hash = 0;
+      for (let p = 0; p < pixels.length; p++) hash = Math.imul(hash ^ pixels[p], 16777619);
+      return hash;
+    });
+    expect(new Set(signatures).size).toBe(8);
   });
 
   it('fades light locally without brightening the entire screen', () => {

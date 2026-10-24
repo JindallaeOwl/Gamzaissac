@@ -35,7 +35,7 @@ export function lightFalloff(distance: number, radius: number): number {
 }
 
 export function caveThemeForFloor(floor: number): CaveTheme | null {
-  return Number.isInteger(floor) ? CAVE_THEMES[floor - 1]?.id ?? null : null;
+  return Number.isInteger(floor) ? (CAVE_THEMES[floor - 1]?.id ?? null) : null;
 }
 
 /** Full-room, seeded art: grain is baked once, never animated screen noise. */
@@ -44,49 +44,80 @@ export function createCavePixels(
   seed = 7041,
   theme: CaveTheme = 'burrow',
 ): Uint8ClampedArray {
-  const pixels = theme === 'ruins' || theme === 'cellar' ? createRuinsPixels(exits, seed) : createBurrowPixels(exits, seed);
+  const pixels =
+    theme === 'ruins' || theme === 'cellar'
+      ? createRuinsPixels(exits, seed)
+      : createBurrowPixels(exits, seed);
   if (theme === 'burrow') return pixels;
   decorateCaveTheme(pixels, exits, seed, theme);
   return pixels;
 }
 
 /** Distinct material silhouettes, not just a color filter. All decoration respects doorways. */
-function decorateCaveTheme(pixels: Uint8ClampedArray, exits: readonly Direction[], seed: number, theme: CaveTheme): void {
+function decorateCaveTheme(
+  pixels: Uint8ClampedArray,
+  exits: readonly Direction[],
+  seed: number,
+  theme: CaveTheme,
+): void {
   const settings = caveThemeSettings(theme);
   const random = createSeededRandom(seed ^ 0x76ab);
   const passages = exits.map(getDoorwayRect);
-  const isPassage = (x: number, y: number): boolean => passages.some((p) => Math.abs(x - p.x) <= p.width / 2 + 1 && Math.abs(y - p.y) <= p.height / 2 + 1);
+  const isPassage = (x: number, y: number): boolean =>
+    passages.some(
+      (p) => Math.abs(x - p.x) <= p.width / 2 + 1 && Math.abs(y - p.y) <= p.height / 2 + 1,
+    );
   for (let i = 0; i < pixels.length; i += 4) {
     if (pixels[i] === 7 && pixels[i + 1] === 9 && pixels[i + 2] === 12) continue;
     for (let c = 0; c < 3; c++) pixels[i + c] *= settings.tint[c];
   }
   const put = (x: number, y: number, color: number): void => {
-    x = Math.floor(x); y = Math.floor(y);
-    if (x < 16 || y < 16 || x >= WORLD_WIDTH - 16 || y >= WORLD_HEIGHT - 16 || isPassage(x, y)) return;
+    x = Math.floor(x);
+    y = Math.floor(y);
+    if (x < 16 || y < 16 || x >= WORLD_WIDTH - 16 || y >= WORLD_HEIGHT - 16 || isPassage(x, y))
+      return;
     const i = (y * WORLD_WIDTH + x) * 4;
-    pixels[i] = (color >>> 16) & 255; pixels[i + 1] = (color >>> 8) & 255; pixels[i + 2] = color & 255;
+    pixels[i] = (color >>> 16) & 255;
+    pixels[i + 1] = (color >>> 8) & 255;
+    pixels[i + 2] = color & 255;
   };
   const line = (x: number, y: number, ex: number, ey: number, color: number): void => {
     const length = Math.ceil(Math.max(Math.abs(ex - x), Math.abs(ey - y)));
-    for (let t = 0; t <= length; t++) put(x + (ex - x) * t / Math.max(1, length), y + (ey - y) * t / Math.max(1, length), color);
+    for (let t = 0; t <= length; t++)
+      put(
+        x + ((ex - x) * t) / Math.max(1, length),
+        y + ((ey - y) * t) / Math.max(1, length),
+        color,
+      );
   };
-  const oval = (cx: number, cy: number, rx: number, ry: number, color: number, edge: number): void => {
-    for (let dy = -ry; dy <= ry; dy++) for (let dx = -rx; dx <= rx; dx++) {
-      const d = dx * dx / (rx * rx) + dy * dy / (ry * ry);
-      if (d > 1 || (d > 0.85 && random() < 0.25)) continue;
-      put(cx + dx, cy + dy, d > 0.65 && dy < 0 ? edge : color);
-    }
+  const oval = (
+    cx: number,
+    cy: number,
+    rx: number,
+    ry: number,
+    color: number,
+    edge: number,
+  ): void => {
+    for (let dy = -ry; dy <= ry; dy++)
+      for (let dx = -rx; dx <= rx; dx++) {
+        const d = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
+        if (d > 1 || (d > 0.85 && random() < 0.25)) continue;
+        put(cx + dx, cy + dy, d > 0.65 && dy < 0 ? edge : color);
+      }
   };
   const edgePoint = (n: number): [number, number] => {
     const side = n % 4;
-    return [side === 0 ? 30 + random() * 18 : side === 1 ? 430 + random() * 18 : 45 + random() * 390,
-      side === 2 ? 28 + random() * 18 : side === 3 ? 226 + random() * 18 : 45 + random() * 180];
+    return [
+      side === 0 ? 30 + random() * 18 : side === 1 ? 430 + random() * 18 : 45 + random() * 390,
+      side === 2 ? 28 + random() * 18 : side === 3 ? 226 + random() * 18 : 45 + random() * 180,
+    ];
   };
 
   if (theme === 'wetClay') {
     for (let i = 0; i < 32; i++) {
       const [x, y] = edgePoint(i);
-      const rx = 4 + Math.floor(random() * 16), ry = 2 + Math.floor(random() * 4);
+      const rx = 4 + Math.floor(random() * 16),
+        ry = 2 + Math.floor(random() * 4);
       oval(x, y, rx, ry, 0x16282a, 0x33494a);
       line(x - rx * 0.5, y + 1, x + rx * 0.4, y + 1, 0x294143);
       if (i % 4 === 0) put(x - 2, y - 1, 0x56807c);
@@ -100,14 +131,15 @@ function decorateCaveTheme(pixels: Uint8ClampedArray, exits: readonly Direction[
     for (let i = 0; i < 30; i++) {
       const [x, y] = edgePoint(i);
       for (let t = 0; t < 32; t++) {
-        const px = x + Math.sin(t * 0.09 + i) * 10, py = y + t * (i % 2 ? -0.5 : 0.5);
+        const px = x + Math.sin(t * 0.09 + i) * 10,
+          py = y + t * (i % 2 ? -0.5 : 0.5);
         line(px, py, px + 4, py, 0x271f29);
         put(px - 1, py, 0x4c354b);
         if (t % 5 === 0) line(px, py, px + 3, py, 0x382a37);
       }
       for (let j = 0; j < 3; j++) {
-        oval(x + j * 4, y + j % 2 * 4, 3, 4, 0x3b2d42, 0x68516d);
-        put(x + j * 4, y + j % 2 * 4 - 1, 0x8b628f);
+        oval(x + j * 4, y + (j % 2) * 4, 3, 4, 0x3b2d42, 0x68516d);
+        put(x + j * 4, y + (j % 2) * 4 - 1, 0x8b628f);
       }
     }
   }
@@ -123,24 +155,28 @@ function decorateCaveTheme(pixels: Uint8ClampedArray, exits: readonly Direction[
         line(x - 3, y + 2, x + 5, y + 4, 0x4f5335);
       }
       if (theme === 'scrap' && i % 4 === 0) {
-        for (let dy = 0; dy < 5; dy++) line(x, y + dy, x + 9, y + dy, dy === 0 ? 0x74503a : 0x453729);
+        for (let dy = 0; dy < 5; dy++)
+          line(x, y + dy, x + 9, y + dy, dy === 0 ? 0x74503a : 0x453729);
         line(x + 2, y + 2, x + 7, y + 2, 0x302a22);
       }
     }
-    if (theme === 'scrap') for (let i = 0; i < 12; i++) {
-      const [x, y] = edgePoint(i);
-      line(x, y, x + 12, y - 8, 0x56574a);
-      line(x, y + 1, x + 12, y - 7, 0x32392e);
-      for (let j = 0; j < 3; j++) line(x + 9 + j * 2, y - 5 - j, x + 6 + j * 2, y - 10 - j, 0x76604a);
-    }
+    if (theme === 'scrap')
+      for (let i = 0; i < 12; i++) {
+        const [x, y] = edgePoint(i);
+        line(x, y, x + 12, y - 8, 0x56574a);
+        line(x, y + 1, x + 12, y - 7, 0x32392e);
+        for (let j = 0; j < 3; j++)
+          line(x + 9 + j * 2, y - 5 - j, x + 6 + j * 2, y - 10 - j, 0x76604a);
+      }
   }
   if (theme === 'ruins' || theme === 'vines') {
     for (let i = 0; i < (theme === 'vines' ? 36 : 16); i++) {
       const [x, y] = edgePoint(i);
       const green = theme === 'vines';
       const direction = y > 136 ? -1 : 1;
-      for (let t = 0; t < 22 + i % 16; t++) {
-        const px = x + Math.sin(t * 0.14 + i) * 8, py = y + t * direction * 0.65;
+      for (let t = 0; t < 22 + (i % 16); t++) {
+        const px = x + Math.sin(t * 0.14 + i) * 8,
+          py = y + t * direction * 0.65;
         line(px, py, px + 2, py, green ? 0x2b4029 : 0x32291d);
         put(px, py - 1, green ? 0x5b6e3c : 0x655235);
         if (green && t % 7 === 0) {
@@ -159,7 +195,8 @@ function decorateCaveTheme(pixels: Uint8ClampedArray, exits: readonly Direction[
       }
       for (const y of [24, 45, 231, 249]) {
         line(x, y, x + 7, y, 0x30352f);
-        put(x + 1, y, 0x7b7961); put(x + 6, y, 0x666a59);
+        put(x + 1, y, 0x7b7961);
+        put(x + 6, y, 0x666a59);
       }
     }
     for (const y of [20, 24, 248, 252]) line(20, y, 459, y, y % 8 ? 0x57472f : 0x756040);
@@ -171,15 +208,22 @@ function decorateCaveTheme(pixels: Uint8ClampedArray, exits: readonly Direction[
   }
   if (theme === 'vines' || theme === 'cellar') {
     // Sparse shafts through overhead cracks. Grain remains visible through the light.
-    for (const sourceX of [147, 327]) for (let y = 30; y < 100; y++) {
-      const width = 2 + (y - 30) * 0.13;
-      for (let x = Math.floor(sourceX + (y - 30) * 0.28 - width); x < sourceX + (y - 30) * 0.28 + width; x++) {
-        if (isPassage(x, y)) continue;
-        const i = (y * WORLD_WIDTH + x) * 4;
-        const strength = (1 - (y - 30) / 70) * 0.1;
-        pixels[i] += 130 * strength; pixels[i + 1] += 115 * strength; pixels[i + 2] += 70 * strength;
+    for (const sourceX of [147, 327])
+      for (let y = 30; y < 100; y++) {
+        const width = 2 + (y - 30) * 0.13;
+        for (
+          let x = Math.floor(sourceX + (y - 30) * 0.28 - width);
+          x < sourceX + (y - 30) * 0.28 + width;
+          x++
+        ) {
+          if (isPassage(x, y)) continue;
+          const i = (y * WORLD_WIDTH + x) * 4;
+          const strength = (1 - (y - 30) / 70) * 0.1;
+          pixels[i] += 130 * strength;
+          pixels[i + 1] += 115 * strength;
+          pixels[i + 2] += 70 * strength;
+        }
       }
-    }
   }
 }
 
@@ -323,6 +367,29 @@ function createBurrowPixels(exits: readonly Direction[], seed: number): Uint8Cla
     radius: 5 + random() * 14,
     shade: random() * 10,
   }));
+  // Rasterize each small lump locally once, instead of testing 100 circles per wall pixel.
+  const clumps = new Float32Array(WORLD_WIDTH * WORLD_HEIGHT);
+  for (const lump of lumps) {
+    const rx = lump.radius / 0.85;
+    for (
+      let y = Math.max(0, Math.floor(lump.y - lump.radius));
+      y <= Math.min(WORLD_HEIGHT - 1, Math.ceil(lump.y + lump.radius));
+      y++
+    ) {
+      for (
+        let x = Math.max(0, Math.floor(lump.x - rx));
+        x <= Math.min(WORLD_WIDTH - 1, Math.ceil(lump.x + rx));
+        x++
+      ) {
+        if (inside(x, y)) continue;
+        const dx = (x - lump.x) * 0.85,
+          dy = y - lump.y;
+        const square = dx * dx + dy * dy;
+        if (square < lump.radius * lump.radius)
+          clumps[y * WORLD_WIDTH + x] += (1 - Math.sqrt(square) / lump.radius) * (10 + lump.shade);
+      }
+    }
+  }
   for (let y = 0; y < WORLD_HEIGHT; y += 1) {
     for (let x = 0; x < WORLD_WIDTH; x += 1) {
       const grain = random();
@@ -348,11 +415,7 @@ function createBurrowPixels(exits: readonly Direction[], seed: number): Uint8Cla
         );
       } else if (depth < WALL_THICKNESS + 3 + roughness) {
         // Uneven compacted soil and embedded rounded rocks, without masonry joints.
-        let clump = 0;
-        for (const lump of lumps) {
-          const distance = Math.hypot((x - lump.x) * 0.85, y - lump.y);
-          if (distance < lump.radius) clump += (1 - distance / lump.radius) * (10 + lump.shade);
-        }
+        const clump = clumps[y * WORLD_WIDTH + x];
         const strata = Math.sin(y * 0.4 + Math.sin(x * 0.09) * 3) * 4;
         const ledge = depth < 3 + roughness * 0.3 ? 13 : depth > 12 + roughness ? -12 : 0;
         const grit = grain < 0.17 ? -8 : grain > 0.89 ? 7 : 0;

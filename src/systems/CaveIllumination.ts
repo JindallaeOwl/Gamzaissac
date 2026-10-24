@@ -23,6 +23,7 @@ export class CaveIllumination {
   private readonly bloomData: ImageData;
   private elapsed = 1000;
   private ambient = 0xbcb8b0;
+  private lit = false;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -31,7 +32,8 @@ export class CaveIllumination {
     this.supported = scene.game.renderer.type === Phaser.WEBGL;
     if (this.supported) {
       scene.lights.enable();
-      for (let i = 0; i < 10; i++) this.pool.push(scene.lights.addLight(0, 0, 1, 0xffffff, 0));
+      for (let i = 0; i < 10; i++)
+        this.pool.push(scene.lights.addLight(0, 0, 1, 0xffffff, 0).setVisible(false));
     }
     this.bloomTexture = (
       scene.textures.exists(BLOOM_KEY)
@@ -76,7 +78,7 @@ export class CaveIllumination {
   }
 
   reset(): void {
-    for (const light of this.pool) light.setIntensity(0);
+    for (const light of this.pool) light.setIntensity(0).setVisible(false);
     this.bloom.clear();
     this.bloomTexture.context.clearRect(0, 0, this.bloom.width, this.bloom.height);
     this.bloomTexture.refresh();
@@ -92,8 +94,12 @@ export class CaveIllumination {
     const quality = getGameSettings().renderQuality;
     const budget = LIGHTING_BUDGETS[quality];
     const lit = this.supported && budget.lights > 0;
+    if (this.supported && lit !== this.lit) {
+      if (lit) this.background.setPipeline('Light2D');
+      else this.background.resetPipeline();
+      this.lit = lit;
+    }
     if (lit) {
-      this.background.setPipeline('Light2D');
       this.scene.lights.setAmbientColor(this.ambient);
       const selected = selectSurfaceLights(lights, quality, WORLD_WIDTH, WORLD_HEIGHT);
       this.pool.forEach((light, i) => {
@@ -103,12 +109,12 @@ export class CaveIllumination {
             .setPosition(next.x, next.y)
             .setRadius(next.radius)
             .setColor(next.color)
-            .setIntensity(next.intensity);
-        else light.setIntensity(0);
+            .setIntensity(next.intensity)
+            .setVisible(true);
+        else light.setIntensity(0).setVisible(false);
       });
     } else {
-      this.background.resetPipeline();
-      for (const light of this.pool) light.setIntensity(0);
+      for (const light of this.pool) light.setIntensity(0).setVisible(false);
     }
     this.bloomImage.setVisible(lit && budget.bloomHz > 0);
     if (!lit || budget.bloomHz === 0) return;

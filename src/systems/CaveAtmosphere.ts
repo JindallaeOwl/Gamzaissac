@@ -270,14 +270,14 @@ export class CaveAtmosphere {
       for (const p of this.fire.particles) {
         if (p.kind === 'smoke') continue;
         const a = fireAppearance(p);
-        buffer.emit(p.x / 4, p.y / 4, a.color, a.alpha * 0.9);
+        buffer.emit(p.x / 4, p.y / 4, a.color, a.alpha * 0.35);
       }
       for (const p of this.fire.groundEmbers) {
         const a = groundEmberAppearance(p);
         buffer.emit(p.x / 4, (p.y - p.z) / 4, a.color, a.alpha * 0.65);
       }
       for (const p of candidates) {
-        buffer.emit(p.x / 4, p.y / 4, p.color, p.intensity * 1.5);
+        buffer.emit(p.x / 4, p.y / 4, p.color, p.intensity * 0.8);
       }
     });
   }
