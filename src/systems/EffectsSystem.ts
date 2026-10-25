@@ -8,6 +8,7 @@ import { EnemyDamageVisual } from './EnemyDamageVisual';
 import type { RoomNode } from './DungeonManager';
 import { CaveAtmosphere, type LightProjectile } from './CaveAtmosphere';
 import { CAVE_PALETTE } from './CaveArt';
+import { SeedShotEffects } from './SeedShotEffects';
 
 type ShakeKind = keyof typeof FEEDBACK_TUNING.cameraShake;
 
@@ -16,15 +17,18 @@ export class EffectsSystem {
   private readonly debris = new PixelDebris(ROOM_RECT);
   private readonly debrisGraphics: Phaser.GameObjects.Graphics;
   private readonly atmosphere: CaveAtmosphere;
+  private readonly seedShots: SeedShotEffects;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.atmosphere = new CaveAtmosphere(scene);
+    this.seedShots = new SeedShotEffects(scene);
     // Keep debris below projectiles, pickups and actors so combat stays readable.
     this.debrisGraphics = scene.add.graphics().setDepth(DEPTH.floor + 1);
     scene.events.on(ENEMY_PIXEL_FRAGMENTS, this.enemyFragments, this);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.debris.clear();
+      this.seedShots.clear();
       scene.events.off(ENEMY_PIXEL_FRAGMENTS, this.enemyFragments, this);
     });
   }
@@ -53,6 +57,7 @@ export class EffectsSystem {
   }
 
   update(deltaMs: number, projectiles: readonly LightProjectile[] = []): void {
+    this.seedShots.update(deltaMs);
     this.atmosphere.update(deltaMs, projectiles);
     this.debris.update(deltaMs);
     const graphics = this.debrisGraphics.clear();
@@ -74,11 +79,13 @@ export class EffectsSystem {
   }
 
   clearDebris(): void {
+    this.seedShots.clear();
     this.debris.clear();
     this.debrisGraphics.clear();
   }
 
   enterRoom(room: RoomNode, floor: number): void {
+    this.seedShots.clear();
     this.atmosphere.enterRoom(room, floor);
     room.groundDebris ??= [];
     this.debris.enterRoom(room.groundDebris);
@@ -94,22 +101,14 @@ export class EffectsSystem {
     }
   }
 
-  muzzleFlash(x: number, y: number, direction: { x: number; y: number }): void {
-    const flash = this.scene.add.circle(
-      x + direction.x * 5,
-      y + direction.y * 5,
-      4,
-      0xf7f3e8,
-      0.85,
-    );
-    flash.setDepth(DEPTH.effect);
-    this.scene.tweens.add({
-      targets: flash,
-      scale: 1.8,
-      alpha: 0,
-      duration: FEEDBACK_TUNING.effects.muzzleMs,
-      onComplete: () => flash.destroy(),
-    });
+  muzzleFlash(
+    x: number,
+    y: number,
+    direction: { x: number; y: number },
+    tint?: number,
+    scale?: number,
+  ): void {
+    this.seedShots.emit(x, y, direction, tint, scale);
   }
 
   impact(x: number, y: number, color = 0xf7f3e8): void {

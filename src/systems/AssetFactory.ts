@@ -17,6 +17,7 @@ import {
   PixelSprite,
 } from './enemyPixelSprites';
 import { createItemPixelIcon } from './itemPixelIcons';
+import { createSeedTexture } from './seedPixelSprites';
 import { buildCaveChest, buildCaveCrate, buildCaveDoor, type PropPixels } from './propPixelSprites';
 import {
   buildSoilBase,
@@ -89,20 +90,6 @@ function createPlayerCosmeticTextures(scene: Phaser.Scene): void {
   toothpick.fillTriangle(12, 1, 15, 0, 13, 4);
   toothpick.generateTexture(TextureKeys.playerToothpick, 16, 19);
   toothpick.destroy();
-}
-
-function createSeedTexture(scene: Phaser.Scene): void {
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(0x07110a, 0.35);
-  graphics.fillEllipse(4, 5, 8, 5);
-  graphics.fillStyle(0x79cf52, 1);
-  graphics.lineStyle(1, 0x214f28, 1);
-  graphics.fillEllipse(4, 4, 7, 5);
-  graphics.strokeEllipse(4, 4, 7, 5);
-  graphics.fillStyle(0xc7f28c, 1);
-  graphics.fillRect(2, 2, 2, 1);
-  graphics.generateTexture(TextureKeys.playerSeed, 8, 8);
-  graphics.destroy();
 }
 
 export function createPlaceholderAnimations(scene: Phaser.Scene): void {

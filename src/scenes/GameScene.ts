@@ -856,8 +856,14 @@ export class GameScene extends Phaser.Scene {
 
     this.player.on(
       'player-shot',
-      (event: { x: number; y: number; direction: { x: number; y: number } }) => {
-        this.effects.muzzleFlash(event.x, event.y, event.direction);
+      (event: {
+        x: number;
+        y: number;
+        direction: { x: number; y: number };
+        tint?: number;
+        scale?: number;
+      }) => {
+        this.effects.muzzleFlash(event.x, event.y, event.direction, event.tint, event.scale);
         this.audio.play('shoot');
       },
     );

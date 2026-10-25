@@ -351,7 +351,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const muzzleX = this.x + direction.x * 12;
     const muzzleY = this.y + direction.y * 12;
-    this.emit('player-shot', { x: muzzleX, y: muzzleY, direction });
+    this.emit('player-shot', {
+      x: muzzleX,
+      y: muzzleY,
+      direction,
+      tint: this.attackProfile.forceRedSeeds ? 0xff4d4d : undefined,
+      scale: getSeedDisplayScale(this.attackProfile.seedScale, getEffectiveDamage(this.stats)),
+    });
   }
 
   /**

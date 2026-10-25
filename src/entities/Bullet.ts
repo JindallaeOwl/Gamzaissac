@@ -2,6 +2,13 @@ import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
 import { DEPTH, ROOM_RECT } from '../config/gameConfig';
 import { getWaveAngleOffset } from '../systems/SeedWaveRules';
+import {
+  SEED_DROP_BOUNCE_MS,
+  SEED_DROP_FADE_MS,
+  seedDropFallMs,
+  seedDropPose,
+  seedFlightFrame,
+} from '../systems/seedPixelSprites';
 
 export type BulletOwner = 'player' | 'enemy';
 
@@ -40,7 +47,7 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
   private waveBaseAngle = 0;
 
   constructor(scene: Phaser.Scene) {
-    super(scene, 0, 0, TextureKeys.playerSeed);
+    super(scene, 0, 0, TextureKeys.playerSeed, 0);
   }
 
   static spawn(
@@ -70,7 +77,10 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
     this.waveDegrees = config.waveDegrees ?? 0;
     this.waveSign = config.waveSign ?? 1;
     this.setScale(config.displayScale ?? config.scale ?? 1);
-    this.setTexture(config.owner === 'player' ? TextureKeys.playerSeed : TextureKeys.enemyBullet);
+    this.setTexture(
+      config.owner === 'player' ? TextureKeys.playerSeed : TextureKeys.enemyBullet,
+      config.owner === 'player' ? 0 : undefined,
+    );
     if (config.tint !== undefined) {
       this.setTint(config.tint);
     }
@@ -174,6 +184,12 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
+    if (this.owner === 'player') {
+      const frame = seedFlightFrame(time - this.bornAt);
+      // Atlas frames share dimensions. Leave the origin and Arcade body alone.
+      if (Number(this.frame.name) !== frame) this.setFrame(frame, false, false);
+    }
+
     // 물결 궤적: 발사 각에 조향 오프셋을 더해 속도의 "방향"만 돌린다. 크기는
     // body가 가진 현재 속력을 그대로 보존하므로(setAngle), 나중에 탄속을 바꾸는
     // 효과가 생겨도 물결이 그것을 덮어쓰지 않는다. 위치를 직접 옮기지 않으므로
@@ -210,17 +226,21 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
 
     const body = this.body as Phaser.Physics.Arcade.Body | undefined;
     const scene = this.scene;
-    const direction = body?.velocity.clone().normalize() ?? new Phaser.Math.Vector2();
-    const landingX = this.x + direction.x * 3;
-    const landingY = this.y + direction.y * 3 + 4;
+    const velocity = { x: body?.velocity.x ?? 0, y: body?.velocity.y ?? 0 };
+    const fallMs = seedDropFallMs(Math.hypot(velocity.x, velocity.y));
+    const duration = fallMs + SEED_DROP_BOUNCE_MS + SEED_DROP_FADE_MS;
+    const startX = this.x;
+    const startY = this.y;
+    const startRotation = this.rotation;
+    const flightAge = scene.time.now - this.bornAt;
     const seedScaleX = this.scaleX;
     const seedScaleY = this.scaleY;
     const shadow = scene.add
-      .ellipse(landingX, landingY + 2, 7 * seedScaleX, 3 * seedScaleY, 0x07110a, 0.08)
+      .rectangle(startX, startY + 12, 6 * seedScaleX, 2 * seedScaleY, 0x07110a, 0.08)
       .setScale(0.35)
       .setDepth(DEPTH.bullet - 1);
     const fallenSeed = scene.add
-      .image(this.x, this.y, TextureKeys.playerSeed)
+      .image(this.x, this.y, TextureKeys.playerSeed, this.frame.name)
       .setScale(seedScaleX, seedScaleY)
       .setRotation(this.rotation)
       .setDepth(DEPTH.bullet);
@@ -229,37 +249,34 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
       fallenSeed.setTint(this.tintColor);
     }
 
+    const clock = { elapsed: 0 };
+    let landed = false;
     scene.tweens.add({
-      targets: shadow,
-      scaleX: 1,
-      scaleY: 1,
-      alpha: 0.28,
-      duration: 130,
-      ease: 'Quad.easeIn',
-    });
-    scene.tweens.add({
-      targets: fallenSeed,
-      x: landingX,
-      y: landingY,
-      rotation: this.rotation + Math.PI * 0.65,
-      scaleX: seedScaleX * 1.05,
-      scaleY: seedScaleY * 0.65,
-      duration: 130,
-      ease: 'Quad.easeIn',
+      targets: clock,
+      elapsed: duration,
+      duration,
+      ease: 'Linear',
+      onUpdate: () => {
+        const pose = seedDropPose(clock.elapsed, velocity, fallMs);
+        fallenSeed
+          .setPosition(startX + pose.x, startY + pose.y)
+          .setRotation(startRotation + (velocity.x < 0 ? -1 : 1) * 0.2 * pose.progress)
+          .setScale(seedScaleX * (2 - pose.squash), seedScaleY * pose.squash)
+          .setAlpha(pose.alpha);
+        shadow
+          .setPosition(startX + pose.x, startY + pose.groundY + 2)
+          .setScale(0.35 + 0.65 * pose.progress)
+          .setAlpha((0.08 + 0.14 * pose.progress) * pose.alpha);
+        if (clock.elapsed < fallMs) {
+          fallenSeed.setFrame(seedFlightFrame(flightAge + clock.elapsed));
+        } else if (!landed) {
+          landed = true;
+          fallenSeed.setDepth(DEPTH.floor + 1.4);
+        }
+      },
       onComplete: () => {
-        scene.tweens.add({
-          targets: [fallenSeed, shadow],
-          alpha: 0,
-          scaleX: '*=0.75',
-          scaleY: '*=0.75',
-          delay: 140,
-          duration: 180,
-          ease: 'Quad.easeOut',
-          onComplete: () => {
-            fallenSeed.destroy();
-            shadow.destroy();
-          },
-        });
+        fallenSeed.destroy();
+        shadow.destroy();
       },
     });
   }

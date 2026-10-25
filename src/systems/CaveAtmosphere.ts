@@ -69,6 +69,7 @@ export class CaveAtmosphere {
       texture.context.putImageData(data, 0, 0);
       texture.refresh();
     }
+    scene.textures.get(GLOW_KEY).setFilter(Phaser.Textures.FilterMode.LINEAR);
     if (!scene.textures.exists(ROOM_KEY))
       scene.textures.createCanvas(ROOM_KEY, WORLD_WIDTH, WORLD_HEIGHT);
     this.background = scene.add
@@ -290,20 +291,13 @@ export class CaveAtmosphere {
       this.flames
         .fillStyle(0x181614, alpha * 0.65)
         .fillRect(x - 1, Math.round(ember.y), ember.size + 2, 2);
-      this.flames.fillStyle(color, alpha * 0.045).fillRect(x - 4, y - 3, 9, 7);
-      this.flames
-        .fillStyle(color, alpha * 0.12)
-        .fillRect(x - 1, y - 1, ember.size + 2, ember.size + 2);
+      // The emission buffer supplies the soft halo; draw only the sharp ember here.
       this.flames.fillStyle(color, alpha).fillRect(x, y, ember.size, 1);
     }
     for (const p of this.fire.particles) {
       const appearance = fireAppearance(p);
       const x = Math.round(p.x),
         y = Math.round(p.y);
-      if (p.kind !== 'smoke') {
-        this.flames.fillStyle(appearance.color, appearance.alpha * 0.07);
-        this.flames.fillRect(x - 2, y - 2, appearance.size + 4, appearance.size + 4);
-      }
       if (p.kind === 'ember' && Math.hypot(p.vx, p.vy) > 30) {
         this.flames.lineStyle(1, appearance.color, appearance.alpha * 0.4);
         this.flames.lineBetween(x - p.vx * 0.025, y - p.vy * 0.025, x, y);

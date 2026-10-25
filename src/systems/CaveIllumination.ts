@@ -47,7 +47,9 @@ export class CaveIllumination {
       .setOrigin(0)
       .setDisplaySize(WORLD_WIDTH, WORLD_HEIGHT)
       .setBlendMode(Phaser.BlendModes.ADD)
-      .setDepth(DEPTH.floor + 1.15)
+      .setAlpha(0.45)
+      // Keep the halo behind the flame pixels and the charred torch handle.
+      .setDepth(DEPTH.floor + 1.05)
       .setVisible(false);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const light of this.pool) scene.lights.removeLight(light);
@@ -81,7 +83,7 @@ export class CaveIllumination {
     for (const light of this.pool) light.setIntensity(0).setVisible(false);
     this.bloom.clear();
     this.bloomTexture.context.clearRect(0, 0, this.bloom.width, this.bloom.height);
-    this.bloomTexture.refresh();
+    this.refreshBloomTexture();
     this.bloomImage.setVisible(false);
     this.elapsed = 1000;
   }
@@ -125,6 +127,13 @@ export class CaveIllumination {
     emit(this.bloom);
     this.bloomData.data.set(this.bloom.blur());
     this.bloomTexture.context.putImageData(this.bloomData, 0, 0);
+    this.refreshBloomTexture();
+  }
+
+  private refreshBloomTexture(): void {
+    // Canvas uploads restore the renderer's NEAREST filter in pixel-art mode.
+    // Reapply LINEAR after every upload so the quarter-size halo stays smooth.
     this.bloomTexture.refresh();
+    this.bloomTexture.setFilter(Phaser.Textures.FilterMode.LINEAR);
   }
 }
