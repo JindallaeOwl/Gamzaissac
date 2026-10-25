@@ -9,6 +9,7 @@ import { ShopOffer } from '../entities/ShopOffer';
 import { SeedPlot } from '../entities/SeedPlot';
 import { ShopNpc } from '../entities/ShopNpc';
 import { createEnemy } from '../entities/enemies/EnemyFactory';
+import { RootGnarlMiniboss } from '../entities/enemies/RootGnarlMiniboss';
 import type { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import {
   DEPTH,
@@ -544,6 +545,9 @@ export class RoomController {
 
       occupiedPositions.push(safePosition);
       this.registerSpawnedEnemy(enemy, spawn.enemyId);
+      if (room.type === 'boss' && enemy instanceof RootGnarlMiniboss) {
+        enemy.playEntrance();
+      }
     }
   }
 

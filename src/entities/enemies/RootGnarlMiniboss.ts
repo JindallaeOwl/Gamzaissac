@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { MINIBOSS_TUNING, ROOM_RECT } from '../../config/gameConfig';
+import { DEPTH, MINIBOSS_TUNING, ROOM_RECT } from '../../config/gameConfig';
 import { getNextTelegraphAt } from '../../systems/SummonerRules';
 import { createRadialDirections } from '../../utils/attackDirections';
 import { clampPointInsideBounds, normalizeVector } from '../../utils/math';
@@ -28,14 +28,118 @@ const TUNING = MINIBOSS_TUNING.rootGnarl;
 // 방에 들어선 직후 곧바로 덮치지 않게 두는 첫 여유. 문에서 들어오는 순간
 // 방사탄이나 도약을 맞으면 피할 자리가 없다.
 const FIRST_ACTION_DELAY_MS = 1200;
+const ENTRANCE_WAIT_MS = 1000;
+const ENTRANCE_FALL_MS = 360;
+const ENTRANCE_IMPACT_MS = 140;
 
 export class RootGnarlMiniboss extends BaseEnemy {
   private attackState: RootGnarlState = 'chasing';
   private stateEndsAt = 0;
   private nextActionAt = 0;
   private leapTarget = { x: 0, y: 0 };
+  private entranceState: 'ready' | 'waiting' | 'falling' | 'impact' = 'ready';
+  private entranceTimer?: Phaser.Time.TimerEvent;
+  private readonly entranceDust = new Set<Phaser.GameObjects.Rectangle>();
+
+  /** Boss-room entrance only; ordinary developer spawns retain their usual behavior. */
+  playEntrance(): void {
+    if (this.entranceState !== 'ready') {
+      return;
+    }
+
+    this.entranceState = 'waiting';
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.stop();
+    body.enable = false;
+    this.setVisible(false);
+
+    const landingY = this.y;
+    const baseScaleX = this.scaleX;
+    const baseScaleY = this.scaleY;
+    this.entranceTimer = this.scene.time.delayedCall(ENTRANCE_WAIT_MS, () => {
+      this.entranceTimer = undefined;
+      if (!this.active || this.entranceState !== 'waiting') {
+        return;
+      }
+
+      this.entranceState = 'falling';
+      this.y = -this.displayHeight / 2;
+      this.setVisible(true);
+      this.scene.tweens.add({
+        targets: this,
+        y: landingY,
+        duration: ENTRANCE_FALL_MS,
+        ease: 'Cubic.easeIn',
+        onComplete: () => {
+          if (!this.active || this.entranceState !== 'falling') {
+            return;
+          }
+
+          this.entranceState = 'impact';
+          this.spawnEntranceDust(landingY);
+          this.setScale(baseScaleX * 1.2, baseScaleY * 0.76);
+          this.scene.tweens.add({
+            targets: this,
+            scaleX: baseScaleX,
+            scaleY: baseScaleY,
+            duration: ENTRANCE_IMPACT_MS,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+              if (!this.active || this.entranceState !== 'impact') {
+                return;
+              }
+
+              body.reset(this.x, landingY);
+              body.enable = true;
+              this.entranceState = 'ready';
+            },
+          });
+        },
+      });
+    });
+  }
+
+  private spawnEntranceDust(landingY: number): void {
+    const groundY = landingY + this.effectiveBodyRadius * 0.7;
+    for (let index = 0; index < 16; index += 1) {
+      const side = index % 2 === 0 ? -1 : 1;
+      const lane = Math.floor(index / 2);
+      const dust = this.scene.add
+        .rectangle(
+          this.x + side * (4 + lane * 2),
+          groundY,
+          3 + (lane % 3) * 2,
+          3 + (lane % 2) * 2,
+          [0x6b4a31, 0x9b7047, 0xc39a66][lane % 3],
+        )
+        .setDepth(DEPTH.effect);
+      this.entranceDust.add(dust);
+      this.scene.tweens.add({
+        targets: dust,
+        x: dust.x + side * (16 + lane * 7),
+        y: groundY - 7 - (lane % 4) * 5,
+        alpha: 0,
+        duration: 240 + lane * 28,
+        ease: 'Quad.easeOut',
+        onComplete: () => {
+          this.entranceDust.delete(dust);
+          dust.destroy();
+        },
+      });
+    }
+  }
+
+  override takeDamage(amount: number, sourceX: number, sourceY: number): boolean {
+    if (this.entranceState !== 'ready') {
+      return false;
+    }
+    return super.takeDamage(amount, sourceX, sourceY);
+  }
 
   updateAI(time: number, player: Player, enemyBullets: Phaser.Physics.Arcade.Group): void {
+    if (this.entranceState !== 'ready') {
+      return;
+    }
     this.updatePhase();
 
     if (this.nextActionAt === 0) {
@@ -241,5 +345,17 @@ export class RootGnarlMiniboss extends BaseEnemy {
 
   private actionCooldown(): number {
     return this.isInPhaseTwo() ? TUNING.phaseTwoActionCooldownMs : TUNING.actionCooldownMs;
+  }
+
+  override destroy(fromScene?: boolean): void {
+    this.entranceTimer?.remove(false);
+    this.entranceTimer = undefined;
+    this.scene.tweens.killTweensOf(this);
+    for (const dust of this.entranceDust) {
+      this.scene.tweens.killTweensOf(dust);
+      dust.destroy(fromScene);
+    }
+    this.entranceDust.clear();
+    super.destroy(fromScene);
   }
 }
