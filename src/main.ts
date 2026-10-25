@@ -21,6 +21,7 @@ const config: Phaser.Types.Core.GameConfig = {
     antialiasGL: false,
     pixelArt: true,
     roundPixels: true,
+    maxLights: 10,
     // The HUD uses a second camera. Present only completed frames so the
     // browser cannot display the world-camera pass before the HUD pass.
     desynchronized: false,

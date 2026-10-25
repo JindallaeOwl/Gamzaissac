@@ -1,10 +1,14 @@
 import Phaser from 'phaser';
 import { TextureKeys } from '../config/assets';
 import { DEPTH, OBSTACLE_TUNING } from '../config/gameConfig';
+import { EnemyDamageVisual } from '../systems/EnemyDamageVisual';
+import type { DamageScar, FragmentImpact } from '../systems/EnemyDamagePixels';
 
 export class Obstacle extends Phaser.Physics.Arcade.Sprite {
   private hp: number;
   private destroyQueued = false;
+  private damageVisual?: EnemyDamageVisual;
+  private readonly scars: DamageScar[];
   private readonly onHealthChanged?: (remainingHealth: number) => void;
   private readonly onDestroyed?: (x: number, y: number) => void;
 
@@ -15,9 +19,11 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
     initialHealth = OBSTACLE_TUNING.maxHealth,
     onHealthChanged?: (remainingHealth: number) => void,
     onDestroyed?: (x: number, y: number) => void,
+    scars: DamageScar[] = [],
   ) {
     super(scene, x, y, TextureKeys.obstacleCrate);
     this.hp = initialHealth;
+    this.scars = scars;
     this.onHealthChanged = onHealthChanged;
     this.onDestroyed = onDestroyed;
     scene.add.existing(this);
@@ -30,14 +36,17 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
 
     // 텍스처 여백과 접지 그림자를 뺀, 실제로 그려진 상자만 막는다.
     body?.setSize(OBSTACLE_TUNING.bodyWidth, OBSTACLE_TUNING.bodyHeight);
+    if (scars.length) this.damageVisual = new EnemyDamageVisual(this, scars);
   }
 
-  takeDamage(amount: number): boolean {
+  takeDamage(amount: number, sourceX = this.x, sourceY = this.y, impact?: FragmentImpact): boolean {
     if (!this.active || this.destroyQueued) {
       return false;
     }
 
     this.hp -= amount;
+    this.damageVisual ??= new EnemyDamageVisual(this, this.scars);
+    this.damageVisual.hit(sourceX, sourceY, 0xffffff, this.hp <= 0, impact);
     this.onHealthChanged?.(Math.max(0, this.hp));
 
     if (this.hp <= 0) {
@@ -54,8 +63,21 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
     return false;
   }
 
-  destroyByBomb(): boolean {
+  destroyByBomb(sourceX = this.x, sourceY = this.y): boolean {
+    if (!this.active || this.destroyQueued) return false;
+    this.damageVisual ??= new EnemyDamageVisual(this, this.scars);
+    this.damageVisual.hit(sourceX, sourceY, 0xffffff, true, {
+      kind: 'explosion',
+      x: this.x - sourceX,
+      y: this.y - sourceY,
+    });
     return this.destroyObstacle();
+  }
+
+  override destroy(fromScene?: boolean): void {
+    this.damageVisual?.destroy();
+    this.damageVisual = undefined;
+    super.destroy(fromScene);
   }
 
   private destroyObstacle(): boolean {

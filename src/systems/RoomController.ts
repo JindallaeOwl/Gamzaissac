@@ -700,6 +700,7 @@ export class RoomController {
     if (!room.obstacleHealth) {
       room.obstacleHealth = positions.map(() => OBSTACLE_TUNING.maxHealth);
     }
+    room.obstacleScars ??= positions.map(() => []);
 
     positions.forEach((position, index) => {
       const health = room.obstacleHealth?.[index] ?? OBSTACLE_TUNING.maxHealth;
@@ -719,6 +720,7 @@ export class RoomController {
           }
         },
         this.onObstacleDestroyed,
+        room.obstacleScars![index],
       );
       this.obstacles.add(obstacle);
     });

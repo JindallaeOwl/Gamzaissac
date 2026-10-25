@@ -3,7 +3,6 @@ import {
   HUD_ICON_ASSETS,
   ITEM_IMAGE_ASSETS,
   MUSIC_ASSETS,
-  PICKUP_SPRITESHEET_ASSETS,
   PLAYER_IMAGE_ASSETS,
   PLAYER_SPRITESHEET_ASSETS,
   SHOP_NPC_IMAGE_ASSETS,
@@ -36,13 +35,6 @@ export class BootScene extends Phaser.Scene {
     }
 
     for (const asset of PLAYER_SPRITESHEET_ASSETS) {
-      this.load.spritesheet(asset.key, asset.path, {
-        frameWidth: asset.frameWidth,
-        frameHeight: asset.frameHeight,
-      });
-    }
-
-    for (const asset of PICKUP_SPRITESHEET_ASSETS) {
       this.load.spritesheet(asset.key, asset.path, {
         frameWidth: asset.frameWidth,
         frameHeight: asset.frameHeight,

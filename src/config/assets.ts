@@ -117,15 +117,6 @@ export const UI_IMAGE_ASSETS = [
   },
 ] as const;
 
-export const PICKUP_SPRITESHEET_ASSETS = [
-  {
-    key: TextureKeys.chestPickup,
-    path: 'assets/pickups/treasure-chest.png',
-    frameWidth: 64,
-    frameHeight: 64,
-  },
-] as const;
-
 export const MUSIC_ASSETS = [
   { key: MusicKeys.title, path: 'assets/music/chajamakesmusic/start.ogg' },
   { key: MusicKeys.journey, path: 'assets/music/chajamakesmusic/journey.ogg' },

@@ -7,6 +7,8 @@ import { normalizeVector } from '../../utils/math';
 import { getCenteredCircleBodyOffset } from '../../utils/collisionBody';
 import { effectiveBodyRadius } from '../../systems/EnemyScaleRules';
 import { t } from '../../i18n';
+import { EnemyDamageVisual } from '../../systems/EnemyDamageVisual';
+import type { FragmentImpact } from '../../systems/EnemyDamagePixels';
 
 /** 챔피언 승격이 적용할 수치 묶음. 값은 스폰 정책(ChampionRules)이 정해 넘긴다 —
     엔티티는 받은 숫자를 적용할 뿐, 등장 확률 같은 정책을 알지 못한다. */
@@ -33,6 +35,8 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   private phaseTwoLatched = false;
   private telegraphRing?: Phaser.GameObjects.Graphics;
   private groundMarker?: Phaser.GameObjects.Graphics;
+  private damageVisual?: EnemyDamageVisual;
+  private fragmentImpact?: FragmentImpact;
 
   constructor(
     scene: Phaser.Scene,
@@ -71,6 +75,11 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
 
   abstract updateAI(time: number, player: Player, enemyBullets: Phaser.Physics.Arcade.Group): void;
 
+  override preUpdate(time: number, delta: number): void {
+    super.preUpdate(time, delta);
+    this.damageVisual?.sync();
+  }
+
   get scoreValue(): number {
     return this.baseScoreValue;
   }
@@ -105,6 +114,14 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.hp -= amount;
+    this.damageVisual ??= new EnemyDamageVisual(this);
+    this.damageVisual.hit(
+      sourceX,
+      sourceY,
+      this.persistentTint ?? 0xffffff,
+      this.hp <= 0,
+      this.fragmentImpact,
+    );
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const push = normalizeVector(this.x - sourceX, this.y - sourceY);
@@ -134,6 +151,21 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     return false;
   }
 
+  /** Preserve subclass damage gates and phase transitions while supplying visual force. */
+  takeImpactDamage(
+    amount: number,
+    sourceX: number,
+    sourceY: number,
+    impact: FragmentImpact,
+  ): boolean {
+    this.fragmentImpact = impact;
+    try {
+      return this.takeDamage(amount, sourceX, sourceY);
+    } finally {
+      this.fragmentImpact = undefined;
+    }
+  }
+
   /**
    * Kill this enemy immediately, bypassing any invulnerability (e.g. the Worm
    * King while burrowed). Fires the same defeat events as a normal kill so score
@@ -148,6 +180,8 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
 
     this.hp = 0;
     this.defeated = true;
+    this.damageVisual ??= new EnemyDamageVisual(this);
+    this.damageVisual.hit(this.x, this.y, this.persistentTint ?? 0xffffff, true);
 
     const body = this.body as Phaser.Physics.Arcade.Body | undefined;
 
@@ -317,6 +351,8 @@ export abstract class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   override destroy(fromScene?: boolean): void {
+    this.damageVisual?.destroy();
+    this.damageVisual = undefined;
     this.clearTelegraphRing(fromScene);
     this.clearGroundMarker(fromScene);
     super.destroy(fromScene);

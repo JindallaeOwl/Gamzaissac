@@ -151,11 +151,9 @@ export class CombatCollisionSystem {
       return;
     }
 
-    const destroyed = obstacle.takeDamage(bullet.damage);
-    this.effects.impact(x, y, 0xc7fff4);
+    const destroyed = obstacle.takeDamage(bullet.damage, x, y);
 
     if (destroyed) {
-      this.effects.obstacleBreak(obstacle.x, obstacle.y);
       this.audio.play('hit');
     }
 
@@ -185,7 +183,6 @@ export class CombatCollisionSystem {
       bulletY,
     );
     const continues = bullet.overflowPenetration && defeated && overflowDamage > 0;
-    this.effects.impact(bulletX, bulletY, defeated ? 0xffd166 : 0xf7f3e8);
 
     if (continues) {
       bullet.retainOverflowDamage(overflowDamage);
@@ -226,8 +223,12 @@ export class CombatCollisionSystem {
 
     const enemyX = enemy.x;
     const enemyY = enemy.y;
-    const defeated = enemy.takeDamage(beam.damage, this.player.x, this.player.y);
-    this.effects.beamImpact(enemyX, enemyY);
+    const defeated = enemy.takeImpactDamage(
+      beam.damage,
+      enemyX - beam.direction.x * 100,
+      enemyY - beam.direction.y * 100,
+      { kind: 'beam', ...beam.direction },
+    );
     this.handleEnemyDamageFeedback(enemy, enemyX, enemyY, defeated, 'beam');
   }
 
@@ -250,12 +251,10 @@ export class CombatCollisionSystem {
 
     const x = obstacle.x;
     const y = obstacle.y;
-    const destroyed = obstacle.takeDamage(beam.damage);
-    this.effects.beamImpact(x, y);
-
-    if (destroyed) {
-      this.effects.obstacleBreak(x, y);
-    }
+    obstacle.takeDamage(beam.damage, x - beam.direction.x * 100, y - beam.direction.y * 100, {
+      kind: 'beam',
+      ...beam.direction,
+    });
 
     this.audio.play('hit');
   }
